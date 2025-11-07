@@ -17,7 +17,10 @@ public class TheLoaiDAO {
 		while(rs.next()) {
 			int MaTheLoai = rs.getInt("MaTheLoai");
 			String TenTheLoai = rs.getNString("TenTheLoai");
-			ds.add(new TheLoai(MaTheLoai, TenTheLoai));
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			ds.add(new TheLoai(MaTheLoai, TenTheLoai, TrangThai, ThoiDiemTao, ThoiDiemCapNhat));
 		}
 		
 		pr.close();
@@ -34,10 +37,11 @@ public class TheLoaiDAO {
 	}
 	
 	public void updateDB(TheLoai tl) throws Exception {
-		String sql = "UPDATE TheLoai SET TenTheLoai = ? WHERE MaTheLoai = ?;";
+		String sql = "UPDATE TheLoai SET TenTheLoai = ?, TrangThai = ? WHERE MaTheLoai = ?;";
 		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
 		pr.setNString(1, tl.getTenTheLoai());
-		pr.setInt(2, tl.getMaTheLoai());
+		pr.setNString(2, tl.getTrangThai());
+		pr.setInt(3, tl.getMaTheLoai());
 		pr.executeUpdate();
 		pr.close();
 	}
@@ -60,7 +64,10 @@ public class TheLoaiDAO {
 	    if (rs.next()) {
 	        int MaTheLoai = rs.getInt("MaTheLoai");
 	        String TenTheLoai = rs.getNString("TenTheLoai");
-	        tl = new TheLoai(MaTheLoai, TenTheLoai);
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+	        tl = new TheLoai(MaTheLoai, TenTheLoai, TrangThai, ThoiDiemTao, ThoiDiemCapNhat);
 	    }
 
 	    rs.close();
@@ -78,7 +85,10 @@ public class TheLoaiDAO {
 	    if (rs.next()) {
 	        int MaTheLoai = rs.getInt("MaTheLoai");
 	        String TenTheLoai = rs.getNString("TenTheLoai");
-	        tl = new TheLoai(MaTheLoai, TenTheLoai);
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			tl = new TheLoai(MaTheLoai, TenTheLoai, TrangThai, ThoiDiemTao, ThoiDiemCapNhat);
 	    }
 
 	    rs.close();

@@ -215,7 +215,7 @@ public class BinhLuanBO {
 	}
 	
 	// Lọc danh sách bình luận theo mã bài viết
-	public ArrayList<BinhLuan> filterDB_maBaiViet(long maBaiViet) throws Exception {
+	public ArrayList<BinhLuan> filterDB_maBaiViet(long maBaiViet, String trangThaiBaiViet) throws Exception {
 		ArrayList<BinhLuan> temp = new ArrayList<BinhLuan>();
 	
 		//Không tìm thấy -> ds rỗng
@@ -225,8 +225,15 @@ public class BinhLuanBO {
 		
 		//Lọc bình luận theo tiêu đề bài viết
 		for(BinhLuan bl: readDB()) {
-			if(bl.getMaBaiViet() == maBaiViet && "Active".equals(bl.getTrangThai())) {
-				temp.add(bl);
+			if(bl.getMaBaiViet() == maBaiViet) {
+				boolean f = false;
+				if("Active".equals(trangThaiBaiViet) || "Hidden".equals(trangThaiBaiViet)) {
+					if("Active".equals(bl.getTrangThai())) f = true;
+				}
+				else {
+					f = true;
+				}
+				if(f) temp.add(bl);
 			}
 		}
 		return temp;

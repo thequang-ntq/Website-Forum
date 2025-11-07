@@ -36,45 +36,80 @@ public class ThongTinCaNhanController extends HttpServlet {
         }
 
         try {
-            // Handle POST-like logic for password change
+        	// Handle POST-like logic for password change
             if ("POST".equalsIgnoreCase(request.getMethod())) {
-                // Lấy dữ liệu từ form
-                String matKhauCu = request.getParameter("matKhauCu");
-                String matKhauMoi = request.getParameter("matKhauMoi");
-                String xacNhanMatKhauMoi = request.getParameter("xacNhanMatKhauMoi");
-
-                // Validate
-                if (matKhauCu == null || matKhauCu.trim().isEmpty()) {
-                    throw new Exception("Mật khẩu cũ không được để trống!");
-                }
-                if (matKhauCu.length() > 255) {
-                    throw new Exception("Mật khẩu cũ không được quá 255 ký tự!");
-                }
-                if (matKhauMoi == null || matKhauMoi.trim().isEmpty()) {
-                    throw new Exception("Mật khẩu mới không được để trống!");
-                }
-                if (matKhauMoi.length() > 255) {
-                    throw new Exception("Mật khẩu mới không được quá 255 ký tự!");
-                }
-                if (matKhauMoi.equals(matKhauCu)) {
-                    throw new Exception("Mật khẩu mới không được trùng mật khẩu cũ!");
-                }
-                if (xacNhanMatKhauMoi == null || xacNhanMatKhauMoi.trim().isEmpty()) {
-                    throw new Exception("Xác nhận mật khẩu mới không được để trống!");
-                }
-                if (xacNhanMatKhauMoi.length() > 255) {
-                    throw new Exception("Xác nhận mật khẩu mới không được quá 255 ký tự!");
-                }
-                if (!xacNhanMatKhauMoi.equals(matKhauMoi)) {
-                    throw new Exception("Xác nhận mật khẩu mới không khớp!");
-                }
-
+                String action = request.getParameter("action");
+                
                 // Đổi mật khẩu
-                tkbo.changePassDB(account, matKhauCu, matKhauMoi);
+                if (action == null || "changePassword".equals(action)) {
+                    // Lấy dữ liệu từ form
+                    String matKhauCu = request.getParameter("matKhauCu");
+                    String matKhauMoi = request.getParameter("matKhauMoi");
+                    String xacNhanMatKhauMoi = request.getParameter("xacNhanMatKhauMoi");
 
-                // Thông báo thành công
-                request.setAttribute("message", "Đổi mật khẩu thành công!");
-                request.setAttribute("messageType", "success");
+                    // Validate
+                    if (matKhauCu == null || matKhauCu.trim().isEmpty()) {
+                        throw new Exception("Mật khẩu cũ không được để trống!");
+                    }
+                    if (matKhauCu.length() > 255) {
+                        throw new Exception("Mật khẩu cũ không được quá 255 ký tự!");
+                    }
+                    if (matKhauMoi == null || matKhauMoi.trim().isEmpty()) {
+                        throw new Exception("Mật khẩu mới không được để trống!");
+                    }
+                    if (matKhauMoi.length() > 255) {
+                        throw new Exception("Mật khẩu mới không được quá 255 ký tự!");
+                    }
+                    if (matKhauMoi.equals(matKhauCu)) {
+                        throw new Exception("Mật khẩu mới không được trùng mật khẩu cũ!");
+                    }
+                    if (xacNhanMatKhauMoi == null || xacNhanMatKhauMoi.trim().isEmpty()) {
+                        throw new Exception("Xác nhận mật khẩu mới không được để trống!");
+                    }
+                    if (xacNhanMatKhauMoi.length() > 255) {
+                        throw new Exception("Xác nhận mật khẩu mới không được quá 255 ký tự!");
+                    }
+                    if (!xacNhanMatKhauMoi.equals(matKhauMoi)) {
+                        throw new Exception("Xác nhận mật khẩu mới không khớp!");
+                    }
+
+                    // Đổi mật khẩu
+                    tkbo.changePassDB(account, matKhauCu, matKhauMoi);
+
+                    // Thông báo thành công
+                    request.setAttribute("message", "Đổi mật khẩu thành công!");
+                    request.setAttribute("messageType", "success");
+                }
+                // Xóa tài khoản
+                else if ("deleteAccount".equals(action)) {
+                    String matKhauXacNhan = request.getParameter("matKhauXacNhan");
+                    String xacNhanXoa = request.getParameter("xacNhanXoa");
+                    
+                    // Validate
+                    if (matKhauXacNhan == null || matKhauXacNhan.trim().isEmpty()) {
+                        throw new Exception("Mật khẩu xác nhận không được để trống!");
+                    }
+                    if (matKhauXacNhan.length() > 255) {
+                        throw new Exception("Mật khẩu xác nhận không được quá 255 ký tự!");
+                    }
+                    if (xacNhanXoa == null || !xacNhanXoa.equals("XOA TAI KHOAN")) {
+                        throw new Exception("Vui lòng nhập đúng cụm từ xác nhận: XOA TAI KHOAN");
+                    }
+                    
+                    // Kiểm tra mật khẩu
+                    TaiKhoan tkCheck = tkbo.checkLoginDB(account, matKhauXacNhan);
+                    if (tkCheck == null) {
+                        throw new Exception("Mật khẩu không chính xác!");
+                    }
+                    
+                    // Xóa tài khoản
+                    tkbo.deleteDB(account);
+                    
+                    // Xóa session và chuyển về trang đăng nhập
+                    session.invalidate();
+                    response.sendRedirect(request.getContextPath() + "/DangNhapController?deleteSuccess=true");
+                    return;
+                }
             }
 
             // Lấy thông tin tài khoản

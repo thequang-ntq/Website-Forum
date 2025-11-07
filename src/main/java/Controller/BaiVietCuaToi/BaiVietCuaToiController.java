@@ -45,7 +45,7 @@ public class BaiVietCuaToiController extends HttpServlet {
 		
 		try {
 			// Lấy danh sách thể loại cho dropdown và filter
-			ArrayList<TheLoai> dsTheLoai = tlbo.readDB();
+			ArrayList<TheLoai> dsTheLoai = tlbo.readDB2();
 			request.setAttribute("dsTheLoai", dsTheLoai);
 			
 			// Lấy danh sách bài viết của tài khoản hiện tại
@@ -137,7 +137,7 @@ public class BaiVietCuaToiController extends HttpServlet {
 			
 			// Lấy danh sách bình luận cho mỗi bài viết
 			for(BaiViet bv : dsBaiVietPhanTrang) {
-				ArrayList<BinhLuan> binhLuanCuaBaiViet = blbo.filterDB_maBaiViet(bv.getMaBaiViet());
+				ArrayList<BinhLuan> binhLuanCuaBaiViet = blbo.filterDB_maBaiViet(bv.getMaBaiViet(), bv.getTrangThai());
 				request.setAttribute("dsBinhLuan_" + bv.getMaBaiViet(), binhLuanCuaBaiViet);
 			}
 			

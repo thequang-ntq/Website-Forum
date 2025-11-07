@@ -1,7 +1,7 @@
-<%@page import="java.text.SimpleDateFormat"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.ArrayList" %>
-<%@ page import="Modal.TheLoai.TheLoai" %>
+<%@ page import="Modal.TaiKhoan.TaiKhoan" %>
+<%@ page import="java.text.SimpleDateFormat" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -10,7 +10,7 @@
 	<title>Website Forum</title>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-	<link rel="stylesheet" href="${pageContext.request.contextPath}/pages/category_page/style.css">
+	<link rel="stylesheet" href="${pageContext.request.contextPath}/pages/account_page/style.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
@@ -19,7 +19,7 @@
 		String account = (String) session.getAttribute("account");
 		boolean isAdmin = "Admin".equals(quyen);
 		
-		ArrayList<TheLoai> dsTheLoai = (ArrayList<TheLoai>) request.getAttribute("dsTheLoai");
+		ArrayList<TaiKhoan> dsTaiKhoan = (ArrayList<TaiKhoan>) request.getAttribute("dsTaiKhoan");
 		String searchKey = (String) request.getAttribute("searchKey");
 		String message = (String) request.getAttribute("message");
 		String messageType = (String) request.getAttribute("messageType");
@@ -62,12 +62,12 @@
 					</li>
 					<% if(isAdmin) { %>
 					<li class="nav-item">
-						<a class="nav-link" href="${pageContext.request.contextPath}/TaiKhoanController">
-							<i class="bi bi-tags-fill me-1"></i>Tài khoản
+						<a class="nav-link active" href="${pageContext.request.contextPath}/TaiKhoanController">
+							<i class="bi bi-people-fill me-1"></i>Tài khoản
 						</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link active" href="${pageContext.request.contextPath}/TheLoaiController">
+						<a class="nav-link" href="${pageContext.request.contextPath}/TheLoaiController">
 							<i class="bi bi-tags-fill me-1"></i>Thể loại
 						</a>
 					</li>
@@ -119,7 +119,7 @@
 		<!-- Page Title -->
 		<div class="text-center mb-4">
 			<h1 class="page-title">
-				<i class="bi bi-tags-fill me-2"></i>Danh sách Thể loại
+				<i class="bi bi-people-fill me-2"></i>Danh sách Tài khoản
 			</h1>
 		</div>
 
@@ -136,7 +136,7 @@
 			<div class="col-lg-4 col-md-6 ms-auto">
 				<div class="search-box">
 					<input type="text" class="form-control" id="searchInput" 
-						   placeholder="Tìm kiếm thể loại..." 
+						   placeholder="Tìm kiếm tài khoản..." 
 						   value="<%= searchKey != null ? searchKey : "" %>"
 						   onkeyup="handleSearch()">
 					<i class="bi bi-search search-icon"></i>
@@ -144,17 +144,17 @@
 			</div>
 		</div>
 
-		<!-- Category Table or Empty State -->
+		<!-- Account Table or Empty State -->
 		<div class="card shadow-sm table-card">
 			<div class="card-body">
-				<% if(dsTheLoai == null || dsTheLoai.isEmpty()) { %>
+				<% if(dsTaiKhoan == null || dsTaiKhoan.isEmpty()) { %>
 					<div class="empty-state text-center py-5">
 						<i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
 						<h5 class="mt-3 text-muted">
 							<% if(searchKey != null && !searchKey.trim().isEmpty()) { %>
-								Không tìm thấy thể loại nào phù hợp
+								Không tìm thấy tài khoản nào phù hợp
 							<% } else { %>
-								Chưa có thể loại nào
+								Chưa có tài khoản nào
 							<% } %>
 						</h5>
 					</div>
@@ -163,39 +163,41 @@
 						<table class="table table-hover align-middle">
 							<thead class="table-header">
 								<tr>
-									<th width="10%" class="text-center">Số thứ tự</th>
-									<th width="50%">Tên thể loại</th>
-									<th width="15%" class="text-center">Trạng thái</th>
+									<th width="15%" class="text-center">Số thứ tự</th>
+									<th width="40%">Tên đăng nhập</th>
+									<th width="20%" class="text-center">Trạng thái</th>
 									<th width="25%" class="text-center">Thao tác</th>
 								</tr>
 							</thead>
 							<tbody>
 								<% 
 									int stt = startIndex + 1;
-									for(TheLoai tl : dsTheLoai) { 
+									for(TaiKhoan tk : dsTaiKhoan) { 
 										String trangThaiVN = "";
-										if("Active".equals(tl.getTrangThai())) trangThaiVN = "Hoạt động";
-										else if("Deleted".equals(tl.getTrangThai())) trangThaiVN = "Đã xóa";
-										else if("Hidden".equals(tl.getTrangThai())) trangThaiVN = "Ẩn";
+										if("Active".equals(tk.getTrangThai())) trangThaiVN = "Hoạt động";
+										else if("Deleted".equals(tk.getTrangThai())) trangThaiVN = "Đã xóa";
+										else if("Hidden".equals(tk.getTrangThai())) trangThaiVN = "Ẩn";
 								%>
-									<tr class="table-row" onclick="showDetailModal('<%= tl.getMaTheLoai() %>')">
+									<tr class="table-row" onclick="showDetailModal('<%= tk.getTenDangNhap() %>')">
 										<td class="text-center fw-bold"><%= stt++ %></td>
-										<td><%= tl.getTenTheLoai() %></td>
+										<td><%= tk.getTenDangNhap() %></td>
 										<td class="text-center">
-											<span class="badge <%= "Active".equals(tl.getTrangThai()) ? "bg-success" : ("Deleted".equals(tl.getTrangThai()) ? "bg-danger" : "bg-warning") %>">
+											<span class="badge <%= "Active".equals(tk.getTrangThai()) ? "bg-success" : ("Deleted".equals(tk.getTrangThai()) ? "bg-danger" : "bg-warning") %>">
 												<%= trangThaiVN %>
 											</span>
 										</td>
-										<td class="text-center" onclick="event.stopPropagation()">
-											<button class="btn btn-sm btn-edit me-2" 
-													onclick="showEditModal('<%= tl.getMaTheLoai() %>')">
-												<i class="bi bi-pencil-fill me-1"></i>Sửa
-											</button>
-											<button class="btn btn-sm btn-delete" 
-													onclick="showDeleteModal(<%= tl.getMaTheLoai() %>, '<%= tl.getTenTheLoai().replace("'", "\\'") %>')">
-												<i class="bi bi-trash-fill me-1"></i>Xóa
-											</button>
-										</td>
+										<% if(!account.equals(tk.getTenDangNhap())) { %>
+											<td class="text-center" onclick="event.stopPropagation()">
+												<button class="btn btn-sm btn-edit me-2" 
+														onclick="showEditModal('<%= tk.getTenDangNhap().replace("'", "\\'") %>')">
+													<i class="bi bi-pencil-fill me-1"></i>Sửa
+												</button>
+												<button class="btn btn-sm btn-delete" 
+														onclick="showDeleteModal('<%= tk.getTenDangNhap().replace("'", "\\'") %>')">
+													<i class="bi bi-trash-fill me-1"></i>Xóa
+												</button>
+											</td>
+										<% } %>
 									</tr>
 								<% } %>
 							</tbody>
@@ -206,7 +208,6 @@
 					<% if(totalPages > 1) { %>
 						<nav aria-label="Page navigation" class="mt-4">
 							<ul class="pagination justify-content-center">
-								<!-- Previous Button -->
 								<li class="page-item <%= currentPage == 1 ? "disabled" : "" %>">
 									<a class="page-link" href="<%= currentPage > 1 ? buildPaginationUrl(request, currentPage - 1) : "#" %>" aria-label="Previous">
 										<span aria-hidden="true">&laquo;</span>
@@ -214,21 +215,17 @@
 								</li>
 								
 								<%
-									// Hiển thị các số trang
 									int startPage = Math.max(1, currentPage - 2);
 									int endPage = Math.min(totalPages, currentPage + 2);
 									
-									// Nếu ở đầu, hiển thị thêm trang sau
 									if(currentPage <= 3) {
 										endPage = Math.min(5, totalPages);
 									}
 									
-									// Nếu ở cuối, hiển thị thêm trang trước
 									if(currentPage >= totalPages - 2) {
 										startPage = Math.max(1, totalPages - 4);
 									}
 									
-									// Trang đầu tiên
 									if(startPage > 1) {
 								%>
 										<li class="page-item">
@@ -242,7 +239,6 @@
 								<%
 									}
 									
-									// Các trang ở giữa
 									for(int i = startPage; i <= endPage; i++) {
 								%>
 										<li class="page-item <%= i == currentPage ? "active" : "" %>">
@@ -251,7 +247,6 @@
 								<%
 									}
 									
-									// Trang cuối cùng
 									if(endPage < totalPages) {
 										if(endPage < totalPages - 1) {
 								%>
@@ -268,7 +263,6 @@
 									}
 								%>
 								
-								<!-- Next Button -->
 								<li class="page-item <%= currentPage == totalPages ? "disabled" : "" %>">
 									<a class="page-link" href="<%= currentPage < totalPages ? buildPaginationUrl(request, currentPage + 1) : "#" %>" aria-label="Next">
 										<span aria-hidden="true">&raquo;</span>
@@ -277,11 +271,10 @@
 							</ul>
 						</nav>
 						
-						<!-- Page Info -->
 						<div class="text-center text-muted mt-2">
 							<small>
 								Trang <%= currentPage %> / <%= totalPages %> 
-								(Tổng <%= totalItems %> thể loại)
+								(Tổng <%= totalItems %> tài khoản)
 							</small>
 						</div>
 					<% } %>
@@ -292,18 +285,17 @@
 		<!-- Add Button -->
 		<div class="text-center mt-4 mb-5">
 			<button class="btn btn-add" onclick="showAddModal()">
-				<i class="bi bi-plus-circle-fill me-2"></i>Thêm thể loại
+				<i class="bi bi-plus-circle-fill me-2"></i>Thêm tài khoản
 			</button>
 		</div>
 	</div>
 
 	<%!
-		// Helper method để build URL phân trang
 		private String buildPaginationUrl(HttpServletRequest request, int page) {
 			String contextPath = request.getContextPath();
 			String searchKey = request.getParameter("search");
 			
-			StringBuilder url = new StringBuilder(contextPath + "/TheLoaiController?page=" + page);
+			StringBuilder url = new StringBuilder(contextPath + "/TaiKhoanController?page=" + page);
 			
 			if(searchKey != null && !searchKey.trim().isEmpty()) {
 				try {
@@ -329,7 +321,7 @@
 		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title"><i class="bi bi-info-circle-fill me-2"></i>Chi tiết thể loại</h5>
+					<h5 class="modal-title"><i class="bi bi-info-circle-fill me-2"></i>Chi tiết tài khoản</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 				</div>
 				<div class="modal-body" id="detailContent">
@@ -347,24 +339,50 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
-						<i class="bi bi-plus-circle-fill me-2"></i>Thêm thể loại
+						<i class="bi bi-plus-circle-fill me-2"></i>Thêm tài khoản
 					</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 				</div>
-				<form id="addForm" action="${pageContext.request.contextPath}/XuLyTheLoaiController" method="post">
+				<form id="addForm" action="${pageContext.request.contextPath}/XuLyTaiKhoanController" method="post">
 					<input type="hidden" name="action" value="create">
 					<div class="modal-body">
 						<div id="addError" class="alert alert-danger" style="display: none;">
-							<i class="bi bi-x-circle-fill me-2"></i><span id="addErrorText"></span>
+							<i class="bi bi-x-circle-fill me-2"></i>
+							<span id="addErrorText"></span>
 						</div>
 						<div class="mb-3">
-							<label for="addTenTheLoai" class="form-label fw-bold">
-								Tên thể loại <span class="text-danger">*</span>
+							<label for="addTenDangNhap" class="form-label fw-bold">
+								Tên đăng nhập <span class="text-danger">*</span>
 							</label>
-							<input type="text" class="form-control" id="addTenTheLoai" 
-								   name="tenTheLoai" maxlength="200" 
+							<input type="text" class="form-control" id="addTenDangNhap" 
+								   name="tenDangNhap" maxlength="150" 
 								   onkeyup="validateAddForm()" required>
-							<div id="addTenTheLoaiError" class="invalid-feedback"></div>
+							<div id="addTenDangNhapError" class="invalid-feedback"></div>
+						</div>
+
+						<div class="mb-3">
+							<label for="addMatKhau" class="form-label fw-bold">
+								Mật khẩu <span class="text-danger">*</span>
+							</label>
+							<div class="input-group">
+								<input type="password" class="form-control" id="addMatKhau" 
+									   name="matKhau" maxlength="255" 
+									   onkeyup="validateAddForm()" required>
+								<button class="btn btn-outline-secondary" type="button" id="addTogglePassword">
+									<i class="bi bi-eye" id="addToggleIcon"></i>
+								</button>
+							</div>
+							<div id="addMatKhauError" class="invalid-feedback"></div>
+						</div>
+
+						<div class="mb-3">
+							<label for="addQuyen" class="form-label fw-bold">
+								Quyền <span class="text-danger">*</span>
+							</label>
+							<select class="form-select" id="addQuyen" name="quyen" required>
+								<option value="User" selected>User</option>
+								<option value="Admin">Admin</option>
+							</select>
 						</div>
 					</div>
 					<div class="modal-footer">
@@ -386,25 +404,50 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
-						<i class="bi bi-pencil-fill me-2"></i>Sửa thể loại
+						<i class="bi bi-pencil-fill me-2"></i>Sửa tài khoản
 					</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 				</div>
-				<form id="editForm" action="${pageContext.request.contextPath}/XuLyTheLoaiController" method="post">
+				<form id="editForm" action="${pageContext.request.contextPath}/XuLyTaiKhoanController" method="post">
 					<input type="hidden" name="action" value="update">
-					<input type="hidden" id="editMaTheLoai" name="maTheLoai">
+					<input type="hidden" id="editTenDangNhapHidden" name="tenDangNhap">
 					<div class="modal-body">
 						<div id="editError" class="alert alert-danger" style="display: none;">
-							<i class="bi bi-x-circle-fill me-2"></i><span id="editErrorText"></span>
+							<i class="bi bi-x-circle-fill me-2"></i>
+							<span id="editErrorText"></span>
 						</div>
 						<div class="mb-3">
-							<label for="editTenTheLoai" class="form-label fw-bold">
-								Tên thể loại <span class="text-danger">*</span>
+							<label for="editTenDangNhap" class="form-label fw-bold">
+								Tên đăng nhập <span class="text-danger">*</span>
 							</label>
-							<input type="text" class="form-control" id="editTenTheLoai" 
-								   name="tenTheLoai" maxlength="200" 
-								   onkeyup="validateEditForm()" required>
-							<div id="editTenTheLoaiError" class="invalid-feedback"></div>
+							<input type="text" class="form-control" id="editTenDangNhap" 
+								   maxlength="150" disabled>
+							<small class="text-muted">Tên đăng nhập không thể thay đổi</small>
+						</div>
+
+						<div class="mb-3">
+							<label for="editMatKhau" class="form-label fw-bold">
+								Mật khẩu <span class="text-danger">*</span>
+							</label>
+							<div class="input-group">
+								<input type="password" class="form-control" id="editMatKhau" 
+									   name="matKhau" maxlength="255" 
+									   onkeyup="validateEditForm()" required>
+								<button class="btn btn-outline-secondary" type="button" id="editTogglePassword">
+									<i class="bi bi-eye" id="editToggleIcon"></i>
+								</button>
+							</div>
+							<div id="editMatKhauError" class="invalid-feedback"></div>
+						</div>
+
+						<div class="mb-3">
+							<label for="editQuyen" class="form-label fw-bold">
+								Quyền <span class="text-danger">*</span>
+							</label>
+							<select class="form-select" id="editQuyen" name="quyen" required>
+								<option value="User">User</option>
+								<option value="Admin">Admin</option>
+							</select>
 						</div>
 						<div class="mb-3">
 							<label for="editTrangThai" class="form-label fw-bold">
@@ -440,11 +483,17 @@
 					</h5>
 					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 				</div>
-				<form action="${pageContext.request.contextPath}/XuLyTheLoaiController" method="post">
+				<form action="${pageContext.request.contextPath}/XuLyTaiKhoanController" method="post">
 					<input type="hidden" name="action" value="delete">
-					<input type="hidden" id="deleteMaTheLoai" name="maTheLoai">
+					<input type="hidden" id="deleteTenDangNhap" name="tenDangNhap">
 					<div class="modal-body">
-						<p class="mb-0">Bạn có chắc chắn muốn xóa thể loại <strong id="deleteTenTheLoai"></strong>?</p>
+						<p class="mb-2">Bạn có chắc chắn muốn xóa tài khoản <strong id="deleteTenDangNhapText"></strong>?</p>
+						<p class="text-danger mb-0">
+							<small>
+								<i class="bi bi-exclamation-triangle-fill me-1"></i>
+								<strong>Cảnh báo:</strong> Nếu xóa thì mọi dữ liệu về bài viết, bình luận, lượt thích và lượt đánh giá của tài khoản <strong id="deleteTenDangNhapText2"></strong> cũng sẽ bị xóa theo.
+							</small>
+						</p>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -458,25 +507,25 @@
 			</div>
 		</div>
 	</div>
-	
+
 	<!-- Hidden data for detail modal -->
-	<div id="categoryData" style="display: none;">
+	<div id="accountData" style="display: none;">
 		<%
-			if(dsTheLoai != null && !dsTheLoai.isEmpty()) {
-				for(TheLoai tl : dsTheLoai) {
+			if(dsTaiKhoan != null && !dsTaiKhoan.isEmpty()) {
+				for(TaiKhoan tk : dsTaiKhoan) {
 					String trangThaiVN = "";
-					if("Active".equals(tl.getTrangThai())) trangThaiVN = "Hoạt động";
-					else if("Deleted".equals(tl.getTrangThai())) trangThaiVN = "Đã xóa";
-					else if("Hidden".equals(tl.getTrangThai())) trangThaiVN = "Ẩn";
+					if("Active".equals(tk.getTrangThai())) trangThaiVN = "Hoạt động";
+					else if("Deleted".equals(tk.getTrangThai())) trangThaiVN = "Đã xóa";
+					else if("Hidden".equals(tk.getTrangThai())) trangThaiVN = "Ẩn";
 		%>
-			<div class="category-data-item" 
-				 data-id="<%= tl.getMaTheLoai() %>"
-				 data-matheloai="<%= tl.getMaTheLoai() %>"
-				 data-tentheloai="<%= tl.getTenTheLoai() %>"
-				 data-trangthai="<%= tl.getTrangThai() %>"
+			<div class="account-data-item" 
+				 data-tendangnhap="<%= tk.getTenDangNhap() %>"
+				 data-matkhau="<%= tk.getMatKhau() %>"
+				 data-quyen="<%= tk.getQuyen() %>"
+				 data-trangthai="<%= tk.getTrangThai() %>"
 				 data-trangthaiVN="<%= trangThaiVN %>"
-				 data-thoidiemtao="<%= tl.getThoiDiemTao() != null ? sdf.format(tl.getThoiDiemTao()) : "" %>"
-				 data-thoidiemcapnhat="<%= tl.getThoiDiemCapNhat() != null ? sdf.format(tl.getThoiDiemCapNhat()) : "" %>">
+				 data-thoidiemtao="<%= tk.getThoiDiemTao() != null ? sdf.format(tk.getThoiDiemTao()) : "" %>"
+				 data-thoidiemcapnhat="<%= tk.getThoiDiemCapNhat() != null ? sdf.format(tk.getThoiDiemCapNhat()) : "" %>">
 			</div>
 		<%
 				}
@@ -484,11 +533,9 @@
 		%>
 	</div>
 
-	<script src="${pageContext.request.contextPath}/pages/category_page/script.js"></script>
+	<script src="${pageContext.request.contextPath}/pages/account_page/script.js"></script>
 	<script>
-		// Message from server - Must run after script.js loads
 		<% if(message != null && messageType != null) { 
-			// Escape single quotes and backslashes for JavaScript
 			String escapedMessage = message.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r");
 		%>
 			document.addEventListener('DOMContentLoaded', function() {

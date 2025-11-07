@@ -215,6 +215,7 @@ body {
 
 .table-row {
 	transition: all 0.3s ease !important;
+	cursor: pointer !important;
 }
 
 .table-row:hover {
@@ -352,6 +353,77 @@ body {
 }
 
 /* =======================
+   Detail Modal Specific Styles
+======================= */
+#detailModal .modal-dialog {
+    max-width: 600px !important;
+}
+
+#detailModal .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+
+#detailModal .modal-title i {
+    font-size: 1.4rem !important;
+}
+
+/* Container cho nội dung chi tiết */
+.detail-content-wrapper {
+    padding: 1.5rem 0 !important;
+}
+
+/* Mỗi item chi tiết (Mã thể loại, Tên, Trạng thái,...) */
+.detail-item {
+    margin-bottom: 1.8rem !important;
+    padding-bottom: 1.2rem !important;
+    border-bottom: 1px dashed #e2e8f0 !important;
+}
+
+.detail-item:last-child {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.detail-label {
+    font-weight: 600 !important;
+    color: #667eea !important;
+    font-size: 1rem !important;
+    margin-bottom: 0.6rem !important;
+    display: flex !important;
+    align-items: center !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.detail-label i {
+    margin-right: 10px !important;
+    font-size: 1.2rem !important;
+    width: 28px !important;
+    text-align: center !important;
+}
+
+.detail-value {
+    color: #2d3748 !important;
+    font-size: 1.1rem !important;
+    word-break: break-word !important;
+    background-color: #f8fafc !important;
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    border-left: 4px solid #667eea !important;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.1) !important;
+    transition: all 0.3s ease !important;
+}
+
+.detail-value:hover {
+    background-color: #edf2f7 !important;
+    transform: translateX(4px) !important;
+}
+
+
+/* =======================
    Footer
 ======================= */
 .footer {
@@ -433,6 +505,16 @@ body {
 }
 
 /* =======================
+   Badge Styles
+======================= */
+.badge {
+	padding: 6px 12px !important;
+	font-weight: 500 !important;
+	font-size: 0.85rem !important;
+	border-radius: 6px !important;
+}
+
+/* =======================
    Responsive Design
 ======================= */
 @media (max-width: 991px) {
@@ -498,6 +580,20 @@ body {
 	.pagination {
 		flex-wrap: wrap !important;
 	}
+	
+	#detailModal .modal-dialog {
+        margin: 1rem !important;
+        max-width: none !important;
+    }
+    
+    .detail-value {
+        font-size: 1rem !important;
+        padding: 10px 12px !important;
+    }
+    
+    .detail-label {
+        font-size: 0.9rem !important;
+    }
 }
 
 /* =======================

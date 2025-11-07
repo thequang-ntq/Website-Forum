@@ -67,6 +67,11 @@
 					</li>
 					<% if(isAdmin) { %>
 					<li class="nav-item">
+						<a class="nav-link" href="${pageContext.request.contextPath}/TaiKhoanController">
+							<i class="bi bi-tags-fill me-1"></i>Tài khoản
+						</a>
+					</li>
+					<li class="nav-item">
 						<a class="nav-link" href="${pageContext.request.contextPath}/TheLoaiController">
 							<i class="bi bi-tags-fill me-1"></i>Thể loại
 						</a>
@@ -550,7 +555,7 @@
 						}
 					}
 					
-					ArrayList<BinhLuan> dsBinhLuan = blbo.filterDB_maBaiViet(bv.getMaBaiViet());
+					ArrayList<BinhLuan> dsBinhLuan = blbo.filterDB_maBaiViet(bv.getMaBaiViet(), bv.getTrangThai());
 					int soBinhLuan = (dsBinhLuan != null) ? dsBinhLuan.size() : 0;
 					
 					String trangThaiVN = "";

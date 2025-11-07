@@ -6,6 +6,7 @@ BEGIN
 		TenDangNhap NVARCHAR(150) NOT NULL UNIQUE,
 		MatKhau NVARCHAR(255) NOT NULL, -- Tăng lên 512 nếu cần Hashing sau này
 		Quyen NVARCHAR(50) DEFAULT N'User' CHECK (Quyen IN (N'Admin', N'User')),
+		TrangThai NVARCHAR(50) DEFAULT N'Active' CHECK (TrangThai IN (N'Active', N'Deleted', N'Hidden')),
 		ThoiDiemTao DATETIME DEFAULT GETDATE(),
 		ThoiDiemCapNhat DATETIME,
 		CONSTRAINT pk_taikhoan PRIMARY KEY(TenDangNhap)
@@ -18,6 +19,9 @@ BEGIN
 	CREATE TABLE TheLoai (
 		MaTheLoai INT IDENTITY(1,1),
 		TenTheLoai NVARCHAR(200) NOT NULL,
+		TrangThai NVARCHAR(50) DEFAULT N'Active' CHECK (TrangThai IN (N'Active', N'Deleted', N'Hidden')),
+		ThoiDiemTao DATETIME DEFAULT GETDATE(),
+		ThoiDiemCapNhat DATETIME,
 		CONSTRAINT pk_theloai PRIMARY KEY (MaTheLoai),
 		CONSTRAINT uq_theloai UNIQUE (TenTheLoai)
 	);
@@ -72,8 +76,8 @@ BEGIN
 		TenDangNhap NVARCHAR(150) NOT NULL,
 		ThoiDiemThich DATETIME DEFAULT GETDATE(),
 		CONSTRAINT pk_luotthichbinhluan PRIMARY KEY (MaLuotThich),
-		CONSTRAINT fk_luotthichbinhluan_binhluan FOREIGN KEY (MaBinhLuan) REFERENCES BinhLuan (MaBinhLuan) ON DELETE CASCADE,
-		CONSTRAINT fk_luotthichbinhluan_taikhoan FOREIGN KEY (TenDangNhap) REFERENCES TaiKhoan (TenDangNhap) ON DELETE CASCADE,
+		CONSTRAINT fk_luotthichbinhluan_binhluan FOREIGN KEY (MaBinhLuan) REFERENCES BinhLuan (MaBinhLuan) ON DELETE NO ACTION,
+		CONSTRAINT fk_luotthichbinhluan_taikhoan FOREIGN KEY (TenDangNhap) REFERENCES TaiKhoan (TenDangNhap) ON DELETE NO ACTION,
 		CONSTRAINT uq_luotthichbinhluan UNIQUE (MaBinhLuan, TenDangNhap)
 	);
 END
@@ -88,14 +92,14 @@ BEGIN
 		Diem DECIMAL(5,2) NOT NULL CHECK (Diem BETWEEN 0 AND 5),
 		ThoiDiemDanhGia DATETIME DEFAULT GETDATE(),
 		CONSTRAINT pk_danhgiabaiviet PRIMARY KEY (MaDanhGia),
-		CONSTRAINT fk_danhgiabaiviet_baiviet FOREIGN KEY (MaBaiViet) REFERENCES BaiViet (MaBaiViet) ON DELETE CASCADE,
-		CONSTRAINT fk_danhgiabaiviet_taikhoan FOREIGN KEY (TenDangNhap) REFERENCES TaiKhoan (TenDangNhap) ON DELETE CASCADE,
+		CONSTRAINT fk_danhgiabaiviet_baiviet FOREIGN KEY (MaBaiViet) REFERENCES BaiViet (MaBaiViet) ON DELETE NO ACTION,
+		CONSTRAINT fk_danhgiabaiviet_taikhoan FOREIGN KEY (TenDangNhap) REFERENCES TaiKhoan (TenDangNhap) ON DELETE NO ACTION,
 		CONSTRAINT uq_danhgiabaiviet UNIQUE (MaBaiViet, TenDangNhap)
 	);
 END
 GO
 
--- Khi xóa tài khoản thì chuyển trạng thái bài viết, bình luận thành Deleted, xóa thẳng lượt thích, đánh giá, tài khoản
+-- Khi xóa tài khoản thì chuyển trạng thái bài viết, bình luận, tài khoản thành Deleted, xóa thẳng lượt thích, đánh giá
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_TaiKhoan_SoftDelete')
 	DROP TRIGGER trg_TaiKhoan_SoftDelete;
 GO
@@ -129,14 +133,16 @@ BEGIN
 	FROM DanhGiaBaiViet dgbv
 	INNER JOIN DELETED d ON dgbv.TenDangNhap = d.TenDangNhap
 	
-	-- Xóa tài khoản
-	DELETE tk
+	-- Tài khoản
+	UPDATE tk
+	SET tk.TrangThai = N'Deleted',
+		tk.ThoiDiemCapNhat = GETDATE()
 	FROM TaiKhoan tk
 	INNER JOIN DELETED d ON tk.TenDangNhap = d.TenDangNhap
 END
 GO
 
--- Khi xóa thể loại thì chuyển trạng thái bài viết, bình luận thành Deleted, xóa thẳng lượt thích, đánh giá, thể loại
+-- Khi xóa thể loại thì chuyển trạng thái bài viết, bình luận, thể loại thành Deleted, xóa thẳng lượt thích, đánh giá
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_TheLoai_SoftDelete')
 	DROP TRIGGER trg_TheLoai_SoftDelete;
 GO
@@ -174,8 +180,10 @@ BEGIN
 	INNER JOIN BaiViet bv ON dgbv.MaBaiViet = bv.MaBaiViet
 	INNER JOIN DELETED d ON bv.MaTheLoai = d.MaTheLoai
 	
-	-- Xóa thể loại
-	DELETE tl
+	-- Thể loại
+	UPDATE tl
+	SET tl.TrangThai = N'Deleted',
+		tl.ThoiDiemCapNhat = GETDATE()
 	FROM TheLoai tl
 	INNER JOIN DELETED d ON tl.MaTheLoai = d.MaTheLoai
 END
@@ -261,6 +269,25 @@ BEGIN
 END
 GO
 
+-- Khi Update Thể loại thì tự động cập nhật ThoiDiemCapNhat
+IF  EXISTS(SELECT * FROM sys.triggers WHERE name = 'trg_TheLoai_Update')
+	DROP TRIGGER trg_TheLoai_Update;
+GO
+CREATE TRIGGER trg_TheLoai_Update
+ON TheLoai
+AFTER UPDATE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	-- Ngăn không cho trigger kích hoạt đệ quy
+    IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    UPDATE tl
+    SET ThoiDiemCapNhat = GETDATE()
+    FROM TheLoai tl
+    INNER JOIN INSERTED i ON tl.MaTheLoai = i.MaTheLoai;
+END
+GO
+
 -- Khi Update Bài viết thì tự động cập nhật ThoiDiemCapNhat
 IF  EXISTS(SELECT * FROM sys.triggers WHERE name = 'trg_BaiViet_Update')
 	DROP TRIGGER trg_BaiViet_Update;
@@ -318,16 +345,9 @@ AFTER INSERT
 AS
 BEGIN
 	SET NOCOUNT ON;
-    IF TRIGGER_NESTLEVEL() > 1 RETURN;
-    UPDATE bl
-    SET bl.SoLuotThich = bl.SoLuotThich + t.SoLuongMoi
+    UPDATE bl SET SoLuotThich = SoLuotThich + 1
     FROM BinhLuan bl
-    INNER JOIN (
-        SELECT MaBinhLuan, COUNT(*) AS SoLuongMoi
-        FROM INSERTED
-        WHERE MaBinhLuan IS NOT NULL
-        GROUP BY MaBinhLuan
-    ) AS t ON bl.MaBinhLuan = t.MaBinhLuan;
+    INNER JOIN INSERTED i ON bl.MaBinhLuan = i.MaBinhLuan;
 END
 GO
 
@@ -341,22 +361,10 @@ ON LuotThichBinhLuan
 AFTER DELETE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    IF TRIGGER_NESTLEVEL() > 1 RETURN;
-
-    -- Cập nhật số lượt thích trong bảng BinhLuan sau khi xóa
-    UPDATE bl
-    SET bl.SoLuotThich = 
-		CASE 
-			WHEN bl.SoLuotThich - t.SoLuongXoa < 0 THEN 0
-			ELSE bl.SoLuotThich - t.SoLuongXoa
-		END
+	SET NOCOUNT ON;
+    UPDATE bl SET SoLuotThich = CASE WHEN SoLuotThich > 0 THEN SoLuotThich - 1 ELSE 0 END
     FROM BinhLuan bl
-    INNER JOIN (
-        SELECT MaBinhLuan, COUNT(*) AS SoLuongXoa
-        FROM DELETED
-        GROUP BY MaBinhLuan
-    ) AS t ON bl.MaBinhLuan = t.MaBinhLuan
+    INNER JOIN DELETED d ON bl.MaBinhLuan = d.MaBinhLuan;
 END
 GO
 
@@ -372,19 +380,12 @@ AFTER INSERT
 AS
 BEGIN
 	SET NOCOUNT ON;
-	IF TRIGGER_NESTLEVEL() > 1 RETURN;
-
-	-- Tính trung bình cộng điểm đánh giá cho từng bài viết được thêm mới đánh giá
-	UPDATE bv
-	SET bv.DanhGia = t.TrungBinhMoi
-	FROM BaiViet bv
-	INNER JOIN (
-		SELECT dgbv.MaBaiViet, 
-			   AVG(CAST(dgbv.Diem AS DECIMAL(5,2))) AS TrungBinhMoi
-		FROM DanhGiaBaiViet dgbv
-		INNER JOIN INSERTED i ON dgbv.MaBaiViet = i.MaBaiViet
-		GROUP BY dgbv.MaBaiViet
-	) AS t ON bv.MaBaiViet = t.MaBaiViet;
+    UPDATE bv SET DanhGia = (
+        SELECT AVG(CAST(Diem AS DECIMAL(5,2)))
+        FROM DanhGiaBaiViet WHERE MaBaiViet = i.MaBaiViet
+    )
+    FROM BaiViet bv
+    INNER JOIN INSERTED i ON bv.MaBaiViet = i.MaBaiViet;
 END;
 GO
 
@@ -398,18 +399,17 @@ AFTER DELETE
 AS
 BEGIN
 	SET NOCOUNT ON;
-	IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    UPDATE bv SET DanhGia = (
+        SELECT AVG(CAST(Diem AS DECIMAL(5,2)))
+        FROM DanhGiaBaiViet WHERE MaBaiViet = bv.MaBaiViet
+    )
+    FROM BaiViet bv
+    WHERE MaBaiViet IN (SELECT MaBaiViet FROM DELETED);
 
-	UPDATE bv
-	SET bv.DanhGia = ISNULL(t.TrungBinhMoi, NULL)
-	FROM BaiViet bv
-	LEFT JOIN (
-		SELECT MaBaiViet, AVG(CAST(Diem AS DECIMAL(5,2))) AS TrungBinhMoi
-		FROM DanhGiaBaiViet
-		WHERE MaBaiViet IN (SELECT MaBaiViet FROM DELETED)
-		GROUP BY MaBaiViet
-	) AS t ON bv.MaBaiViet = t.MaBaiViet
-	WHERE bv.MaBaiViet IN (SELECT MaBaiViet FROM DELETED);
+    -- Nếu không còn đánh giá → NULL
+    UPDATE BaiViet SET DanhGia = NULL
+    WHERE MaBaiViet IN (SELECT MaBaiViet FROM DELETED)
+      AND NOT EXISTS (SELECT 1 FROM DanhGiaBaiViet WHERE MaBaiViet = BaiViet.MaBaiViet);
 END;
 GO
 
@@ -456,10 +456,10 @@ SELECT * FROM DanhGiaBaiViet
 SELECT name FROM sys.triggers
 */
 /* Reset khi tạo / chèn sai
+DROP TABLE LuotThichBinhLuan
+DROP TABLE DanhGiaBaiViet
 DROP TABLE BinhLuan
 DROP TABLE BaiViet
 DROP TABLE TheLoai
 DROP TABLE TaiKhoan
-DROP TABLE LuotThichBinhLuan
-DROP TABLE DanhGiaBaiViet
 */

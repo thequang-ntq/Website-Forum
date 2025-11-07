@@ -48,7 +48,7 @@ public class TrangChuController extends HttpServlet {
 
         try {
             // Lấy danh sách thể loại
-            ArrayList<TheLoai> dsTheLoai = tlbo.readDB();
+            ArrayList<TheLoai> dsTheLoai = tlbo.readDB2();
             request.setAttribute("dsTheLoai", dsTheLoai);
 
             // Lấy danh sách tài khoản
@@ -157,7 +157,7 @@ public class TrangChuController extends HttpServlet {
             // Lấy danh sách bình luận cho mỗi bài viết và đếm số lượng
             ArrayList<BinhLuan> dsBinhLuan = blbo.readDB();
             for (BaiViet bv : dsBaiVietPhanTrang) {
-                ArrayList<BinhLuan> binhLuanCuaBaiViet = blbo.filterDB_maBaiViet(bv.getMaBaiViet());
+                ArrayList<BinhLuan> binhLuanCuaBaiViet = blbo.filterDB_maBaiViet(bv.getMaBaiViet(), bv.getTrangThai());
                 request.setAttribute("dsBinhLuan_" + bv.getMaBaiViet(), binhLuanCuaBaiViet);
             }
 

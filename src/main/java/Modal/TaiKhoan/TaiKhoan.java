@@ -6,22 +6,23 @@ public class TaiKhoan {
 	private String TenDangNhap;
 	private String MatKhau;
 	private String Quyen;
+	private String TrangThai;
 	private Timestamp ThoiDiemTao;
 	private Timestamp ThoiDiemCapNhat;
 	public TaiKhoan() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public TaiKhoan(String tenDangNhap, String matKhau, String quyen, Timestamp thoiDiemTao,
+	public TaiKhoan(String tenDangNhap, String matKhau, String quyen, String trangThai, Timestamp thoiDiemTao,
 			Timestamp thoiDiemCapNhat) {
 		super();
 		TenDangNhap = tenDangNhap;
 		MatKhau = matKhau;
 		Quyen = quyen;
+		TrangThai = trangThai;
 		ThoiDiemTao = thoiDiemTao;
 		ThoiDiemCapNhat = thoiDiemCapNhat;
 	}
-	
 	public String getTenDangNhap() {
 		return TenDangNhap;
 	}
@@ -40,6 +41,12 @@ public class TaiKhoan {
 	public void setQuyen(String quyen) {
 		Quyen = quyen;
 	}
+	public String getTrangThai() {
+		return TrangThai;
+	}
+	public void setTrangThai(String trangThai) {
+		TrangThai = trangThai;
+	}
 	public Timestamp getThoiDiemTao() {
 		return ThoiDiemTao;
 	}
@@ -52,5 +59,7 @@ public class TaiKhoan {
 	public void setThoiDiemCapNhat(Timestamp thoiDiemCapNhat) {
 		ThoiDiemCapNhat = thoiDiemCapNhat;
 	}
+
+	
 	
 }

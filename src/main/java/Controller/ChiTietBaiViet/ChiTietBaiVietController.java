@@ -107,7 +107,7 @@ public class ChiTietBaiVietController extends HttpServlet {
 			String tenTheLoai = (tl != null) ? tl.getTenTheLoai() : "Không xác định";
 			
 			// Lấy danh sách bình luận Active
-			ArrayList<BinhLuan> dsBinhLuan = blbo.filterDB_maBaiViet(maBaiViet);
+			ArrayList<BinhLuan> dsBinhLuan = blbo.filterDB_maBaiViet(maBaiViet, bv.getTrangThai());
 			
 			// Sắp xếp bình luận theo thời gian tạo mới nhất
 			dsBinhLuan = blbo.sortDB_thoiDiemTao_ganNhat(dsBinhLuan);

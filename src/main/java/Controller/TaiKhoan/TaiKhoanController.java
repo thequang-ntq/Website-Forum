@@ -1,4 +1,4 @@
-package Controller.BaiViet;
+package Controller.TaiKhoan;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,24 +10,27 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import Modal.BaiViet.BaiViet;
-import Modal.BaiViet.BaiVietBO;
-import Modal.TheLoai.TheLoai;
-import Modal.TheLoai.TheLoaiBO;
-import Modal.BinhLuan.BinhLuan;
-import Modal.BinhLuan.BinhLuanBO;
+import Modal.TaiKhoan.TaiKhoan;
+import Modal.TaiKhoan.TaiKhoanBO;
 
-@WebServlet("/BaiVietController")
-public class BaiVietController extends HttpServlet {
+/**
+ * Servlet implementation class TaiKhoanController
+ */
+@WebServlet("/TaiKhoanController")
+public class TaiKhoanController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	private BaiVietBO bvbo = new BaiVietBO();
-	private TheLoaiBO tlbo = new TheLoaiBO();
-	private BinhLuanBO blbo = new BinhLuanBO();
+	private TaiKhoanBO tkbo = new TaiKhoanBO();
        
-	public BaiVietController() {
-		super();
-	}
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public TaiKhoanController() {
+        super();
+    }
 
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// Set UTF-8 encoding
 		request.setCharacterEncoding("UTF-8");
@@ -55,26 +58,22 @@ public class BaiVietController extends HttpServlet {
 			// Lấy tham số tìm kiếm
 			String searchKey = request.getParameter("search");
 			
-			ArrayList<BaiViet> dsBaiViet;
+			ArrayList<TaiKhoan> dsTaiKhoan;
 			
 			// Nếu có từ khóa tìm kiếm
 			if(searchKey != null && !searchKey.trim().isEmpty()) {
-				dsBaiViet = bvbo.findDB_admin(searchKey.trim());
+				dsTaiKhoan = tkbo.findDB(searchKey.trim());
 				request.setAttribute("searchKey", searchKey);
 			} else {
 				// Lấy toàn bộ danh sách
-				dsBaiViet = bvbo.readDB();
+				dsTaiKhoan = tkbo.readDB();
 			}
 			
-			// Sắp xếp theo MaBaiViet tăng dần
-			dsBaiViet.sort((a, b) -> Long.compare(a.getMaBaiViet(), b.getMaBaiViet()));
-			
-			// Lấy danh sách thể loại cho dropdown
-			ArrayList<TheLoai> dsTheLoai = tlbo.readDB2();
-			request.setAttribute("dsTheLoai", dsTheLoai);
+			// Sắp xếp theo TenDangNhap
+			dsTaiKhoan.sort((a, b) -> a.getTenDangNhap().compareTo(b.getTenDangNhap()));
 			
 			// === PHÂN TRANG ===
-			int itemsPerPage = 8; // 8 bài viết mỗi trang
+			int itemsPerPage = 8; // 8 tài khoản mỗi trang
 			int currentPage = 1;
 			
 			// Lấy số trang từ URL
@@ -89,7 +88,7 @@ public class BaiVietController extends HttpServlet {
 			}
 			
 			// Tính tổng số trang
-			int totalItems = dsBaiViet.size();
+			int totalItems = dsTaiKhoan.size();
 			int totalPages = (int) Math.ceil((double) totalItems / itemsPerPage);
 			
 			// Đảm bảo currentPage không vượt quá totalPages
@@ -101,13 +100,13 @@ public class BaiVietController extends HttpServlet {
 			int startIndex = (currentPage - 1) * itemsPerPage;
 			int endIndex = Math.min(startIndex + itemsPerPage, totalItems);
 			
-			ArrayList<BaiViet> dsBaiVietPhanTrang = new ArrayList<>();
+			ArrayList<TaiKhoan> dsTaiKhoanPhanTrang = new ArrayList<>();
 			if(totalItems > 0) {
-				dsBaiVietPhanTrang = new ArrayList<>(dsBaiViet.subList(startIndex, endIndex));
+				dsTaiKhoanPhanTrang = new ArrayList<>(dsTaiKhoan.subList(startIndex, endIndex));
 			}
 			
 			// Truyền dữ liệu phân trang
-			request.setAttribute("dsBaiViet", dsBaiVietPhanTrang);
+			request.setAttribute("dsTaiKhoan", dsTaiKhoanPhanTrang);
 			request.setAttribute("currentPage", currentPage);
 			request.setAttribute("totalPages", totalPages);
 			request.setAttribute("totalItems", totalItems);
@@ -125,16 +124,19 @@ public class BaiVietController extends HttpServlet {
 				session.removeAttribute("messageType");
 			}
 			
-			// Forward đến trang PostPage
-			request.getRequestDispatcher("/pages/post_page/PostPage.jsp").forward(request, response);
+			// Forward đến trang AccountPage
+			request.getRequestDispatcher("/pages/account_page/AccountPage.jsp").forward(request, response);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
 			request.setAttribute("error", "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại!");
-			request.getRequestDispatcher("/pages/post_page/PostPage.jsp").forward(request, response);
+			request.getRequestDispatcher("/pages/account_page/AccountPage.jsp").forward(request, response);
 		}
 	}
 
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		doGet(request, response);
 	}

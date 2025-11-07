@@ -142,9 +142,38 @@ body {
 }
 
 /* =======================
-   Info Card
+   Search Box
 ======================= */
-.info-card {
+.search-box {
+	position: relative !important;
+}
+
+.search-box .form-control {
+	padding-left: 2.5rem !important;
+	border-radius: 25px !important;
+	border: 2px solid #e2e8f0 !important;
+	transition: all 0.3s ease !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+.search-box .form-control:focus {
+	border-color: #667eea !important;
+	box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+}
+
+.search-icon {
+	position: absolute !important;
+	left: 1rem !important;
+	top: 50% !important;
+	transform: translateY(-50%) !important;
+	color: #667eea !important;
+	font-size: 1.2rem !important;
+}
+
+/* =======================
+   Table Card
+======================= */
+.table-card {
 	border: none !important;
 	border-radius: 16px !important;
 	overflow: hidden !important;
@@ -162,89 +191,43 @@ body {
 	}
 }
 
-.info-row {
-	display: flex !important;
-	align-items: center !important;
-	padding: 1.25rem !important;
-	border-bottom: 1px solid #e2e8f0 !important;
-	transition: all 0.3s ease !important;
+.table-responsive {
+	border-radius: 12px !important;
 }
 
-.info-row:last-child {
-	border-bottom: none !important;
+.table {
+	margin-bottom: 0 !important;
 }
 
-.info-row:hover {
-	background-color: #f8f9fa !important;
+.table-header {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
 }
 
-.info-label {
-	flex: 0 0 200px !important;
+.table-header th {
+	padding: 1rem !important;
 	font-weight: 600 !important;
-	color: #2d3748 !important;
-	font-size: 1rem !important;
-}
-
-.info-value {
-	flex: 1 !important;
-	color: #4a5568 !important;
-	font-size: 1rem !important;
-}
-
-/* =======================
-   Password Field
-======================= */
-.password-container {
-	position: relative !important;
-	display: flex !important;
-	align-items: center !important;
-}
-
-.password-field {
-	border: 2px solid #e2e8f0 !important;
-	border-radius: 8px !important;
-	padding: 8px 45px 8px 12px !important;
-	flex: 1 !important;
-	background-color: #f8f9fa !important;
-	font-family: monospace !important;
-	letter-spacing: 2px !important;
-}
-
-.btn-toggle-password {
-	position: absolute !important;
-	right: 10px !important;
-	background: none !important;
 	border: none !important;
-	color: #667eea !important;
-	font-size: 1.2rem !important;
-	cursor: pointer !important;
+	text-transform: uppercase !important;
+	font-size: 0.85rem !important;
+	letter-spacing: 0.5px !important;
+}
+
+.table-row {
 	transition: all 0.3s ease !important;
-	padding: 5px !important;
+	cursor: pointer !important;
 }
 
-.btn-toggle-password:hover {
-	color: #764ba2 !important;
-	transform: scale(1.1) !important;
+.table-row:hover {
+	background-color: #f8f9fa !important;
+	transform: scale(1.01) !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
-/* =======================
-   Badge
-======================= */
-.badge {
-	padding: 8px 16px !important;
-	border-radius: 20px !important;
-	font-weight: 600 !important;
-	font-size: 0.9rem !important;
-}
-
-.badge-admin {
-	background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
-	color: white !important;
-}
-
-.badge-user {
-	background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
-	color: white !important;
+.table-row td {
+	padding: 1rem !important;
+	vertical-align: middle !important;
+	border-bottom: 1px solid #e2e8f0 !important;
 }
 
 /* =======================
@@ -261,7 +244,7 @@ body {
 /* =======================
    Buttons
 ======================= */
-.btn-change-password {
+.btn-add {
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
 	color: white !important;
 	border: none !important;
@@ -273,26 +256,41 @@ body {
 	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
 }
 
-.btn-change-password:hover {
+.btn-add:hover {
 	transform: translateY(-2px) !important;
 	box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6) !important;
 }
 
-.btn-delete-account {
-	background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%) !important;
+.btn-edit {
+	background-color: #3182ce !important;
 	color: white !important;
 	border: none !important;
-	padding: 12px 32px !important;
-	border-radius: 25px !important;
-	font-weight: 600 !important;
-	font-size: 1.1rem !important;
+	padding: 6px 16px !important;
+	border-radius: 8px !important;
+	font-weight: 500 !important;
 	transition: all 0.3s ease !important;
-	box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4) !important;
 }
 
-.btn-delete-account:hover {
+.btn-edit:hover {
+	background-color: #2c5282 !important;
 	transform: translateY(-2px) !important;
-	box-shadow: 0 6px 16px rgba(245, 87, 108, 0.6) !important;
+	box-shadow: 0 4px 8px rgba(49, 130, 206, 0.4) !important;
+}
+
+.btn-delete {
+	background-color: #e53e3e !important;
+	color: white !important;
+	border: none !important;
+	padding: 6px 16px !important;
+	border-radius: 8px !important;
+	font-weight: 500 !important;
+	transition: all 0.3s ease !important;
+}
+
+.btn-delete:hover {
+	background-color: #c53030 !important;
+	transform: translateY(-2px) !important;
+	box-shadow: 0 4px 8px rgba(229, 62, 62, 0.4) !important;
 }
 
 /* =======================
@@ -312,30 +310,15 @@ body {
 	padding: 1.5rem !important;
 }
 
-.modal-header .btn-close {
+.modal-header .btn-close,
+.modal-header .btn-close-white {
 	filter: brightness(0) invert(1) !important;
 }
 
 .modal-body {
 	padding: 2rem !important;
-}
-
-.modal-body .alert {
-	border: none !important;
-	border-radius: 8px !important;
-	padding: 0.75rem 1rem !important;
-	margin-bottom: 1rem !important;
-}
-
-.modal-body .alert-danger {
-	background-color: #fee !important;
-	color: #c00 !important;
-	border-left: 4px solid #dc3545 !important;
-}
-
-.modal-body .alert.border-danger {
-	border: 2px solid #dc3545 !important;
-	border-radius: 8px !important;
+	max-height: 70vh !important;
+	overflow-y: auto !important;
 }
 
 .modal-footer {
@@ -348,19 +331,19 @@ body {
 	margin-bottom: 0.5rem !important;
 }
 
-.form-control {
+.form-control, .form-select {
 	border: 2px solid #e2e8f0 !important;
 	border-radius: 8px !important;
 	padding: 10px 16px !important;
 	transition: all 0.3s ease !important;
 }
 
-.form-control:focus {
+.form-control:focus, .form-select:focus {
 	border-color: #667eea !important;
 	box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
 }
 
-.form-control.is-invalid {
+.form-control.is-invalid, .form-select.is-invalid {
 	border-color: #e53e3e !important;
 }
 
@@ -369,6 +352,42 @@ body {
 	color: #e53e3e !important;
 	font-size: 0.875rem !important;
 	margin-top: 0.5rem !important;
+}
+
+/* =======================
+   Detail Modal Content
+======================= */
+.detail-item {
+	margin-bottom: 1.5rem !important;
+	padding-bottom: 1rem !important;
+	border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.detail-item:last-child {
+	border-bottom: none !important;
+}
+
+.detail-label {
+	font-weight: 600 !important;
+	color: #667eea !important;
+	margin-bottom: 0.5rem !important;
+	display: flex !important;
+	align-items: center !important;
+}
+
+.detail-label i {
+	margin-right: 8px !important;
+}
+
+.detail-value {
+	color: #2d3748 !important;
+	word-wrap: break-word !important;
+}
+
+.password-masked {
+	font-family: 'Courier New', monospace !important;
+	letter-spacing: 2px !important;
+	color: #718096 !important;
 }
 
 /* =======================
@@ -402,13 +421,64 @@ body {
 	padding-left: 25px !important;
 }
 
-.dropdown-item.active {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-	color: white !important;
-}
-
 .dropdown-item i {
 	width: 20px !important;
+}
+
+/* =======================
+   Pagination Styles
+======================= */
+.pagination {
+	margin-bottom: 0 !important;
+}
+
+.page-link {
+	color: #667eea !important;
+	border: 1px solid #e2e8f0 !important;
+	padding: 8px 16px !important;
+	margin: 0 4px !important;
+	border-radius: 8px !important;
+	transition: all 0.3s ease !important;
+	font-weight: 500 !important;
+}
+
+.page-link:hover {
+	background-color: #f8f9fa !important;
+	border-color: #667eea !important;
+	transform: translateY(-2px) !important;
+	box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+.page-item.active .page-link {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	border-color: #667eea !important;
+	color: white !important;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+}
+
+.page-item.disabled .page-link {
+	color: #cbd5e0 !important;
+	background-color: #f8f9fa !important;
+	border-color: #e2e8f0 !important;
+	cursor: not-allowed !important;
+}
+
+.page-item:first-child .page-link {
+	border-radius: 8px !important;
+}
+
+.page-item:last-child .page-link {
+	border-radius: 8px !important;
+}
+
+/* =======================
+   Badge Styles
+======================= */
+.badge {
+	padding: 6px 12px !important;
+	font-weight: 500 !important;
+	font-size: 0.85rem !important;
+	border-radius: 6px !important;
 }
 
 /* =======================
@@ -417,15 +487,6 @@ body {
 @media (max-width: 991px) {
 	.page-title {
 		font-size: 2rem !important;
-	}
-	
-	.info-label {
-		flex: 0 0 150px !important;
-		font-size: 0.9rem !important;
-	}
-	
-	.info-value {
-		font-size: 0.9rem !important;
 	}
 }
 
@@ -438,44 +499,33 @@ body {
 		font-size: 1.2rem !important;
 	}
 	
-	.info-row {
-		flex-direction: column !important;
-		align-items: flex-start !important;
-		padding: 1rem !important;
-	}
-	
-	.info-label {
-		flex: none !important;
-		margin-bottom: 0.5rem !important;
-		font-size: 0.85rem !important;
-	}
-	
-	.info-value {
-		width: 100% !important;
-		font-size: 0.85rem !important;
-	}
-	
-	.password-field {
-		width: 100% !important;
-	}
-	
-	.btn-change-password {
+	.btn-add {
 		font-size: 1rem !important;
 		padding: 10px 24px !important;
 	}
 	
-	.btn-delete-account {
-		font-size: 1rem !important;
-		padding: 10px 24px !important;
-		margin-top: 0.5rem !important;
+	.btn-edit,
+	.btn-delete {
+		padding: 5px 12px !important;
+		font-size: 0.875rem !important;
+	}
+	
+	.table-header th {
+		font-size: 0.75rem !important;
+		padding: 0.75rem 0.5rem !important;
+	}
+	
+	.table-row td {
+		padding: 0.75rem 0.5rem !important;
+		font-size: 0.875rem !important;
+	}
+	
+	.modal-body {
+		padding: 1.5rem !important;
 	}
 }
 
 @media (max-width: 576px) {
-	.modal-body {
-		padding: 1.5rem !important;
-	}
-	
 	.navbar-brand i {
 		font-size: 1.5rem !important;
 	}
@@ -488,8 +538,14 @@ body {
 		width: 95% !important;
 	}
 	
-	.info-card {
-		margin: 0 0.5rem !important;
+	.page-link {
+		padding: 6px 12px !important;
+		font-size: 0.875rem !important;
+		margin: 0 2px !important;
+	}
+	
+	.pagination {
+		flex-wrap: wrap !important;
 	}
 }
 

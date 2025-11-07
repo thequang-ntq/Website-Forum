@@ -41,7 +41,11 @@
 
 | Quên mật khẩu                       	    || Trang chủ                     |
 | ------------------------------------------|-| -----------------------------|
-| ![ForgetPass](./images/UI/forgetpass.png) || ![Home](./images/UI/home.png) | 
+| ![ForgetPass](./images/UI/forgetpass.png) || ![Home](./images/UI/home.png) |
+
+| Admin - Tài khoản                           |
+| --------------------------------------------|
+| ![Account](./images/UI/account.png) 	      |
 
 | Admin - Thể loại (1)                                || Admin - Thể loại (2)                                |
 | ----------------------------------------------------|-| ---------------------------------------------------|

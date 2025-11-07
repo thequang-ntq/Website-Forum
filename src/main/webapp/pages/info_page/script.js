@@ -211,3 +211,120 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 });
+
+// Show Delete Account Modal
+function showDeleteAccountModal() {
+	const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
+	const form = document.getElementById('deleteAccountForm');
+	const deleteModalError = document.getElementById('deleteModalError');
+	
+	// Reset form
+	form.reset();
+	
+	// Clear all errors
+	clearDeleteAccountErrors();
+	
+	// Hide modal error
+	deleteModalError.style.display = 'none';
+	
+	modal.show();
+}
+
+// Clear Delete Account Errors
+function clearDeleteAccountErrors() {
+	const inputs = ['matKhauXacNhan', 'xacNhanXoa'];
+	
+	inputs.forEach(id => {
+		const input = document.getElementById(id);
+		const errorDiv = document.getElementById(id + 'Error');
+		
+		if(input) {
+			input.classList.remove('is-invalid');
+		}
+		if(errorDiv) {
+			errorDiv.textContent = '';
+		}
+	});
+	
+	// Disable submit button
+	const submitBtn = document.getElementById('deleteAccountSubmitBtn');
+	if(submitBtn) {
+		submitBtn.disabled = true;
+	}
+}
+
+// Validate Delete Account Form
+function validateDeleteAccountForm() {
+	const matKhauXacNhan = document.getElementById('matKhauXacNhan');
+	const xacNhanXoa = document.getElementById('xacNhanXoa');
+	
+	const matKhauXacNhanError = document.getElementById('matKhauXacNhanError');
+	const xacNhanXoaError = document.getElementById('xacNhanXoaError');
+	
+	const submitBtn = document.getElementById('deleteAccountSubmitBtn');
+	const deleteModalError = document.getElementById('deleteModalError');
+	
+	let isValid = true;
+	
+	// Hide modal error
+	deleteModalError.style.display = 'none';
+	
+	// Validate Mật khẩu xác nhận
+	if(matKhauXacNhan.value.trim() === '') {
+		matKhauXacNhan.classList.add('is-invalid');
+		matKhauXacNhanError.textContent = 'Mật khẩu xác nhận không được để trống';
+		isValid = false;
+	} else if(matKhauXacNhan.value.length > 255) {
+		matKhauXacNhan.classList.add('is-invalid');
+		matKhauXacNhanError.textContent = 'Mật khẩu xác nhận không được quá 255 ký tự';
+		isValid = false;
+	} else {
+		matKhauXacNhan.classList.remove('is-invalid');
+		matKhauXacNhanError.textContent = '';
+	}
+	
+	// Validate Xác nhận xóa
+	if(xacNhanXoa.value.trim() === '') {
+		xacNhanXoa.classList.add('is-invalid');
+		xacNhanXoaError.textContent = 'Vui lòng nhập cụm từ xác nhận';
+		isValid = false;
+	} else if(xacNhanXoa.value !== 'XOA TAI KHOAN') {
+		xacNhanXoa.classList.add('is-invalid');
+		xacNhanXoaError.textContent = 'Cụm từ xác nhận không chính xác';
+		isValid = false;
+	} else {
+		xacNhanXoa.classList.remove('is-invalid');
+		xacNhanXoaError.textContent = '';
+	}
+	
+	// Enable/disable submit button
+	submitBtn.disabled = !isValid;
+	
+	return isValid;
+}
+
+// Handle Delete Account Form Submit
+document.addEventListener('DOMContentLoaded', function() {
+	const deleteAccountForm = document.getElementById('deleteAccountForm');
+	if(deleteAccountForm) {
+		deleteAccountForm.addEventListener('submit', function(e) {
+			if(!validateDeleteAccountForm()) {
+				e.preventDefault();
+				
+				const deleteModalError = document.getElementById('deleteModalError');
+				const deleteModalErrorText = document.getElementById('deleteModalErrorText');
+				deleteModalErrorText.textContent = 'Vui lòng kiểm tra lại các trường đã nhập!';
+				deleteModalError.style.display = 'block';
+				
+				setTimeout(() => {
+					deleteModalError.style.display = 'none';
+				}, 3000);
+			} else {
+				// Show confirmation before submit
+				if(!confirm('Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác!')) {
+					e.preventDefault();
+				}
+			}
+		});
+	}
+});

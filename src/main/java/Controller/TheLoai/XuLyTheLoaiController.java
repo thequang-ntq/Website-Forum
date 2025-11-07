@@ -75,6 +75,7 @@ public class XuLyTheLoaiController extends HttpServlet {
 				// Sửa thể loại
 				int maTheLoai = Integer.parseInt(request.getParameter("maTheLoai"));
 				String tenTheLoai = request.getParameter("tenTheLoai");
+				String trangThai = request.getParameter("trangThai");
 				
 				if(tenTheLoai == null || tenTheLoai.trim().isEmpty()) {
 					session.setAttribute("message", "Tên thể loại không được để trống!");
@@ -82,8 +83,11 @@ public class XuLyTheLoaiController extends HttpServlet {
 				} else if(tenTheLoai.trim().length() > 200) {
 					session.setAttribute("message", "Tên thể loại không được quá 200 ký tự!");
 					session.setAttribute("messageType", "error");
+				} else if(trangThai == null || trangThai.trim().isEmpty()) {
+					session.setAttribute("message", "Trạng thái không được để trống!");
+					session.setAttribute("messageType", "error");
 				} else {
-					tlbo.updateDB(maTheLoai, tenTheLoai.trim());
+					tlbo.updateDB(maTheLoai, tenTheLoai.trim(), trangThai);
 					session.setAttribute("message", "Cập nhật thể loại thành công!");
 					session.setAttribute("messageType", "success");
 				}

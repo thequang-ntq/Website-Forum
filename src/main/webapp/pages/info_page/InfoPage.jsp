@@ -49,6 +49,11 @@
 					</li>
 					<% if(isAdmin) { %>
 					<li class="nav-item">
+						<a class="nav-link" href="${pageContext.request.contextPath}/TaiKhoanController">
+							<i class="bi bi-tags-fill me-1"></i>Tài khoản
+						</a>
+					</li>
+					<li class="nav-item">
 						<a class="nav-link" href="${pageContext.request.contextPath}/TheLoaiController">
 							<i class="bi bi-tags-fill me-1"></i>Thể loại
 						</a>
@@ -176,8 +181,11 @@
 							</div>
 
 							<div class="text-center mt-4">
-								<button class="btn btn-change-password" onclick="showChangePasswordModal()">
+								<button class="btn btn-change-password me-2" onclick="showChangePasswordModal()">
 									<i class="bi bi-key-fill me-2"></i>Đổi mật khẩu
+								</button>
+								<button class="btn btn-delete-account" onclick="showDeleteAccountModal()">
+									<i class="bi bi-trash-fill me-2"></i>Xóa tài khoản
 								</button>
 							</div>
 						<% } %>
@@ -257,6 +265,68 @@
 			</div>
 		</div>
 	</div>
+	
+	<!-- Delete Account Modal -->
+	<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header bg-danger text-white">
+					<h5 class="modal-title">
+						<i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa tài khoản
+					</h5>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+				</div>
+				<form id="deleteAccountForm" action="${pageContext.request.contextPath}/ThongTinCaNhanController" method="post">
+					<input type="hidden" name="action" value="deleteAccount">
+					<div class="modal-body">
+						<!-- Warning Alert -->
+						<div class="alert alert-danger border-danger">
+							<i class="bi bi-exclamation-triangle-fill me-2"></i>
+							<strong>Cảnh báo:</strong> Hành động này không thể hoàn tác!<br>
+							Tất cả bài viết, bình luận của bạn sẽ bị xóa vĩnh viễn.
+						</div>
+
+						<!-- Error Message -->
+						<div id="deleteModalError" class="alert alert-danger" style="display: none;">
+							<i class="bi bi-x-circle-fill me-2"></i>
+							<span id="deleteModalErrorText"></span>
+						</div>
+
+						<!-- Mật khẩu xác nhận -->
+						<div class="mb-3">
+							<label for="matKhauXacNhan" class="form-label fw-bold">
+								Nhập mật khẩu để xác nhận <span class="text-danger">*</span>
+							</label>
+							<input type="password" class="form-control" id="matKhauXacNhan" 
+								   name="matKhauXacNhan" maxlength="255" 
+								   onkeyup="validateDeleteAccountForm()" required>
+							<div id="matKhauXacNhanError" class="invalid-feedback"></div>
+						</div>
+
+						<!-- Xác nhận bằng text -->
+						<div class="mb-3">
+							<label for="xacNhanXoa" class="form-label fw-bold">
+								Nhập "<span class="text-danger">XOA TAI KHOAN</span>" để xác nhận <span class="text-danger">*</span>
+							</label>
+							<input type="text" class="form-control" id="xacNhanXoa" 
+								   name="xacNhanXoa" placeholder="XOA TAI KHOAN"
+								   onkeyup="validateDeleteAccountForm()" required>
+							<small class="text-muted">Viết hoa, không dấu, có khoảng trắng</small>
+							<div id="xacNhanXoaError" class="invalid-feedback"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+							<i class="bi bi-x-circle me-1"></i>Hủy
+						</button>
+						<button type="submit" class="btn btn-danger" id="deleteAccountSubmitBtn" disabled>
+							<i class="bi bi-trash-fill me-1"></i>Xóa vĩnh viễn
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 
 	<script src="${pageContext.request.contextPath}/pages/info_page/script.js"></script>
 	<script>
@@ -270,6 +340,15 @@
 				}, 100);
 			});
 		<% } %>
+		// Delete success message from URL
+		const urlParams = new URLSearchParams(window.location.search);
+		if(urlParams.get('deleteSuccess') === 'true') {
+			document.addEventListener('DOMContentLoaded', function() {
+				setTimeout(function() {
+					showMessage('Tài khoản đã được xóa thành công!', 'success');
+				}, 100);
+			});
+		}
 	</script>
 </body>
 </html>

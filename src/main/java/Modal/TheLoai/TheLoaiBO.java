@@ -14,6 +14,15 @@ public class TheLoaiBO {
 		return ds;
 	}
 	
+	public ArrayList<TheLoai> readDB2() throws Exception {
+		ds = dao.readDB();
+		ArrayList<TheLoai> temp = new ArrayList<TheLoai>();
+		for(TheLoai tl: ds) {
+			if("Active".equals(tl.getTrangThai())) temp.add(tl);
+		}
+		return temp;
+	}
+	
 	public void createDB(String TenTheLoai) throws Exception {
 		if(TenTheLoai == null || TenTheLoai.trim().isEmpty()) {
 			throw new Exception("Tên thể loại không được để trống!");
@@ -22,19 +31,22 @@ public class TheLoaiBO {
 			throw new Exception("Thể loại đã tồn tại!");
 		}
 		
-		TheLoai tl = new TheLoai(-1, TenTheLoai);
+		TheLoai tl = new TheLoai(-1, TenTheLoai, null, null, null);
 		dao.createDB(tl);
 	}
 	
-	public void updateDB(int MaTheLoai, String TenTheLoai) throws Exception {
+	public void updateDB(int MaTheLoai, String TenTheLoai, String TrangThai) throws Exception {
 		if(TenTheLoai == null || TenTheLoai.trim().isEmpty()) {
 			throw new Exception("Tên thể loại không được để trống!");
+		}
+		if(TrangThai == null || TrangThai.trim().isEmpty()) {
+			throw new Exception("Trạng thái không được để trống!");
 		}
 		if(dao.findByMaTheLoai(MaTheLoai) == null) {
 			throw new Exception("Thể loại không tồn tại!");
 		}
 		
-		TheLoai tl = new TheLoai(MaTheLoai, TenTheLoai);
+		TheLoai tl = new TheLoai(MaTheLoai, TenTheLoai, TrangThai, null, null);
 		dao.updateDB(tl);
 	}
 	
@@ -46,12 +58,15 @@ public class TheLoaiBO {
 		dao.deleteDB(MaTheLoai);
 	}
 	
-	// Tìm theo mã / tên thể loại
+	// Tìm theo mã / tên thể loại / trạng thái / thời điểm tạo / thời điểm cập nhật
 	public ArrayList<TheLoai> findDB(String key) throws Exception {
 		ArrayList<TheLoai> temp = new ArrayList<TheLoai>();
 		for(TheLoai tl: ds) {
 			if( tl.getTenTheLoai().trim().toLowerCase().contains(key.trim().toLowerCase())
 			|| String.valueOf(tl.getMaTheLoai()).trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tl.getTrangThai().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tl.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| (tl.getThoiDiemCapNhat() != null && tl.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
 			) {
 				temp.add(tl);
 			}

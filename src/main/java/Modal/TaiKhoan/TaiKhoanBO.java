@@ -22,22 +22,25 @@ public class TaiKhoanBO {
 			throw new Exception("Tên đăng nhập đã tồn tại!");
 		}
 		
-		TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, null, null);
+		TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, null, null, null);
 		dao.createDB(tk);
 	}
 	
-	public void updateDB(String TenDangNhap, String MatKhau, String Quyen) throws Exception {
+	public void updateDB(String TenDangNhap, String MatKhau, String Quyen, String TrangThai) throws Exception {
 		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
 			throw new Exception("Tên đăng nhập không được để trống!");
 		}
 		if(MatKhau == null || MatKhau.trim().isEmpty()) {
 			throw new Exception("Mật khẩu không được để trống!");
 		}
+		if(TrangThai == null || TrangThai.trim().isEmpty()) {
+			throw new Exception("Trạng thái không được để trống!");
+		}
 		if(dao.findByTenDangNhap(TenDangNhap) == null) {
 			throw new Exception("Tài khoản không tồn tại!");
 		}
 		
-		TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, null, null);
+		TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, TrangThai, null, null);
 		dao.updateDB(tk);
 	}
 	
@@ -52,14 +55,15 @@ public class TaiKhoanBO {
 		dao.deleteDB(TenDangNhap);
 	}
 	
-	// Tìm theo tên tài khoản / quyền / thời điểm tạo / thời điểm cập nhật
+	// Tìm theo tên tài khoản / quyền / trạng thái / thời điểm tạo / thời điểm cập nhật
 	public ArrayList<TaiKhoan> findDB(String key) throws Exception {
 		ArrayList<TaiKhoan> temp = new ArrayList<TaiKhoan>();
-		for(TaiKhoan tk: ds) {
+		for(TaiKhoan tk: readDB()) {
 			if(tk.getTenDangNhap().trim().toLowerCase().contains(key.trim().toLowerCase())
 			|| tk.getQuyen().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tk.getTrangThai().trim().toLowerCase().contains(key.trim().toLowerCase())
 			|| tk.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
-			|| tk.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| (tk.getThoiDiemCapNhat() != null && tk.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
 			) {
 				temp.add(tk);
 			}
@@ -74,10 +78,10 @@ public class TaiKhoanBO {
 		return tk;
 	}
 	
-	// Nếu tài khoản tồn tại thì trả về tk và đăng nhập thành công
+	// Nếu tài khoản tồn tại và đang hoạt động thì trả về tk và đăng nhập thành công
 	public TaiKhoan checkLoginDB(String TenDangNhap, String MatKhau) throws Exception {
 		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
-		if(tk != null && tk.getMatKhau().equals(MatKhau)) {
+		if(tk != null && tk.getMatKhau().equals(MatKhau) && tk.getTrangThai().equals("Active")) {
 			return tk;
 		}
 		
@@ -86,7 +90,7 @@ public class TaiKhoanBO {
 	
 	public void forgetPassDB(String TenDangNhap, String MatKhauMoi, String NhapLaiMatKhauMoi) throws Exception {
 		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
-		if(tk == null) {
+		if(tk == null || tk.getTrangThai().equals("Deleted")) {
 			throw new Exception("Tài khoản không tồn tại!");
 		}
 		if(MatKhauMoi == null || MatKhauMoi.trim().isEmpty()) {
@@ -105,7 +109,7 @@ public class TaiKhoanBO {
 	
 	public void changePassDB(String TenDangNhap, String MatKhauCu, String MatKhauMoi) throws Exception {
 		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
-		if(tk == null) {
+		if(tk == null || tk.getTrangThai().equals("Deleted")) {
 			throw new Exception("Tài khoản không tồn tại!");
 		}
 		if(!tk.getMatKhau().equals(MatKhauCu)) {

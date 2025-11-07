@@ -17,9 +17,10 @@ public class TaiKhoanDAO {
 			String TenDangNhap = rs.getNString("TenDangNhap");
 			String MatKhau = rs.getNString("MatKhau");
 			String Quyen = rs.getNString("Quyen");
+			String TrangThai = rs.getNString("TrangThai");
 			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
 			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
-			ds.add(new TaiKhoan(TenDangNhap, MatKhau, Quyen, ThoiDiemTao, ThoiDiemCapNhat));
+			ds.add(new TaiKhoan(TenDangNhap, MatKhau, Quyen, TrangThai, ThoiDiemTao, ThoiDiemCapNhat));
 		}
 		
 		pr.close();
@@ -38,11 +39,12 @@ public class TaiKhoanDAO {
 	}
 	
 	public void updateDB(TaiKhoan tk) throws Exception {
-		String sql = "UPDATE TaiKhoan SET MatKhau = ?, Quyen = ? WHERE TenDangNhap = ?;";
+		String sql = "UPDATE TaiKhoan SET MatKhau = ?, Quyen = ?, TrangThai = ? WHERE TenDangNhap = ?;";
 		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
 		pr.setNString(1, tk.getMatKhau());
 		pr.setNString(2, tk.getQuyen());
-		pr.setNString(3, tk.getTenDangNhap());
+		pr.setNString(3, tk.getTrangThai());
+		pr.setNString(4, tk.getTenDangNhap());
 		pr.executeUpdate();
 		pr.close();
 	}
@@ -65,9 +67,10 @@ public class TaiKhoanDAO {
 			String TenDangNhap = rs.getNString("TenDangNhap");
 			String MatKhau = rs.getNString("MatKhau");
 			String Quyen = rs.getNString("Quyen");
+			String TrangThai = rs.getNString("TrangThai");
 			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
 			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
-			tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, ThoiDiemTao, ThoiDiemCapNhat);
+			tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, TrangThai, ThoiDiemTao, ThoiDiemCapNhat);
 		}
 		
 		pr.close();
