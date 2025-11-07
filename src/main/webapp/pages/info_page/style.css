@@ -1,0 +1,487 @@
+@charset "UTF-8";
+
+/* =======================
+   Global Styles
+======================= */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+	background-color: #f0f2f5 !important;
+	min-height: 100vh !important;
+	display: flex !important;
+	flex-direction: column !important;
+}
+
+/* =======================
+   Navbar Styles
+======================= */
+.bg-gradient {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.navbar {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar-brand {
+	font-size: 1.5rem !important;
+	transition: transform 0.3s ease !important;
+}
+
+.navbar-brand:hover {
+	transform: scale(1.05) !important;
+}
+
+.navbar-brand i {
+	font-size: 1.8rem !important;
+}
+
+.nav-link {
+	border-radius: 8px !important;
+	margin: 0 4px !important;
+	transition: all 0.3s ease !important;
+	color: #fff !important;
+}
+
+.nav-link:hover {
+	background-color: rgba(255, 255, 255, 0.1) !important;
+	transform: translateY(-2px) !important;
+}
+
+.nav-link.active {
+	background-color: rgba(255, 255, 255, 0.25) !important;
+	font-weight: 600 !important;
+}
+
+.btn-user {
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	border: none !important;
+	color: #fff !important;
+	border-radius: 25px !important;
+	padding: 8px 16px !important;
+	transition: all 0.3s ease !important;
+}
+
+.btn-user:hover {
+	background-color: rgba(255, 255, 255, 0.35) !important;
+	transform: translateY(-2px) !important;
+}
+
+.btn-user i {
+	font-size: 1.5rem !important;
+}
+
+/* =======================
+   Page Title
+======================= */
+.page-title {
+	font-size: 2.5rem !important;
+	font-weight: 700 !important;
+	color: #2d3748 !important;
+	text-align: center !important;
+	margin-bottom: 2rem !important;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	-webkit-background-clip: text !important;
+	-webkit-text-fill-color: transparent !important;
+	background-clip: text !important;
+}
+
+/* =======================
+   Alert Container
+======================= */
+.alert-container {
+	position: fixed !important;
+	top: 80px !important;
+	left: 50% !important;
+	transform: translateX(-50%) !important;
+	z-index: 9999 !important;
+	width: 90% !important;
+	max-width: 600px !important;
+}
+
+.alert-container .alert {
+	border: none !important;
+	border-radius: 12px !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+	padding: 1rem 1.5rem !important;
+	font-weight: 500 !important;
+	opacity: 0 !important;
+	transform: translateY(-20px) !important;
+	transition: all 0.3s ease !important;
+}
+
+.alert-container .alert.show {
+	opacity: 1 !important;
+	transform: translateY(0) !important;
+}
+
+.alert-container .alert-success {
+	background-color: #d4edda !important;
+	color: #155724 !important;
+	border-left: 4px solid #28a745 !important;
+}
+
+.alert-container .alert-success i {
+	color: #28a745 !important;
+}
+
+.alert-container .alert-danger {
+	background-color: #f8d7da !important;
+	color: #721c24 !important;
+	border-left: 4px solid #dc3545 !important;
+}
+
+.alert-container .alert-danger i {
+	color: #dc3545 !important;
+}
+
+/* =======================
+   Info Card
+======================= */
+.info-card {
+	border: none !important;
+	border-radius: 16px !important;
+	overflow: hidden !important;
+	animation: fadeInUp 0.5s ease !important;
+}
+
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.info-row {
+	display: flex !important;
+	align-items: center !important;
+	padding: 1.25rem !important;
+	border-bottom: 1px solid #e2e8f0 !important;
+	transition: all 0.3s ease !important;
+}
+
+.info-row:last-child {
+	border-bottom: none !important;
+}
+
+.info-row:hover {
+	background-color: #f8f9fa !important;
+}
+
+.info-label {
+	flex: 0 0 200px !important;
+	font-weight: 600 !important;
+	color: #2d3748 !important;
+	font-size: 1rem !important;
+}
+
+.info-value {
+	flex: 1 !important;
+	color: #4a5568 !important;
+	font-size: 1rem !important;
+}
+
+/* =======================
+   Password Field
+======================= */
+.password-container {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+}
+
+.password-field {
+	border: 2px solid #e2e8f0 !important;
+	border-radius: 8px !important;
+	padding: 8px 45px 8px 12px !important;
+	flex: 1 !important;
+	background-color: #f8f9fa !important;
+	font-family: monospace !important;
+	letter-spacing: 2px !important;
+}
+
+.btn-toggle-password {
+	position: absolute !important;
+	right: 10px !important;
+	background: none !important;
+	border: none !important;
+	color: #667eea !important;
+	font-size: 1.2rem !important;
+	cursor: pointer !important;
+	transition: all 0.3s ease !important;
+	padding: 5px !important;
+}
+
+.btn-toggle-password:hover {
+	color: #764ba2 !important;
+	transform: scale(1.1) !important;
+}
+
+/* =======================
+   Badge
+======================= */
+.badge {
+	padding: 8px 16px !important;
+	border-radius: 20px !important;
+	font-weight: 600 !important;
+	font-size: 0.9rem !important;
+}
+
+.badge-admin {
+	background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+	color: white !important;
+}
+
+.badge-user {
+	background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+	color: white !important;
+}
+
+/* =======================
+   Empty State
+======================= */
+.empty-state {
+	padding: 4rem 2rem !important;
+}
+
+.empty-state i {
+	opacity: 0.3 !important;
+}
+
+/* =======================
+   Buttons
+======================= */
+.btn-change-password {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+	border: none !important;
+	padding: 12px 32px !important;
+	border-radius: 25px !important;
+	font-weight: 600 !important;
+	font-size: 1.1rem !important;
+	transition: all 0.3s ease !important;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+}
+
+.btn-change-password:hover {
+	transform: translateY(-2px) !important;
+	box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6) !important;
+}
+
+/* =======================
+   Modal Styles
+======================= */
+.modal-content {
+	border-radius: 16px !important;
+	border: none !important;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+.modal-header {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+	border-radius: 16px 16px 0 0 !important;
+	border: none !important;
+	padding: 1.5rem !important;
+}
+
+.modal-header .btn-close {
+	filter: brightness(0) invert(1) !important;
+}
+
+.modal-body {
+	padding: 2rem !important;
+}
+
+.modal-body .alert {
+	border: none !important;
+	border-radius: 8px !important;
+	padding: 0.75rem 1rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.modal-body .alert-danger {
+	background-color: #fee !important;
+	color: #c00 !important;
+	border-left: 4px solid #dc3545 !important;
+}
+
+.modal-footer {
+	border: none !important;
+	padding: 1rem 2rem 1.5rem !important;
+}
+
+.form-label {
+	color: #2d3748 !important;
+	margin-bottom: 0.5rem !important;
+}
+
+.form-control {
+	border: 2px solid #e2e8f0 !important;
+	border-radius: 8px !important;
+	padding: 10px 16px !important;
+	transition: all 0.3s ease !important;
+}
+
+.form-control:focus {
+	border-color: #667eea !important;
+	box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+}
+
+.form-control.is-invalid {
+	border-color: #e53e3e !important;
+}
+
+.invalid-feedback {
+	display: block !important;
+	color: #e53e3e !important;
+	font-size: 0.875rem !important;
+	margin-top: 0.5rem !important;
+}
+
+/* =======================
+   Footer
+======================= */
+.footer {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+	padding: 20px 0 !important;
+	margin-top: auto !important;
+}
+
+/* =======================
+   Dropdown
+======================= */
+.dropdown-menu {
+	border: none !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+	border-radius: 12px !important;
+	margin-top: 0.5rem !important;
+	z-index: 1050 !important;
+}
+
+.dropdown-item {
+	padding: 10px 20px !important;
+	transition: all 0.3s ease !important;
+}
+
+.dropdown-item:hover {
+	background-color: #f8f9fa !important;
+	padding-left: 25px !important;
+}
+
+.dropdown-item.active {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+}
+
+.dropdown-item i {
+	width: 20px !important;
+}
+
+/* =======================
+   Responsive Design
+======================= */
+@media (max-width: 991px) {
+	.page-title {
+		font-size: 2rem !important;
+	}
+	
+	.info-label {
+		flex: 0 0 150px !important;
+		font-size: 0.9rem !important;
+	}
+	
+	.info-value {
+		font-size: 0.9rem !important;
+	}
+}
+
+@media (max-width: 767px) {
+	.page-title {
+		font-size: 1.75rem !important;
+	}
+	
+	.navbar-brand {
+		font-size: 1.2rem !important;
+	}
+	
+	.info-row {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+		padding: 1rem !important;
+	}
+	
+	.info-label {
+		flex: none !important;
+		margin-bottom: 0.5rem !important;
+		font-size: 0.85rem !important;
+	}
+	
+	.info-value {
+		width: 100% !important;
+		font-size: 0.85rem !important;
+	}
+	
+	.password-field {
+		width: 100% !important;
+	}
+	
+	.btn-change-password {
+		font-size: 1rem !important;
+		padding: 10px 24px !important;
+	}
+}
+
+@media (max-width: 576px) {
+	.modal-body {
+		padding: 1.5rem !important;
+	}
+	
+	.navbar-brand i {
+		font-size: 1.5rem !important;
+	}
+	
+	.btn-user i {
+		font-size: 1.3rem !important;
+	}
+	
+	.alert-container {
+		width: 95% !important;
+	}
+	
+	.info-card {
+		margin: 0 0.5rem !important;
+	}
+}
+
+/* =======================
+   Scrollbar
+======================= */
+::-webkit-scrollbar {
+	width: 8px !important;
+	height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+	background: #f1f1f1 !important;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #888 !important;
+	border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #555 !important;
+}
