@@ -70,3 +70,6 @@ work/
 # Other temporary or generated files
 temp/
 out/
+
+# Allow library jars in WEB-INF/lib
+!WebContent/WEB-INF/lib/*.jar
