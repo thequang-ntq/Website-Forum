@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.TimeZone;
 
 @WebServlet("/XuLyBinhLuanCuaToiController")
+@MultipartConfig
 public class XuLyBinhLuanCuaToiController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private BinhLuanBO blbo = new BinhLuanBO();
@@ -54,54 +56,67 @@ public class XuLyBinhLuanCuaToiController extends HttpServlet {
 		
 		try {
 			if("create".equals(action)) {
-				// Thêm bình luận
-				String noiDung = request.getParameter("noiDung");
-				String url = request.getParameter("url");
-				String taiKhoanTao = account;
-				String maBaiVietStr = request.getParameter("maBaiViet");
-				
-				// Validate
-				if(noiDung == null || noiDung.trim().isEmpty()) {
-					session.setAttribute("message", "Nội dung không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else if(maBaiVietStr == null || maBaiVietStr.trim().isEmpty()) {
-					session.setAttribute("message", "Mã bài viết không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else {
-					long maBaiViet = Long.parseLong(maBaiVietStr);
-					blbo.createDB(noiDung.trim(), url, taiKhoanTao, maBaiViet);
-					session.setAttribute("message", "Thêm bình luận thành công!");
-					session.setAttribute("messageType", "success");
-				}
-				
+			    // Thêm bình luận
+			    String noiDung = request.getParameter("noiDung");
+			    String url = request.getParameter("url"); // URL từ hidden field sau khi upload
+			    String taiKhoanTao = account;
+			    String maBaiVietStr = request.getParameter("maBaiViet");
+			    
+			    // Validate
+			    if(noiDung == null || noiDung.trim().isEmpty()) {
+			        session.setAttribute("message", "Nội dung không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else if(maBaiVietStr == null || maBaiVietStr.trim().isEmpty()) {
+			        session.setAttribute("message", "Mã bài viết không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else {
+			        long maBaiViet = Long.parseLong(maBaiVietStr);
+			        
+			        // URL có thể null hoặc empty
+			        String finalUrl = (url != null && !url.trim().isEmpty()) ? url.trim() : null;
+			        
+			        blbo.createDB(noiDung.trim(), finalUrl, taiKhoanTao, maBaiViet);
+			        session.setAttribute("message", "Thêm bình luận thành công!");
+			        session.setAttribute("messageType", "success");
+			    }
+			    
 			} else if("update".equals(action)) {
-				// Sửa bình luận
-				long maBinhLuan = Long.parseLong(request.getParameter("maBinhLuan"));
-				
-				// Kiểm tra quyền sở hữu bình luận
-				BinhLuan blCheck = bldao.findByMaBinhLuan(maBinhLuan);
-				if(blCheck == null || !blCheck.getTaiKhoanTao().equals(account)) {
-					session.setAttribute("message", "Bạn không có quyền chỉnh sửa bình luận này!");
-					session.setAttribute("messageType", "error");
-					response.sendRedirect(request.getContextPath() + "/BinhLuanCuaToiController");
-					return;
-				}
-				
-				String noiDung = request.getParameter("noiDung");
-				String url = request.getParameter("url");
-				int soLuotThich = blCheck.getSoLuotThich(); // Giữ nguyên số lượt thích
-				String trangThai = blCheck.getTrangThai(); // Giữ nguyên trạng thái
-				
-				// Validate
-				if(noiDung == null || noiDung.trim().isEmpty()) {
-					session.setAttribute("message", "Nội dung không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else {
-					blbo.updateDB(maBinhLuan, noiDung.trim(), url, soLuotThich, trangThai);
-					session.setAttribute("message", "Cập nhật bình luận thành công!");
-					session.setAttribute("messageType", "success");
-				}
-				
+			    // Sửa bình luận
+			    long maBinhLuan = Long.parseLong(request.getParameter("maBinhLuan"));
+			    
+			    // Kiểm tra quyền sở hữu bình luận
+			    BinhLuan blCheck = bldao.findByMaBinhLuan(maBinhLuan);
+			    if(blCheck == null || !blCheck.getTaiKhoanTao().equals(account)) {
+			        session.setAttribute("message", "Bạn không có quyền chỉnh sửa bình luận này!");
+			        session.setAttribute("messageType", "error");
+			        response.sendRedirect(request.getContextPath() + "/BinhLuanCuaToiController");
+			        return;
+			    }
+			    
+			    String noiDung = request.getParameter("noiDung");
+			    String url = request.getParameter("url");
+			    String keepOldFile = request.getParameter("keepOldFile");
+			    int soLuotThich = blCheck.getSoLuotThich(); // Giữ nguyên số lượt thích
+			    String trangThai = blCheck.getTrangThai(); // Giữ nguyên trạng thái
+			    
+			    // Validate
+			    if(noiDung == null || noiDung.trim().isEmpty()) {
+			        session.setAttribute("message", "Nội dung không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else {
+			        // Xử lý URL
+			        String finalUrl = null;
+			        if(url != null && !url.trim().isEmpty()) {
+			            finalUrl = url.trim();
+			        } else if("true".equals(keepOldFile)) {
+			            // Giữ file cũ - lấy URL cũ từ DB
+			            finalUrl = blCheck.getUrl();
+			        }
+			        
+			        blbo.updateDB(maBinhLuan, noiDung.trim(), finalUrl, soLuotThich, trangThai);
+			        session.setAttribute("message", "Cập nhật bình luận thành công!");
+			        session.setAttribute("messageType", "success");
+			    }
 			} else if("delete".equals(action)) {
 				// Xóa bình luận
 				long maBinhLuan = Long.parseLong(request.getParameter("maBinhLuan"));
