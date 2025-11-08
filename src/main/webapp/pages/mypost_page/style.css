@@ -445,6 +445,74 @@ body {
 }
 
 /* =======================
+   Upload File Styles
+======================= */
+.upload-container {
+	border: 2px dashed #e2e8f0 !important;
+	border-radius: 12px !important;
+	padding: 1.5rem !important;
+	text-align: center !important;
+	background-color: #f8f9fa !important;
+	transition: all 0.3s ease !important;
+}
+
+.upload-container:hover {
+	border-color: #667eea !important;
+	background-color: #f0f2ff !important;
+}
+
+.btn-upload {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+	border: none !important;
+	padding: 10px 24px !important;
+	border-radius: 8px !important;
+	font-weight: 600 !important;
+	transition: all 0.3s ease !important;
+	box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+.btn-upload:hover {
+	transform: translateY(-2px) !important;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5) !important;
+}
+
+.file-status {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	font-size: 0.95rem !important;
+	font-weight: 500 !important;
+	padding: 8px !important;
+}
+
+.file-status i {
+	font-size: 1.2rem !important;
+}
+
+.file-preview {
+	max-width: 100% !important;
+	border-radius: 12px !important;
+	overflow: hidden !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Spinner for loading */
+.spinner-border-sm {
+	width: 1rem !important;
+	height: 1rem !important;
+	border-width: 0.15em !important;
+}
+
+/* Remove file button */
+.btn-sm.btn-danger {
+	padding: 6px 12px !important;
+	font-size: 0.875rem !important;
+	border-radius: 6px !important;
+}
+
+/* =======================
    Responsive
 ======================= */
 @media (max-width: 991px) {
@@ -484,4 +552,57 @@ body {
 	.modal-dialog {
 		margin: 0.5rem !important;
 	}
+}
+
+/* =======================
+   Modal Body & Footer Fix
+======================= */
+.modal-body {
+	padding: 1.5rem !important;
+	max-height: calc(100vh - 250px) !important;
+	overflow-y: auto !important;
+}
+
+.modal-footer {
+	padding: 1rem 1.5rem !important;
+	border-top: 1px solid #e9ecef !important;
+	background-color: #f8f9fa !important;
+}
+
+.modal-dialog-scrollable .modal-body {
+	max-height: calc(100vh - 250px) !important;
+}
+
+.modal-dialog-scrollable .modal-content {
+	max-height: calc(100vh - 60px) !important;
+}
+
+/* =======================
+   Button Styles in Modal
+======================= */
+.modal-footer .btn {
+	min-width: 100px !important;
+	padding: 10px 20px !important;
+	font-weight: 500 !important;
+}
+
+.modal-footer .btn-secondary {
+	background-color: #6c757d !important;
+	border: none !important;
+	color: white !important;
+}
+
+.modal-footer .btn-secondary:hover {
+	background-color: #5a6268 !important;
+}
+
+.modal-footer .btn-primary {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	border: none !important;
+	color: white !important;
+}
+
+.modal-footer .btn-primary:hover {
+	opacity: 0.9 !important;
+	transform: translateY(-1px) !important;
 }

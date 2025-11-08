@@ -27,6 +27,7 @@
 - Website Forum với các tính năng:
 + Phát triển một Website hỗ trợ quản lý, lưu trữ và hiển thị thông tin về các bài viết và bình luận trên bài viết.
 + Đăng nhập, đăng xuất.
++ Thêm, sửa, xóa, xem, tìm kiếm tài khoản cho Admin.
 + Hiển thị thông tin người dùng và đổi mật khẩu.
 + Hiển thị thông tin về bài viết, bình luận theo 2 hướng: Hướng 1 là cho Admin để quản lý bài viết và bình luận; Hướng 2 là cho cả Admin và User là quản lý bài viết và bình luận của riêng tài khoản.
 + Thêm, sửa, xóa, xem, tìm kiếm bài viết và bình luận của tất cả tài khoản (Đối với Admin).

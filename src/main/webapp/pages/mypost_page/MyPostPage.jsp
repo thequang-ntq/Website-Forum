@@ -263,16 +263,20 @@
                                     <h5 class="post-title"><%= bv.getTieuDe() %></h5>
                                     <p class="post-content"><%= bv.getNoiDung().length() > 200 ? bv.getNoiDung().substring(0, 200) + "..." : bv.getNoiDung() %></p>
                                     <% if (bv.getUrl() != null && !bv.getUrl().trim().isEmpty()) { %>
-                                        <div class="post-media mb-3">
-                                            <% if (bv.getUrl().matches(".*\\.(jpg|jpeg|png|gif|webp)$")) { %>
-                                                <img src="<%= bv.getUrl() %>" class="img-fluid rounded" alt="Post image">
-                                            <% } else if (bv.getUrl().matches(".*\\.(mp4|webm|ogg)$")) { %>
-                                                <video controls class="w-100 rounded">
-                                                    <source src="<%= bv.getUrl() %>" type="video/mp4">
-                                                </video>
-                                            <% } %>
-                                        </div>
-                                    <% } %>
+									    <div class="post-media mb-3">
+									        <% 
+									        String contextPath = request.getContextPath();
+									        String fullUrl = contextPath + "/" + bv.getUrl();
+									        
+									        if (bv.getUrl().matches(".*\\.(jpg|jpeg|png|gif|webp)$")) { %>
+									            <img src="<%= fullUrl %>" class="img-fluid rounded" alt="Post image">
+									        <% } else if (bv.getUrl().matches(".*\\.(mp4|webm|ogg)$")) { %>
+									            <video controls class="w-100 rounded">
+									                <source src="<%= fullUrl %>" type="video/mp4">
+									            </video>
+									        <% } %>
+									    </div>
+									<% } %>
                                     <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                                         <div class="text-muted">
                                             <i class="bi bi-chat-fill me-1"></i>
@@ -395,96 +399,131 @@
         </div>
     </footer>
 
-    <!-- Add Post Modal -->
-    <div class="modal fade" id="addPostModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-gradient text-white">
-                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Tạo bài viết mới</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form action="${pageContext.request.contextPath}/XuLyBaiVietCuaToiController" method="post">
-                    <input type="hidden" name="action" value="create">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Tiêu đề <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="tieuDe" required maxlength="255">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Thể loại <span class="text-danger">*</span></label>
-                            <select class="form-select" name="maTheLoai" required>
-                                <option value="">-- Chọn thể loại --</option>
-                                <% if (dsTheLoai != null) {
-                                    for (TheLoai tl : dsTheLoai) { %>
-                                        <option value="<%= tl.getMaTheLoai() %>"><%= tl.getTenTheLoai() %></option>
-                                <% }
-                                } %>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nội dung <span class="text-danger">*</span></label>
-                            <textarea class="form-control" name="noiDung" rows="6" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">URL (Ảnh/Video)</label>
-                            <input type="url" class="form-control" name="url" placeholder="https://example.com/image.jpg">
-                            <small class="text-muted">Hỗ trợ: jpg, jpeg, png, gif, webp, mp4, webm, ogg</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Tạo bài viết</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Post Modal -->
-    <div class="modal fade" id="editPostModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-gradient text-white">
-                    <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Chỉnh sửa bài viết</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form action="${pageContext.request.contextPath}/XuLyBaiVietCuaToiController" method="post" id="editPostForm">
-                    <input type="hidden" name="action" value="update">
-                    <input type="hidden" name="maBaiViet" id="editMaBaiViet">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Tiêu đề <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="tieuDe" id="editTieuDe" required maxlength="255">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Thể loại <span class="text-danger">*</span></label>
-                            <select class="form-select" name="maTheLoai" id="editMaTheLoai" required>
-                                <option value="">-- Chọn thể loại --</option>
-                                <% if (dsTheLoai != null) {
-                                    for (TheLoai tl : dsTheLoai) { %>
-                                        <option value="<%= tl.getMaTheLoai() %>"><%= tl.getTenTheLoai() %></option>
-                                <% }
-                                } %>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nội dung <span class="text-danger">*</span></label>
-                            <textarea class="form-control" name="noiDung" id="editNoiDung" rows="6" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">URL (Ảnh/Video)</label>
-                            <input type="url" class="form-control" name="url" id="editUrl" placeholder="https://example.com/image.jpg">
-                            <small class="text-muted">Hỗ trợ: jpg, jpeg, png, gif, webp, mp4, webm, ogg</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Cập nhật</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- Add Post Modal - UPDATED -->
+	<div class="modal fade" id="addPostModal" tabindex="-1">
+	    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+	        <div class="modal-content">
+	            <div class="modal-header bg-gradient text-white">
+	                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Tạo bài viết mới</h5>
+	                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+	            </div>
+	            <form action="${pageContext.request.contextPath}/XuLyBaiVietCuaToiController" method="post" id="addPostForm">
+	                <input type="hidden" name="action" value="create">
+	                <input type="hidden" id="addUrlHidden" name="url" value="">
+	                <div class="modal-body">
+	                    <div class="mb-3">
+	                        <label class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+	                        <input type="text" class="form-control" name="tieuDe" id="addTieuDe" required maxlength="255">
+	                    </div>
+	                    <div class="mb-3">
+	                        <label class="form-label">Thể loại <span class="text-danger">*</span></label>
+	                        <select class="form-select" name="maTheLoai" id="addMaTheLoai" required>
+	                            <option value="">-- Chọn thể loại --</option>
+	                            <% if (dsTheLoai != null) {
+	                                for (TheLoai tl : dsTheLoai) { %>
+	                                    <option value="<%= tl.getMaTheLoai() %>"><%= tl.getTenTheLoai() %></option>
+	                            <% }
+	                            } %>
+	                        </select>
+	                    </div>
+	                    <div class="mb-3">
+	                        <label class="form-label">Nội dung <span class="text-danger">*</span></label>
+	                        <textarea class="form-control" name="noiDung" id="addNoiDung" rows="6" required></textarea>
+	                    </div>
+	                    
+	                    <!-- Upload File Section -->
+	                    <div class="mb-3">
+	                        <label class="form-label fw-bold">Ảnh/Video</label>
+	                        <div class="upload-container">
+	                            <input type="file" id="addFileInput" accept="image/*,video/*" style="display: none;">
+	                            <button type="button" class="btn btn-upload" onclick="document.getElementById('addFileInput').click()">
+	                                <i class="bi bi-cloud-upload me-2"></i>Tải ảnh/video lên
+	                            </button>
+	                            <div class="file-status mt-2">
+	                                <i class="bi bi-file-earmark"></i>
+	                                <span id="addFileStatus" class="text-muted">Chưa có ảnh/video</span>
+	                            </div>
+	                            <div id="addFilePreview" class="file-preview mt-3" style="display: none;"></div>
+	                        </div>
+	                        <small class="text-muted">
+	                            Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video) - Tối đa 50MB
+	                        </small>
+	                    </div>
+	                </div>
+	                <div class="modal-footer">
+	                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+	                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Tạo bài viết</button>
+	                </div>
+	            </form>
+	        </div>
+	    </div>
+	</div>
+	
+	<!-- Edit Post Modal - UPDATED -->
+	<div class="modal fade" id="editPostModal" tabindex="-1">
+	    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+	        <div class="modal-content">
+	            <div class="modal-header bg-gradient text-white">
+	                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Chỉnh sửa bài viết</h5>
+	                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+	            </div>
+	            <form action="${pageContext.request.contextPath}/XuLyBaiVietCuaToiController" method="post" id="editPostForm">
+	                <input type="hidden" name="action" value="update">
+	                <input type="hidden" name="maBaiViet" id="editMaBaiViet">
+	                <input type="hidden" id="editUrlHidden" name="url" value="">
+	                <input type="hidden" id="editKeepOldFile" name="keepOldFile" value="false">
+	                <div class="modal-body">
+	                    <div class="mb-3">
+	                        <label class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+	                        <input type="text" class="form-control" name="tieuDe" id="editTieuDe" required maxlength="255">
+	                    </div>
+	                    <div class="mb-3">
+	                        <label class="form-label">Thể loại <span class="text-danger">*</span></label>
+	                        <select class="form-select" name="maTheLoai" id="editMaTheLoai" required>
+	                            <option value="">-- Chọn thể loại --</option>
+	                            <% if (dsTheLoai != null) {
+	                                for (TheLoai tl : dsTheLoai) { %>
+	                                    <option value="<%= tl.getMaTheLoai() %>"><%= tl.getTenTheLoai() %></option>
+	                            <% }
+	                            } %>
+	                        </select>
+	                    </div>
+	                    <div class="mb-3">
+	                        <label class="form-label">Nội dung <span class="text-danger">*</span></label>
+	                        <textarea class="form-control" name="noiDung" id="editNoiDung" rows="6" required></textarea>
+	                    </div>
+	                    
+	                    <!-- Upload File Section -->
+	                    <div class="mb-3">
+	                        <label class="form-label fw-bold">Ảnh/Video</label>
+	                        <div class="upload-container">
+	                            <input type="file" id="editFileInput" accept="image/*,video/*" style="display: none;">
+	                            <button type="button" class="btn btn-upload" onclick="document.getElementById('editFileInput').click()">
+	                                <i class="bi bi-cloud-upload me-2"></i>Tải ảnh/video lên
+	                            </button>
+	                            <div class="file-status mt-2">
+	                                <i class="bi bi-file-earmark"></i>
+	                                <span id="editFileStatus" class="text-muted">Chưa có ảnh/video</span>
+	                            </div>
+	                            <div id="editFilePreview" class="file-preview mt-3" style="display: none;"></div>
+	                            <button type="button" class="btn btn-sm btn-danger mt-2" id="editRemoveFileBtn" 
+	                                    style="display: none;" onclick="removeEditFile()">
+	                                <i class="bi bi-trash me-1"></i>Xóa file
+	                            </button>
+	                        </div>
+	                        <small class="text-muted">
+	                            Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video) - Tối đa 50MB
+	                        </small>
+	                    </div>
+	                </div>
+	                <div class="modal-footer">
+	                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+	                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Cập nhật</button>
+	                </div>
+	            </form>
+	        </div>
+	    </div>
+	</div>
 
     <%!
         private String buildPaginationUrl(HttpServletRequest request, int page) {

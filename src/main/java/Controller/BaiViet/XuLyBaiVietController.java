@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -13,6 +14,7 @@ import javax.servlet.http.HttpSession;
 import Modal.BaiViet.BaiVietBO;
 
 @WebServlet("/XuLyBaiVietController")
+@MultipartConfig
 public class XuLyBaiVietController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private BaiVietBO bvbo = new BaiVietBO();
@@ -51,10 +53,9 @@ public class XuLyBaiVietController extends HttpServlet {
 				// Thêm bài viết
 				String tieuDe = request.getParameter("tieuDe");
 				String noiDung = request.getParameter("noiDung");
-				String url = request.getParameter("url");
-				String taiKhoanTao = account; // Lấy từ session
+				String url = request.getParameter("url"); // URL từ hidden field sau khi upload
+				String taiKhoanTao = account;
 				String maTheLoaiStr = request.getParameter("maTheLoai");
-				String danhGiaStr = request.getParameter("danhGia");
 				
 				// Validate
 				if(tieuDe == null || tieuDe.trim().isEmpty()) {
@@ -71,7 +72,11 @@ public class XuLyBaiVietController extends HttpServlet {
 					session.setAttribute("messageType", "error");
 				} else {
 					int maTheLoai = Integer.parseInt(maTheLoaiStr);
-					bvbo.createDB(tieuDe.trim(), noiDung.trim(), url, taiKhoanTao, maTheLoai);
+					
+					// URL có thể null hoặc empty
+					String finalUrl = (url != null && !url.trim().isEmpty()) ? url.trim() : null;
+					
+					bvbo.createDB(tieuDe.trim(), noiDung.trim(), finalUrl, taiKhoanTao, maTheLoai);
 					session.setAttribute("message", "Thêm bài viết thành công!");
 					session.setAttribute("messageType", "success");
 				}
@@ -82,6 +87,7 @@ public class XuLyBaiVietController extends HttpServlet {
 				String tieuDe = request.getParameter("tieuDe");
 				String noiDung = request.getParameter("noiDung");
 				String url = request.getParameter("url");
+				String keepOldFile = request.getParameter("keepOldFile");
 				int maTheLoai = Integer.parseInt(request.getParameter("maTheLoai"));
 				String danhGiaStr = request.getParameter("danhGia");
 				String trangThai = request.getParameter("trangThai");
@@ -111,7 +117,20 @@ public class XuLyBaiVietController extends HttpServlet {
 					session.setAttribute("message", "Trạng thái không được để trống!");
 					session.setAttribute("messageType", "error");
 				} else {
-					bvbo.updateDB(maBaiViet, tieuDe.trim(), noiDung.trim(), url, maTheLoai, danhGia, trangThai);
+					// Xử lý URL
+					String finalUrl = null;
+					if(url != null && !url.trim().isEmpty()) {
+						finalUrl = url.trim();
+					} else if("true".equals(keepOldFile)) {
+						// Giữ file cũ - lấy URL cũ từ DB
+						finalUrl = bvbo.readDB().stream()
+							.filter(bv -> bv.getMaBaiViet() == maBaiViet)
+							.findFirst()
+							.map(bv -> bv.getUrl())
+							.orElse(null);
+					}
+					
+					bvbo.updateDB(maBaiViet, tieuDe.trim(), noiDung.trim(), finalUrl, maTheLoai, danhGia, trangThai);
 					session.setAttribute("message", "Cập nhật bài viết thành công!");
 					session.setAttribute("messageType", "success");
 				}

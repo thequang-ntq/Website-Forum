@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +16,7 @@ import Modal.BaiViet.BaiVietBO;
 import Modal.BaiViet.BaiVietDAO;
 
 @WebServlet("/XuLyBaiVietCuaToiController")
+@MultipartConfig
 public class XuLyBaiVietCuaToiController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private BaiVietBO bvbo = new BaiVietBO();

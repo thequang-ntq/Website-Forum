@@ -341,7 +341,7 @@
 		</div>
 	</div>
 
-	<!-- Add Modal -->
+	<!-- THAY THẾ TOÀN BỘ Add Modal -->
 	<div class="modal fade" id="addModal" tabindex="-1">
 		<div class="modal-dialog modal-lg modal-dialog-scrollable">
 			<div class="modal-content">
@@ -353,6 +353,7 @@
 				</div>
 				<form id="addForm" action="${pageContext.request.contextPath}/XuLyBaiVietController" method="post">
 					<input type="hidden" name="action" value="create">
+					<input type="hidden" id="addUrlHidden" name="url" value="">
 					<div class="modal-body">
 						<div id="addError" class="alert alert-danger" style="display: none;">
 							<i class="bi bi-x-circle-fill me-2"></i>
@@ -368,7 +369,7 @@
 								   onkeyup="validateAddForm()" required>
 							<div class="invalid-feedback" id="addTieuDeError"></div>
 						</div>
-
+	
 						<div class="mb-3">
 							<label for="addNoiDung" class="form-label fw-bold">
 								Nội dung <span class="text-danger">*</span>
@@ -377,16 +378,27 @@
 									  rows="6" onkeyup="validateAddForm()" required></textarea>
 							<div class="invalid-feedback" id="addNoiDungError"></div>
 						</div>
-
+	
+						<!-- Upload File Section -->
 						<div class="mb-3">
-							<label for="addUrl" class="form-label fw-bold">URL ảnh/video</label>
-							<input type="text" class="form-control" id="addUrl" 
-								   name="url" placeholder="https://example.com/image.jpg">
+							<label class="form-label fw-bold">Ảnh/Video</label>
+							<div class="upload-container">
+								<input type="file" id="addFileInput" accept="image/*,video/*" 
+									   style="display: none;">
+								<button type="button" class="btn btn-upload" onclick="document.getElementById('addFileInput').click()">
+									<i class="bi bi-cloud-upload me-2"></i>Tải ảnh/video lên
+								</button>
+								<div class="file-status mt-2">
+									<i class="bi bi-file-earmark"></i>
+									<span id="addFileStatus" class="text-muted">Chưa có ảnh/video</span>
+								</div>
+								<div id="addFilePreview" class="file-preview mt-3" style="display: none;"></div>
+							</div>
 							<small class="text-muted">
-								Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video)
+								Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video) - Tối đa 50MB
 							</small>
 						</div>
-
+	
 						<div class="mb-3">
 							<label for="addMaTheLoai" class="form-label fw-bold">
 								Thể loại <span class="text-danger">*</span>
@@ -415,8 +427,8 @@
 			</div>
 		</div>
 	</div>
-
-	<!-- Edit Modal -->
+	
+	<!-- THAY THẾ TOÀN BỘ Edit Modal -->
 	<div class="modal fade" id="editModal" tabindex="-1">
 		<div class="modal-dialog modal-lg modal-dialog-scrollable">
 			<div class="modal-content">
@@ -429,6 +441,8 @@
 				<form id="editForm" action="${pageContext.request.contextPath}/XuLyBaiVietController" method="post">
 					<input type="hidden" name="action" value="update">
 					<input type="hidden" id="editMaBaiViet" name="maBaiViet">
+					<input type="hidden" id="editUrlHidden" name="url" value="">
+					<input type="hidden" id="editKeepOldFile" name="keepOldFile" value="false">
 					<div class="modal-body">
 						<div id="editError" class="alert alert-danger" style="display: none;">
 							<i class="bi bi-x-circle-fill me-2"></i>
@@ -444,7 +458,7 @@
 								   onkeyup="validateEditForm()" required>
 							<div class="invalid-feedback" id="editTieuDeError"></div>
 						</div>
-
+	
 						<div class="mb-3">
 							<label for="editNoiDung" class="form-label fw-bold">
 								Nội dung <span class="text-danger">*</span>
@@ -453,16 +467,31 @@
 									  rows="6" onkeyup="validateEditForm()" required></textarea>
 							<div class="invalid-feedback" id="editNoiDungError"></div>
 						</div>
-
+	
+						<!-- Upload File Section -->
 						<div class="mb-3">
-							<label for="editUrl" class="form-label fw-bold">URL ảnh/video</label>
-							<input type="text" class="form-control" id="editUrl" 
-								   name="url" placeholder="https://example.com/image.jpg">
+							<label class="form-label fw-bold">Ảnh/Video</label>
+							<div class="upload-container">
+								<input type="file" id="editFileInput" accept="image/*,video/*" 
+									   style="display: none;">
+								<button type="button" class="btn btn-upload" onclick="document.getElementById('editFileInput').click()">
+									<i class="bi bi-cloud-upload me-2"></i>Tải ảnh/video lên
+								</button>
+								<div class="file-status mt-2">
+									<i class="bi bi-file-earmark"></i>
+									<span id="editFileStatus" class="text-muted">Chưa có ảnh/video</span>
+								</div>
+								<div id="editFilePreview" class="file-preview mt-3" style="display: none;"></div>
+								<button type="button" class="btn btn-sm btn-danger mt-2" id="editRemoveFileBtn" 
+										style="display: none;" onclick="removeEditFile()">
+									<i class="bi bi-trash me-1"></i>Xóa file
+								</button>
+							</div>
 							<small class="text-muted">
-								Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video)
+								Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video) - Tối đa 50MB
 							</small>
 						</div>
-
+	
 						<div class="mb-3">
 							<label for="editMaTheLoai" class="form-label fw-bold">
 								Thể loại <span class="text-danger">*</span>
@@ -478,7 +507,7 @@
 							</select>
 							<div class="invalid-feedback" id="editMaTheLoaiError"></div>
 						</div>
-
+	
 						<div class="mb-3">
 							<label for="editDanhGia" class="form-label fw-bold">Đánh giá</label>
 							<input type="number" class="form-control" id="editDanhGia" 
@@ -486,7 +515,7 @@
 								   placeholder="0.0 - 5.0">
 							<small class="text-muted">Để trống nếu chưa đánh giá (từ 0.0 đến 5.0)</small>
 						</div>
-
+	
 						<div class="mb-3">
 							<label for="editTrangThai" class="form-label fw-bold">
 								Trạng thái <span class="text-danger">*</span>
