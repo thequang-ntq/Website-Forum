@@ -69,7 +69,11 @@ public class UploadFileController extends HttpServlet {
             String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
             
             // Đường dẫn thư mục storage
-            String uploadPath = getServletContext().getRealPath("") + File.separator + "storage";
+            String uploadPath = request.getServletContext().getRealPath("") + File.separator + "storage";
+            if (uploadPath.contains(".metadata") && System.getProperty("os.name").toLowerCase().contains("win")) {
+                uploadPath = "D:\\Nam4\\JavaNangCao\\WebsiteForum\\src\\main\\webapp\\storage";
+            }
+
             
             // Tạo thư mục nếu chưa tồn tại
             File uploadDir = new File(uploadPath);

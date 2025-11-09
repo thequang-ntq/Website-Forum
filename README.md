@@ -76,8 +76,8 @@
 
 - Cài: Java JDK 23, Eclipse IDE 2024-12, Tomcat v9.0 Server, Ecipse Enterprise Java and Web Developer Tools 3.36 (Trong Eclipse Marketplace), SQL Server 2014.
 - Bước 1: Tải file zip trên link github về.
-- Bước 2: Giải nén file Zip trong thư mục nào đó trên máy.
-- Bước 3: Mở phần trong file zip trong Ecipse IDE.
+- Bước 2: Tạo Dynamic Web Project tên: WebsiteForum trong Eclipse IDE, giải nén file zip vào trong thư mục project WebsiteForum vừa tạo.
+- Bước 3: Mở project WebsiteForum vừa giải nén file zip ở trong, trong Ecipse IDE.
 - Bước 4: Mở Java Resources - src/main/java - Controller.DanhNhap - DangNhapController.java.
 - Bước 5: Nhấn chạy (Nút Play màu xanh lá cây) trong Ecipse IDE - Chọn Tomcat 9 - Finish. 
 - Bước 6: Ecipse IDE tự động hiển thị Website trên URL: http://localhost:8080/WebsiteForum/DangNhapController của trình duyệt Web mặc định.

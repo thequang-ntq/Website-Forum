@@ -42,5 +42,5 @@ public class DBConfig {
         }
         return instance;
     }
-}
 
+}
