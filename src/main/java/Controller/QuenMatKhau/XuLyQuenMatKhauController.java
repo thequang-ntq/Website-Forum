@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import Modal.TaiKhoan.TaiKhoanBO;
+import Support.md5;
 
 /**
  * Servlet implementation class XuLyQuenMatKhauController
@@ -84,8 +85,13 @@ public class XuLyQuenMatKhauController extends HttpServlet {
 		
 		// Xử lý quên mật khẩu
 		try {
+			
+			// MÃ HÓA mật khẩu người dùng nhập
+		    String encryptedPass1 = md5.ecrypt(matKhauMoi.trim());
+		    String encryptedPass2 = md5.ecrypt(nhapLaiMatKhauMoi.trim());
+		    
 			// Gọi hàm forgetPassDB từ TaiKhoanBO
-			tkbo.forgetPassDB(tenDangNhap.trim(), matKhauMoi.trim(), nhapLaiMatKhauMoi.trim());
+			tkbo.forgetPassDB(tenDangNhap.trim(), encryptedPass1, encryptedPass2);
 			
 			// Đổi mật khẩu thành công
 			// Lưu thông báo thành công vào session

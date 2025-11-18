@@ -1,3 +1,10 @@
+<%@page import="nl.captcha.noise.CurvedLineNoiseProducer"%>
+<%@page import="nl.captcha.backgrounds.GradiatedBackgroundProducer"%>
+<%@page import="java.awt.Color"%>
+<%@page import="java.awt.Font"%>
+<%@page import="java.util.Arrays"%>
+<%@page import="nl.captcha.text.renderer.DefaultWordRenderer"%>
+<%@page import="nl.captcha.Captcha"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="vi">
@@ -12,6 +19,27 @@
 	<script src="${pageContext.request.contextPath}/pages/login_page/script.js"></script>
 </head>
 <body>
+	<%
+		// Kiểm tra số lần đăng nhập sai
+		Integer loginAttempts = (Integer) session.getAttribute("loginAttempts");
+		if (loginAttempts == null) {
+			loginAttempts = 0;
+		}
+		boolean showCaptcha = loginAttempts >= 3;
+		
+		// Tạo captcha nếu cần
+		if (showCaptcha) {
+			Captcha captcha = new Captcha.Builder(200, 60)
+				.addText(new DefaultWordRenderer(
+					Arrays.asList(new Color(0, 0, 0)),
+					Arrays.asList(new Font("Arial", Font.BOLD, 40))
+				))
+				.addBackground(new GradiatedBackgroundProducer())
+				.addNoise(new CurvedLineNoiseProducer())
+				.build();
+			session.setAttribute(Captcha.NAME, captcha);
+		}
+	%>
 	<div class="login-container">
 		<div class="login-card">
 			<!-- Logo/Brand Section -->
@@ -22,6 +50,16 @@
 				<h2 class="brand-title">Website Forum</h2>
 				<p class="text-muted">Đăng nhập để tiếp tục</p>
 			</div>
+			
+			<!-- Hiển thị cảnh báo số lần đăng nhập -->
+	        <% if(showCaptcha) { %>
+	        <div class="text-center">
+	        	<span class="warning-badge">
+	        		<i class="bi bi-exclamation-triangle-fill"></i> 
+	        		Đã đăng nhập sai <%= loginAttempts %> lần!
+	        	</span>
+	        </div>
+	        <% } %>
 			
 			<!-- Success DangKy -->
 			<% String success = (String) session.getAttribute("successDangKy"); %>
@@ -124,7 +162,42 @@
 						} 
 					%>
 				</div>
-
+					
+				<!-- Hiển thị Captcha khi đăng nhập sai >= 3 lần -->
+	            <% if(showCaptcha) { %>
+		            <div class="captcha-container">
+		                <label class="form-label fw-bold text-center d-block mb-2">
+		                	<i class="bi bi-shield-lock-fill text-danger"></i> 
+		                	Xác thực bảo mật
+		                </label>
+		                <div class="d-flex align-items-center justify-content-center mb-3">
+		                    <img src="<%= request.getContextPath() %>/CaptchaImage.jpg" 
+		                         alt="Captcha" 
+		                         class="captcha-image"
+		                         id="captchaImage"/>
+		                    <button type="button" 
+		                            class="btn btn-link refresh-captcha ms-2" 
+		                            onclick="refreshCaptcha()"
+		                            title="Tải lại Captcha">
+		                        <i class="bi bi-arrow-clockwise"></i>
+		                    </button>
+		                </div>
+		                <input
+		                    name="captcha"
+		                    type="text"
+		                    class="form-control captcha-input"
+		                    required
+		                    placeholder="Nhập mã xác thực"
+		                    autocomplete="off"
+		                    maxlength="6"
+		                />
+		                <small class="text-muted d-block text-center mt-2">
+		                	<i class="bi bi-info-circle"></i> 
+		                	Nhập đúng mã trong hình để tiếp tục
+		                </small>
+		            </div>
+	            <% } %>	
+					
 				<!-- Remember Me & Forgot Password -->
 				<div class="d-flex justify-content-between align-items-center mb-4">
 					<div class="form-check">

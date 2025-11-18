@@ -11,6 +11,7 @@ import javax.servlet.http.HttpSession;
 
 import Modal.TaiKhoan.TaiKhoan;
 import Modal.TaiKhoan.TaiKhoanBO;
+import Support.md5;
 
 /**
  * Servlet implementation class XuLyDangKyController
@@ -85,6 +86,10 @@ public class XuLyDangKyController extends HttpServlet {
 		
 		// Xử lý đăng ký
 		try {
+			
+			// MÃ HÓA mật khẩu người dùng nhập vào để so sánh
+		    String encryptedPass = md5.ecrypt(matKhau.trim());
+		    
 			// Gọi hàm checkRegisterDB từ TaiKhoanBO
 			TaiKhoan tk = tkbo.checkRegisterDB(tenDangNhap.trim());
 			
@@ -98,7 +103,7 @@ public class XuLyDangKyController extends HttpServlet {
 				response.sendRedirect(request.getContextPath() + "/DangKyController");
 			} else {
 				// Đăng ký thành công - thêm tài khoản vào database
-				tkbo.createDB(tenDangNhap.trim(), matKhau.trim(), "User");
+				tkbo.createDB(tenDangNhap.trim(), encryptedPass, "User");
 				
 				// Lưu thông báo thành công vào session
 				session.setAttribute("successDangKy", "Đăng ký tài khoản thành công! Vui lòng đăng nhập.");

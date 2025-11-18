@@ -418,10 +418,12 @@ GO
 IF NOT EXISTS (SELECT * FROM TaiKhoan)
 BEGIN
 	INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Quyen)
-	VALUES	(N'admin1', N'mkadmin', N'Admin'),
-			(N'user1', N'mkuser', N'User');
+	VALUES	(N'admin1', N'40e699e50eb956bec37b3426288ad1d2', N'Admin'),
+			(N'user1', N'9e4ce44914c3de695137a377f3bb9f56', N'User'),
+			(N'admin2', N'40e699e50eb956bec37b3426288ad1d2', N'Admin');
 END
 GO
+
 
 IF NOT EXISTS (SELECT * FROM TheLoai)
 BEGIN

@@ -10,6 +10,7 @@ import javax.servlet.http.HttpSession;
 
 import Modal.TaiKhoan.TaiKhoan;
 import Modal.TaiKhoan.TaiKhoanBO;
+import Support.md5;
 
 @WebServlet("/ThongTinCaNhanController")
 public class ThongTinCaNhanController extends HttpServlet {
@@ -73,8 +74,12 @@ public class ThongTinCaNhanController extends HttpServlet {
                         throw new Exception("Xác nhận mật khẩu mới không khớp!");
                     }
 
+                    // Mã hóa
+                    String encryptedPass1 = md5.ecrypt(matKhauCu.trim());
+                    String encryptedPass2 = md5.ecrypt(matKhauMoi.trim());
+                    
                     // Đổi mật khẩu
-                    tkbo.changePassDB(account, matKhauCu, matKhauMoi);
+                    tkbo.changePassDB(account, encryptedPass1, encryptedPass2);
 
                     // Thông báo thành công
                     request.setAttribute("message", "Đổi mật khẩu thành công!");
