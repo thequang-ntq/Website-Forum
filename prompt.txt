@@ -1,0 +1,3440 @@
+* Mẫu các file của project mà cần tham khảo cách upfile, xóa file khi không cần nữa hoặc khi sửa:
+- xulysachAdminController.java:
+package Controller.admin.sach;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.Date;
+import java.util.List;
+import java.util.UUID;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+
+import Modal.sach.sach;
+import Modal.sach.sachbo;
+import Modal.taikhoan.taikhoan;
+
+@WebServlet("/xulysachAdminController")
+@MultipartConfig
+public class xulysachAdminController extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+       
+    public xulysachAdminController() {
+        super();
+    }
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		try {
+    		request.setCharacterEncoding("utf-8");
+    		response.setCharacterEncoding("utf-8");
+    		HttpSession session = request.getSession();
+    		
+    		taikhoan tk = (taikhoan) session.getAttribute("mytk");
+    		if(tk == null || !tk.isQuyen()) {
+    	    	session.setAttribute("errorDangNhapAdmin", "Bạn không có quyền truy cập");
+    	        response.sendRedirect("dangnhapAdminController");
+    	        return;
+    		}
+    		
+    		if(ServletFileUpload.isMultipartContent(request)) {
+    			DiskFileItemFactory factory = new DiskFileItemFactory();
+    			ServletFileUpload upload = new ServletFileUpload(factory);
+    			
+    			sachbo sbo = new sachbo();
+    			String action = "";
+    			String masach = "";
+    			String tensach = "";
+    			String tacgia = "";
+    			long soluong = 0;
+    			long gia = 0;
+    			String maloai = "";
+    			String sotap = "";
+    			String anh = "";
+    			String anhCu = ""; // Lưu đường dẫn ảnh cũ
+    			Date ngaynhap = null;
+    			boolean hasNewImage = false; // Flag kiểm tra có upload ảnh mới không
+    			
+    			List<FileItem> items = upload.parseRequest(request);
+    			
+    			// Bước 1: Đọc tất cả các field trước
+    			for(FileItem item : items) {
+    				if(item.isFormField()) {
+    					String fieldName = item.getFieldName();
+    					String fieldValue = item.getString("UTF-8");
+    					
+    					if("action".equals(fieldName)) action = fieldValue;
+    					else if("txtmasach".equals(fieldName)) masach = fieldValue;
+    					else if("txttensach".equals(fieldName)) tensach = fieldValue;
+    					else if("txttacgia".equals(fieldName)) tacgia = fieldValue;
+    					else if("txtsoluong".equals(fieldName)) soluong = Long.parseLong(fieldValue);
+    					else if("txtgia".equals(fieldName)) gia = Long.parseLong(fieldValue);
+    					else if("txtmaloai".equals(fieldName)) maloai = fieldValue;
+    					else if("txtsotap".equals(fieldName)) sotap = fieldValue;
+    					else if("txtngaynhap".equals(fieldName)) ngaynhap = Date.valueOf(fieldValue);
+    				}
+    			}
+    			
+    			// Bước 2: Nếu là SỬA, lấy thông tin ảnh cũ
+    			if("sua".equals(action)) {
+    				try {
+    					sachbo tempSbo = new sachbo();
+    					for(sach s : tempSbo.getsachdb()) {
+    						if(s.getMasach().equals(masach)) {
+    							anhCu = s.getAnh();
+    							break;
+    						}
+    					}
+    				} catch(Exception e) {
+    					e.printStackTrace();
+    				}
+    			}
+    			
+    			// Bước 3: Xử lý file upload (nếu có)
+    			for(FileItem item : items) {
+    				if(!item.isFormField() && !item.getName().isEmpty()) {
+    					hasNewImage = true;
+    					
+    					// Tạo thư mục nếu chưa có
+    					String dirUrl = request.getServletContext().getRealPath("") + "files";
+    					File dir = new File(dirUrl);
+    					if(!dir.exists()) dir.mkdir();
+    					
+    					// Tạo tên file UNIQUE để tránh trùng lặp
+    					String originalFileName = new File(item.getName()).getName();
+    					String fileExtension = "";
+    					int lastDotIndex = originalFileName.lastIndexOf('.');
+    					if(lastDotIndex > 0) {
+    						fileExtension = originalFileName.substring(lastDotIndex);
+    					}
+    					
+    					// Tạo tên file mới: UUID_originalname
+    					String uniqueFileName = UUID.randomUUID().toString().substring(0, 12) + "_" + originalFileName;
+    					String filePath = dirUrl + File.separator + uniqueFileName;
+    					File file = new File(filePath);
+    					
+    					// Lưu file mới
+    					item.write(file);
+    					anh = "files/" + uniqueFileName;
+    					
+    					// Xóa ảnh cũ nếu đang SỬA và có ảnh cũ
+    					if("sua".equals(action) && anhCu != null && !anhCu.isEmpty()) {
+    						String oldFilePath = request.getServletContext().getRealPath("") + anhCu;
+    						File oldFile = new File(oldFilePath);
+    						if(oldFile.exists()) {
+    							boolean deleted = oldFile.delete();
+    							if(deleted) {
+    								System.out.println("Đã xóa ảnh cũ: " + anhCu);
+    							}
+    						}
+    					}
+    				}
+    			}
+    			
+    			// Bước 4: Nếu SỬA mà KHÔNG upload ảnh mới, giữ ảnh cũ
+    			if("sua".equals(action) && !hasNewImage) {
+    				anh = anhCu;
+    			}
+    			
+    			// Bước 5: Lưu vào database
+    			try {
+    				if("them".equals(action)) {
+    					sbo.themsachdb(masach, tensach, soluong, gia, maloai, sotap, anh, ngaynhap, tacgia);
+    					session.setAttribute("successSach", "Thêm sách thành công!");
+    				}
+    				else if("sua".equals(action)) {
+    					sbo.suasachdb(masach, tensach, soluong, gia, maloai, sotap, anh, ngaynhap, tacgia);
+    					session.setAttribute("successSach", "Cập nhật sách thành công!");
+    				}
+    			} catch(Exception e) {
+    				session.setAttribute("errorSach", e.getMessage());
+    			}
+    			
+    			response.sendRedirect("sachAdminController");
+    		}
+    	}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		doGet(request, response);
+	}
+}
+- xoasachAdminController.java:
+package Controller.admin.sach;
+
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import Modal.sach.sachbo;
+import Modal.taikhoan.taikhoan;
+
+@WebServlet("/xoasachAdminController")
+public class xoasachAdminController extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+       
+    public xoasachAdminController() {
+        super();
+    }
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		try {
+    		request.setCharacterEncoding("utf-8");
+    		response.setCharacterEncoding("utf-8");
+    		HttpSession session = request.getSession();
+    		
+    		taikhoan tk = (taikhoan) session.getAttribute("mytk");
+    		if(tk == null || !tk.isQuyen()) {
+    	    	session.setAttribute("errorDangNhapAdmin", "Bạn không có quyền truy cập");
+    	        response.sendRedirect("dangnhapAdminController");
+    	        return;
+    		}
+    		
+    		String masach = request.getParameter("masach");
+    		
+    		try {
+    			sachbo sbo = new sachbo();
+    			
+    			// Lấy thông tin ảnh trước khi xóa
+    			String anhPath = null;
+    			for(Modal.sach.sach s : sbo.getsachdb()) {
+    				if(s.getMasach().equals(masach)) {
+    					anhPath = s.getAnh();
+    					break;
+    				}
+    			}
+    			
+    			// Xóa sách trong DB
+    			sbo.xoasachdb(masach);
+    			
+    			// Xóa file ảnh (nếu có)
+    			if(anhPath != null && !anhPath.isEmpty()) {
+    				String filePath = request.getServletContext().getRealPath("") + anhPath;
+    				java.io.File file = new java.io.File(filePath);
+    				if(file.exists()) {
+    					boolean deleted = file.delete();
+    					if(deleted) {
+    						System.out.println("Đã xóa file ảnh: " + anhPath);
+    					}
+    				}
+    			}
+    			
+    			session.setAttribute("successSach", "Xóa sách thành công!");
+    		} catch(Exception e) {
+    			session.setAttribute("errorSach", e.getMessage());
+    		}
+    		
+    		response.sendRedirect("sachAdminController");
+    	}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		doGet(request, response);
+	}
+}
+- sachAdmin.jsp:
+<%@page import="Modal.sach.sach"%>
+<%@page import="Modal.sach.sachbo"%>
+<%@page import="Modal.loai.loai"%>
+<%@page import="Modal.loai.loaibo"%>
+<%@page import="Modal.taikhoan.taikhoan"%>
+<%@page import="java.util.ArrayList"%>
+<%@page import="java.text.NumberFormat"%>
+<%@page import="java.util.Locale"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Trang Admin</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<style>
+		.book-img {
+			width: 60px;
+			height: 80px;
+			object-fit: cover;
+			border-radius: 5px;
+		}
+	</style>
+</head>
+<body>
+	<%
+		taikhoan tk = (taikhoan) session.getAttribute("mytk");
+		String tendn = "";
+		if(tk != null) tendn = tk.getTendn();
+		boolean quyen = false;
+		if(tk != null) quyen = tk.isQuyen();
+		
+		// Lấy dữ liệu
+		sachbo sbo = new sachbo();
+		loaibo lbo = new loaibo();
+		ArrayList<sach> dsSach = sbo.getsachdb();
+		ArrayList<loai> dsLoai = lbo.getloaidb();
+		
+		// Tìm kiếm
+		String searchSach = request.getParameter("searchSach");
+		if(searchSach != null && !searchSach.trim().isEmpty()) {
+			dsSach = sbo.tim(searchSach);
+		}
+		
+		// Phân trang
+		int pageSize = 9;
+		int currentPage = 1;
+		String pageParam = request.getParameter("page");
+		if(pageParam != null) {
+			try {
+				currentPage = Integer.parseInt(pageParam);
+			} catch(Exception e) {}
+		}
+		
+		int totalItems = dsSach.size();
+		int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+		int startIndex = (currentPage - 1) * pageSize;
+		int endIndex = Math.min(startIndex + pageSize, totalItems);
+		
+		ArrayList<sach> dsSachPage = new ArrayList<>();
+		for(int i = startIndex; i < endIndex; i++) {
+			dsSachPage.add(dsSach.get(i));
+		}
+		
+		// Thông báo
+		String successMsg = (String) session.getAttribute("successSach");
+		String errorMsg = (String) session.getAttribute("errorSach");
+		session.removeAttribute("successSach");
+		session.removeAttribute("errorSach");
+		
+		NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
+	%>
+	
+	<nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="tcAdminController"
+			onmouseover="this.style.color='#0D6EFD';"
+		    onmouseout="this.style.color='#FFFFFF';">
+				Công ty sách ABC
+			</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="collapsibleNavbar">
+				<ul class="navbar-nav">
+					<li class="nav-item">
+						<a class="nav-link" href="tcAdminController"
+						onmouseover="this.style.background='rgb(235, 235, 235)'; this.style.color='black';"
+						onmouseout="this.style.background='#212529'; this.style.color='#FFFFFF8C';">
+						 	Trang chủ
+						 </a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="loaiAdminController"
+						style="display:<%= (session.getAttribute("mytk") == null || quyen != true) ? "none !important" : "block" %>;"
+						onmouseover="this.style.background='rgb(235, 235, 235)'; this.style.color='black';"
+						onmouseout="this.style.background='#212529'; this.style.color='#FFFFFF8C';">  
+						 	Quản lý loại
+						 </a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="sachAdminController"
+						style="background: rgb(235, 235, 235); color: black; display:<%= (session.getAttribute("mytk") == null || quyen != true) ? "none !important" : "block" %>;"
+						onmouseover="this.style.background='#0D6EFD'; this.style.color='#FFFFFF';"
+						onmouseout="this.style.background='rgb(235, 235, 235)'; this.style.color='black';">
+						 	Quản lý sách
+						 </a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="xacnhandonhangAdminController"
+						style="display:<%= (session.getAttribute("mytk") == null || quyen != true) ? "none !important" : "block" %>;"
+						onmouseover="this.style.background='rgb(235, 235, 235)'; this.style.color='black';"
+						onmouseout="this.style.background='#212529'; this.style.color='#FFFFFF8C';">  
+						 	Xác nhận đơn hàng
+						 </a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="danhsachdonhangAdminController"
+						style="display:<%= (session.getAttribute("mytk") == null) ? "none !important" : "block" %>;"
+						onmouseover="this.style.background='rgb(235, 235, 235)'; this.style.color='black';"
+						onmouseout="this.style.background='#212529'; this.style.color='#FFFFFF8C';">
+						 	Danh sách đơn hàng
+						 </a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="dangxuatAdminController"
+						style="display:<%= (session.getAttribute("mytk") == null) ? "none !important" : "block" %>;"
+						onmouseover="this.style.background='rgb(235, 235, 235)'; this.style.color='black';"
+						onmouseout="this.style.background='#212529'; this.style.color='#FFFFFF8C';">
+							Đăng xuất
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#"
+						style="display:<%= (session.getAttribute("mytk") == null) ? "none !important" : "block" %>;"
+						onmouseover="this.style.background='rgb(235, 235, 235)'; this.style.color='black';"
+						onmouseout="this.style.background='#212529'; this.style.color='#FFFFFF8C';">
+							Xin chào: <%= tendn %>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+	
+	<div class="container-fluid mt-4">
+		<!-- Thông báo -->
+		<% if(successMsg != null) { %>
+		<div class="alert alert-success alert-dismissible fade show">
+			<i class="bi bi-check-circle-fill"></i> <%= successMsg %>
+			<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+		</div>
+		<% } %>
+		<% if(errorMsg != null) { %>
+		<div class="alert alert-danger alert-dismissible fade show">
+			<i class="bi bi-x-circle-fill"></i> <%= errorMsg %>
+			<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+		</div>
+		<% } %>
+		
+		<div class="card shadow">
+			<div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+				<h5 class="mb-0"><i class="bi bi-book-fill"></i> Quản lý sách</h5>
+				<button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#themModal">
+					<i class="bi bi-plus-circle"></i> Thêm sách
+				</button>
+			</div>
+			<div class="card-body">
+				<!-- Tìm kiếm -->
+				<form method="get" class="mb-3">
+					<div class="input-group">
+						<input type="text" class="form-control" name="searchSach" 
+							placeholder="Tìm kiếm theo tên sách, tác giả, mã loại..." 
+							value="<%= searchSach != null ? searchSach : "" %>">
+						<button class="btn btn-primary" type="submit">
+							<i class="bi bi-search"></i> Tìm kiếm
+						</button>
+						<% if(searchSach != null && !searchSach.trim().isEmpty()) { %>
+						<a href="sachAdminController" class="btn btn-secondary">
+							<i class="bi bi-x-circle"></i> Xóa
+						</a>
+						<% } %>
+					</div>
+				</form>
+				
+				<div class="table-responsive">
+					<table class="table table-hover table-striped">
+						<thead class="table-dark">
+							<tr>
+								<th>Ảnh</th>
+								<th>Mã sách</th>
+								<th>Tên sách</th>
+								<th>Tác giả</th>
+								<th>Số lượng</th>
+								<th>Giá</th>
+								<th>Loại</th>
+								<th class="text-center">Thao tác</th>
+							</tr>
+						</thead>
+						<tbody>
+							<% 
+							if(dsSachPage.isEmpty()) {
+							%>
+							<tr>
+								<td colspan="8" class="text-center text-muted">
+									<i class="bi bi-inbox"></i> Không có dữ liệu
+								</td>
+							</tr>
+							<%
+							} else {
+								for(sach s : dsSachPage) {
+							%>
+							<tr>
+								<td>
+									<% if(s.getAnh() != null && !s.getAnh().isEmpty()) { %>
+									<img src="<%= s.getAnh() %>" class="book-img" alt="Ảnh sách">
+									<% } else { %>
+									<div class="book-img bg-secondary d-flex align-items-center justify-content-center">
+										<i class="bi bi-image text-white"></i>
+									</div>
+									<% } %>
+								</td>
+								<td><%= s.getMasach() %></td>
+								<td><%= s.getTensach() %></td>
+								<td><%= s.getTacgia() %></td>
+								<td><%= s.getSoluong() %></td>
+								<td><%= nf.format(s.getGia()) %> VNĐ</td>
+								<td><%= sbo.timtentheoloai(s.getMaloai()) %></td>
+								<td class="text-center">
+									<button class="btn btn-sm btn-warning mb-1" 
+										onclick="openSuaModal('<%= s.getMasach() %>', '<%= s.getTensach() %>', '<%= s.getTacgia() %>', <%= s.getSoluong() %>, <%= s.getGia() %>, '<%= s.getMaloai() %>', '<%= s.getSotap() %>', '<%= s.getNgayNhap() %>', '<%= s.getAnh() != null ? s.getAnh() : "" %>')">
+										<i class="bi bi-pencil-square"></i> Sửa
+									</button>
+									<button class="btn btn-sm btn-danger mb-1" 
+										onclick="confirmXoa('<%= s.getMasach() %>')">
+										<i class="bi bi-trash"></i> Xóa
+									</button>
+								</td>
+							</tr>
+							<%
+								}
+							}
+							%>
+						</tbody>
+					</table>
+				</div>
+				
+				<!-- Phân trang -->
+				<% if(totalPages > 1) { %>
+				<nav>
+					<ul class="pagination justify-content-center">
+						<li class="page-item <%= currentPage == 1 ? "disabled" : "" %>">
+							<a class="page-link" href="?page=<%= currentPage - 1 %><%= searchSach != null ? "&searchSach=" + searchSach : "" %>">
+								<i class="bi bi-chevron-left"></i>
+							</a>
+						</li>
+						<% for(int i = 1; i <= totalPages; i++) { %>
+						<li class="page-item <%= i == currentPage ? "active" : "" %>">
+							<a class="page-link" href="?page=<%= i %><%= searchSach != null ? "&searchSach=" + searchSach : "" %>"><%= i %></a>
+						</li>
+						<% } %>
+						<li class="page-item <%= currentPage == totalPages ? "disabled" : "" %>">
+							<a class="page-link" href="?page=<%= currentPage + 1 %><%= searchSach != null ? "&searchSach=" + searchSach : "" %>">
+								<i class="bi bi-chevron-right"></i>
+							</a>
+						</li>
+					</ul>
+				</nav>
+				<% } %>
+			</div>
+		</div>
+	</div>
+	
+	<!-- Modal thêm -->
+	<div class="modal fade" id="themModal" tabindex="-1">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<form action="xulysachAdminController" method="post" enctype="multipart/form-data">
+					<input type="hidden" name="action" value="them">
+					<div class="modal-header bg-success text-white">
+						<h5 class="modal-title"><i class="bi bi-plus-circle"></i> Thêm sách mới</h5>
+						<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Mã sách <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="txtmasach" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Tên sách <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="txttensach" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Tác giả <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="txttacgia" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Số lượng <span class="text-danger">*</span></label>
+								<input type="number" class="form-control" name="txtsoluong" min="0" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Giá <span class="text-danger">*</span></label>
+								<input type="number" class="form-control" name="txtgia" min="0" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Tên loại <span class="text-danger">*</span></label>
+								<select class="form-select" name="txtmaloai" required>
+									<option value="">-- Chọn loại --</option>
+									<% for(loai l : dsLoai) { %>
+									<option value="<%= l.getMaloai() %>"><%= l.getTenloai() %></option>
+									<% } %>
+								</select>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Số tập</label>
+								<input type="text" class="form-control" name="txtsotap">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Ngày nhập <span class="text-danger">*</span></label>
+								<input type="date" class="form-control" name="txtngaynhap" required>
+							</div>
+							<div class="col-12 mb-3">
+								<label class="form-label">Ảnh</label>
+								<input type="file" class="form-control" name="fileanh" accept="image/*">
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+							<i class="bi bi-x-circle"></i> Hủy
+						</button>
+						<button type="submit" class="btn btn-success">
+							<i class="bi bi-check-circle"></i> Thêm
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	
+	<!-- Modal sửa -->
+	<div class="modal fade" id="suaModal" tabindex="-1">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<form action="xulysachAdminController" method="post" enctype="multipart/form-data">
+					<input type="hidden" name="action" value="sua">
+					<input type="hidden" name="txtmasach" id="suaMasach">
+					<div class="modal-header bg-warning">
+						<h5 class="modal-title"><i class="bi bi-pencil-square"></i> Sửa sách</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Mã sách</label>
+								<input type="text" class="form-control" id="suaMasachDisplay" readonly>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Tên sách <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="txttensach" id="suaTensach" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Tác giả <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="txttacgia" id="suaTacgia" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Số lượng <span class="text-danger">*</span></label>
+								<input type="number" class="form-control" name="txtsoluong" id="suaSoluong" min="0" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Giá <span class="text-danger">*</span></label>
+								<input type="number" class="form-control" name="txtgia" id="suaGia" min="0" required>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Tên loại <span class="text-danger">*</span></label>
+								<select class="form-select" name="txtmaloai" id="suaMaloai" required>
+									<option value="">-- Chọn loại --</option>
+									<% for(loai l : dsLoai) { %>
+									<option value="<%= l.getMaloai() %>"><%= l.getTenloai() %></option>
+									<% } %>
+								</select>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Số tập</label>
+								<input type="text" class="form-control" name="txtsotap" id="suaSotap">
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Ngày nhập <span class="text-danger">*</span></label>
+								<input type="date" class="form-control" name="txtngaynhap" id="suaNgaynhap" required>
+							</div>
+							<div class="col-12 mb-3">
+								<label class="form-label">Ảnh hiện tại</label>
+								<div id="anhHienTai"></div>
+							</div>
+							<div class="col-12 mb-3">
+								<label class="form-label">Ảnh mới (để trống nếu không đổi)</label>
+								<input type="file" class="form-control" name="fileanh" accept="image/*">
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+							<i class="bi bi-x-circle"></i> Hủy
+						</button>
+						<button type="submit" class="btn btn-warning">
+							<i class="bi bi-check-circle"></i> Cập nhật
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		function openSuaModal(masach, tensach, tacgia, soluong, gia, maloai, sotap, ngaynhap, anh) {
+			document.getElementById('suaMasach').value = masach;
+			document.getElementById('suaMasachDisplay').value = masach;
+			document.getElementById('suaTensach').value = tensach;
+			document.getElementById('suaTacgia').value = tacgia;
+			document.getElementById('suaSoluong').value = soluong;
+			document.getElementById('suaGia').value = gia;
+			document.getElementById('suaMaloai').value = maloai;
+			document.getElementById('suaSotap').value = sotap;
+			document.getElementById('suaNgaynhap').value = ngaynhap;
+			
+			var anhDiv = document.getElementById('anhHienTai');
+			if(anh && anh !== '') {
+				anhDiv.innerHTML = '<img src="' + anh + '" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">';
+			} else {
+				anhDiv.innerHTML = '<p class="text-muted">Chưa có ảnh</p>';
+			}
+			
+			new bootstrap.Modal(document.getElementById('suaModal')).show();
+		}
+		
+		function confirmXoa(masach) {
+			if(confirm('Bạn có chắc chắn muốn xóa sách này?')) {
+				window.location.href = 'xoasachAdminController?masach=' + masach;
+			}
+		}
+	</script>
+</body>
+</html>
+- sachAdminController.java:
+package Controller.admin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+
+import Modal.taikhoan.taikhoan;
+
+/**
+ * Servlet implementation class sachAdminController
+ */
+@WebServlet("/sachAdminController")
+public class sachAdminController extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+       
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public sachAdminController() {
+        super();
+        // TODO Auto-generated constructor stub
+    }
+
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {		
+		try {
+    		request.setCharacterEncoding("utf-8");
+    		response.setCharacterEncoding("utf-8");
+    		HttpSession session = request.getSession();
+    		
+    		taikhoan tk = (taikhoan) session.getAttribute("mytk");
+    		//Chưa đăng nhập, chuyển về trang đăng nhập
+    		if(tk == null) {
+    	    	session.setAttribute("errorDangNhapAdmin", "Xin hãy đăng nhập trước khi vào trang Admin");
+    	        response.sendRedirect("dangnhapAdminController");
+    	        return;
+    		}
+    		
+    		
+    		request.getRequestDispatcher("/admin/sachAdmin.jsp").forward(request, response);
+    	}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+		doGet(request, response);
+	}
+
+}
+* Các file của project chính mà project chính này cần cập nhật:
+- script SQL Server 2014:
+USE [master]
+GO
+/****** Object:  Database [22T1020362_Forum]    Script Date: 04/12/2025 11:34:15 SA ******/
+CREATE DATABASE [22T1020362_Forum]
+ CONTAINMENT = NONE
+ ON  PRIMARY 
+( NAME = N'22T1020362_Forum', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL12.MSSQLSERVER\MSSQL\DATA\22T1020362_Forum.mdf' , SIZE = 4096KB , MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB )
+ LOG ON 
+( NAME = N'22T1020362_Forum_log', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL12.MSSQLSERVER\MSSQL\DATA\22T1020362_Forum_log.ldf' , SIZE = 2048KB , MAXSIZE = 2048GB , FILEGROWTH = 10%)
+GO
+ALTER DATABASE [22T1020362_Forum] SET COMPATIBILITY_LEVEL = 120
+GO
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [22T1020362_Forum].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+GO
+ALTER DATABASE [22T1020362_Forum] SET ANSI_NULL_DEFAULT OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET ANSI_NULLS OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET ANSI_PADDING OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET ANSI_WARNINGS OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET ARITHABORT OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET AUTO_CLOSE OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET AUTO_SHRINK OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET AUTO_UPDATE_STATISTICS ON 
+GO
+ALTER DATABASE [22T1020362_Forum] SET CURSOR_CLOSE_ON_COMMIT OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET CURSOR_DEFAULT  GLOBAL 
+GO
+ALTER DATABASE [22T1020362_Forum] SET CONCAT_NULL_YIELDS_NULL OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET NUMERIC_ROUNDABORT OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET QUOTED_IDENTIFIER OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET RECURSIVE_TRIGGERS OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET  DISABLE_BROKER 
+GO
+ALTER DATABASE [22T1020362_Forum] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET DATE_CORRELATION_OPTIMIZATION OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET TRUSTWORTHY OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET PARAMETERIZATION SIMPLE 
+GO
+ALTER DATABASE [22T1020362_Forum] SET READ_COMMITTED_SNAPSHOT OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET HONOR_BROKER_PRIORITY OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET RECOVERY FULL 
+GO
+ALTER DATABASE [22T1020362_Forum] SET  MULTI_USER 
+GO
+ALTER DATABASE [22T1020362_Forum] SET PAGE_VERIFY CHECKSUM  
+GO
+ALTER DATABASE [22T1020362_Forum] SET DB_CHAINING OFF 
+GO
+ALTER DATABASE [22T1020362_Forum] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
+GO
+ALTER DATABASE [22T1020362_Forum] SET TARGET_RECOVERY_TIME = 0 SECONDS 
+GO
+ALTER DATABASE [22T1020362_Forum] SET DELAYED_DURABILITY = DISABLED 
+GO
+EXEC sys.sp_db_vardecimal_storage_format N'22T1020362_Forum', N'ON'
+GO
+USE [22T1020362_Forum]
+GO
+/****** Object:  Table [dbo].[BaiViet]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[BaiViet](
+	[MaBaiViet] [bigint] IDENTITY(1,1) NOT NULL,
+	[TieuDe] [nvarchar](255) NOT NULL,
+	[NoiDung] [nvarchar](max) NOT NULL,
+	[Url] [nvarchar](255) NULL,
+	[TaiKhoanTao] [nvarchar](150) NOT NULL,
+	[MaTheLoai] [int] NOT NULL,
+	[DanhGia] [decimal](5, 2) NULL,
+	[TrangThai] [nvarchar](50) NULL,
+	[ThoiDiemTao] [datetime] NULL,
+	[ThoiDiemCapNhat] [datetime] NULL,
+ CONSTRAINT [pk_baiviet] PRIMARY KEY CLUSTERED 
+(
+	[MaBaiViet] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[BinhLuan]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[BinhLuan](
+	[MaBinhLuan] [bigint] IDENTITY(1,1) NOT NULL,
+	[TieuDe] [nvarchar](255) NULL,
+	[NoiDung] [nvarchar](max) NOT NULL,
+	[Url] [nvarchar](255) NULL,
+	[TaiKhoanTao] [nvarchar](150) NOT NULL,
+	[MaBaiViet] [bigint] NOT NULL,
+	[SoLuotThich] [int] NULL,
+	[TrangThai] [nvarchar](50) NULL,
+	[ThoiDiemTao] [datetime] NULL,
+	[ThoiDiemCapNhat] [datetime] NULL,
+ CONSTRAINT [pk_binhluan] PRIMARY KEY CLUSTERED 
+(
+	[MaBinhLuan] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[DanhGiaBaiViet]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DanhGiaBaiViet](
+	[MaDanhGia] [bigint] IDENTITY(1,1) NOT NULL,
+	[MaBaiViet] [bigint] NOT NULL,
+	[TenDangNhap] [nvarchar](150) NOT NULL,
+	[Diem] [decimal](5, 2) NOT NULL,
+	[ThoiDiemDanhGia] [datetime] NULL,
+ CONSTRAINT [pk_danhgiabaiviet] PRIMARY KEY CLUSTERED 
+(
+	[MaDanhGia] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[LuotThichBinhLuan]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[LuotThichBinhLuan](
+	[MaLuotThich] [bigint] IDENTITY(1,1) NOT NULL,
+	[MaBinhLuan] [bigint] NOT NULL,
+	[TenDangNhap] [nvarchar](150) NOT NULL,
+	[ThoiDiemThich] [datetime] NULL,
+ CONSTRAINT [pk_luotthichbinhluan] PRIMARY KEY CLUSTERED 
+(
+	[MaLuotThich] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[TaiKhoan]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TaiKhoan](
+	[TenDangNhap] [nvarchar](150) NOT NULL,
+	[MatKhau] [nvarchar](255) NOT NULL,
+	[Quyen] [nvarchar](50) NULL,
+	[TrangThai] [nvarchar](50) NULL,
+	[ThoiDiemTao] [datetime] NULL,
+	[ThoiDiemCapNhat] [datetime] NULL,
+ CONSTRAINT [pk_taikhoan] PRIMARY KEY CLUSTERED 
+(
+	[TenDangNhap] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[TheLoai]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TheLoai](
+	[MaTheLoai] [int] IDENTITY(1,1) NOT NULL,
+	[TenTheLoai] [nvarchar](200) NOT NULL,
+	[TrangThai] [nvarchar](50) NULL,
+	[ThoiDiemTao] [datetime] NULL,
+	[ThoiDiemCapNhat] [datetime] NULL,
+ CONSTRAINT [pk_theloai] PRIMARY KEY CLUSTERED 
+(
+	[MaTheLoai] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+SET IDENTITY_INSERT [dbo].[BaiViet] ON 
+
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (1, N'haha', N'ss', N'', N'test', 1, CAST(3.00 AS Decimal(5, 2)), N'Deleted', CAST(N'2025-11-07 21:57:25.510' AS DateTime), CAST(N'2025-11-09 09:04:42.787' AS DateTime))
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (2, N'Bài có ảnh', N'haha', NULL, N'admin1', 1, NULL, N'Active', CAST(N'2025-11-08 08:20:26.207' AS DateTime), NULL)
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (3, N's', N's', NULL, N'admin1', 17, NULL, N'Active', CAST(N'2025-11-08 08:24:08.737' AS DateTime), NULL)
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (4, N'c', N'c', N'storage/7158018a-363d-4dc2-8808-808aee0ffe1b.png', N'admin1', 10, NULL, N'Active', CAST(N'2025-11-08 10:43:02.547' AS DateTime), NULL)
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (5, N'z', N'z', NULL, N'admin1', 14, NULL, N'Active', CAST(N'2025-11-08 10:43:15.707' AS DateTime), NULL)
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (6, N'jjjj', N'nvmvmnv', N'storage/4d14054c-9ece-4561-8e67-d3b2bc29e62c.jpg', N'admin1', 4, NULL, N'Active', CAST(N'2025-11-08 13:44:40.437' AS DateTime), NULL)
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (7, N'sds', N'ds', N'storage/6ad42ac3-7ccd-402a-b8cc-b9cd1f9fd138.jpg', N'admin1', 3, NULL, N'Active', CAST(N'2025-11-09 09:05:11.777' AS DateTime), NULL)
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (8, N'đẹp trai', N'111', N'storage/6197fc72-3633-4204-ba91-a0e84962db65.jpg', N'admin1', 14, NULL, N'Active', CAST(N'2025-11-09 09:09:09.607' AS DateTime), CAST(N'2025-11-09 09:59:20.330' AS DateTime))
+INSERT [dbo].[BaiViet] ([MaBaiViet], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaTheLoai], [DanhGia], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (9, N'Bài đầu tiên của Admin2', N'IT IT IT', N'storage/3fee5106-fe26-4b99-a3d1-10e86cce350c.png', N'admin2', 7, NULL, N'Active', CAST(N'2025-11-24 20:44:52.413' AS DateTime), NULL)
+SET IDENTITY_INSERT [dbo].[BaiViet] OFF
+SET IDENTITY_INSERT [dbo].[BinhLuan] ON 
+
+INSERT [dbo].[BinhLuan] ([MaBinhLuan], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaBaiViet], [SoLuotThich], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (1, N'1', N'1', NULL, N'test', 1, 1, N'Deleted', CAST(N'2025-11-07 21:57:31.503' AS DateTime), CAST(N'2025-11-09 09:04:42.800' AS DateTime))
+INSERT [dbo].[BinhLuan] ([MaBinhLuan], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaBaiViet], [SoLuotThich], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (2, N'2', N'2', NULL, N'admin1', 1, 1, N'Active', CAST(N'2025-11-07 21:57:43.427' AS DateTime), CAST(N'2025-11-07 21:57:43.427' AS DateTime))
+INSERT [dbo].[BinhLuan] ([MaBinhLuan], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaBaiViet], [SoLuotThich], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (3, N'x', N'x', NULL, N'admin1', 2, 0, N'Active', CAST(N'2025-11-08 12:44:34.747' AS DateTime), CAST(N'2025-11-08 12:44:34.763' AS DateTime))
+INSERT [dbo].[BinhLuan] ([MaBinhLuan], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaBaiViet], [SoLuotThich], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (4, N'trôn vn có ảnh', N'trôn vn có ảnh', N'storage/0d1ef565-308e-45d8-9e73-9f219300db25.gif', N'admin1', 2, 0, N'Active', CAST(N'2025-11-08 16:02:58.887' AS DateTime), CAST(N'2025-11-08 16:02:58.903' AS DateTime))
+INSERT [dbo].[BinhLuan] ([MaBinhLuan], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaBaiViet], [SoLuotThich], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (5, N'ta là florentino', N'ta là florentino', N'storage/2519c6f3-ca16-47ce-93e8-868fb79e94ab.png', N'admin1', 2, 0, N'Active', CAST(N'2025-11-08 16:05:12.073' AS DateTime), CAST(N'2025-11-08 16:05:12.090' AS DateTime))
+INSERT [dbo].[BinhLuan] ([MaBinhLuan], [TieuDe], [NoiDung], [Url], [TaiKhoanTao], [MaBaiViet], [SoLuotThich], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (6, N'Thiên Lế ơi cho em theo với.', N'Thiên Lế ơi cho em theo với.', NULL, N'admin1', 3, 2, N'Active', CAST(N'2025-11-14 07:49:27.573' AS DateTime), CAST(N'2025-11-14 07:49:27.617' AS DateTime))
+SET IDENTITY_INSERT [dbo].[BinhLuan] OFF
+SET IDENTITY_INSERT [dbo].[DanhGiaBaiViet] ON 
+
+INSERT [dbo].[DanhGiaBaiViet] ([MaDanhGia], [MaBaiViet], [TenDangNhap], [Diem], [ThoiDiemDanhGia]) VALUES (2, 1, N'admin1', CAST(3.00 AS Decimal(5, 2)), CAST(N'2025-11-07 21:57:46.647' AS DateTime))
+SET IDENTITY_INSERT [dbo].[DanhGiaBaiViet] OFF
+SET IDENTITY_INSERT [dbo].[LuotThichBinhLuan] ON 
+
+INSERT [dbo].[LuotThichBinhLuan] ([MaLuotThich], [MaBinhLuan], [TenDangNhap], [ThoiDiemThich]) VALUES (2, 2, N'admin1', CAST(N'2025-11-07 21:57:44.567' AS DateTime))
+INSERT [dbo].[LuotThichBinhLuan] ([MaLuotThich], [MaBinhLuan], [TenDangNhap], [ThoiDiemThich]) VALUES (3, 1, N'admin1', CAST(N'2025-11-07 21:57:45.090' AS DateTime))
+INSERT [dbo].[LuotThichBinhLuan] ([MaLuotThich], [MaBinhLuan], [TenDangNhap], [ThoiDiemThich]) VALUES (4, 6, N'admin1', CAST(N'2025-11-14 07:49:56.203' AS DateTime))
+INSERT [dbo].[LuotThichBinhLuan] ([MaLuotThich], [MaBinhLuan], [TenDangNhap], [ThoiDiemThich]) VALUES (5, 6, N'user1', CAST(N'2025-11-14 07:51:14.443' AS DateTime))
+SET IDENTITY_INSERT [dbo].[LuotThichBinhLuan] OFF
+INSERT [dbo].[TaiKhoan] ([TenDangNhap], [MatKhau], [Quyen], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (N'admin1', N'40e699e50eb956bec37b3426288ad1d2', N'Admin', N'Active', CAST(N'2025-11-07 21:57:02.010' AS DateTime), CAST(N'2025-11-18 19:30:58.073' AS DateTime))
+INSERT [dbo].[TaiKhoan] ([TenDangNhap], [MatKhau], [Quyen], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (N'admin2', N'40e699e50eb956bec37b3426288ad1d2', N'Admin', N'Active', CAST(N'2025-11-18 17:12:37.683' AS DateTime), NULL)
+INSERT [dbo].[TaiKhoan] ([TenDangNhap], [MatKhau], [Quyen], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (N'haha', N'202cb962ac59075b964b07152d234b70', N'User', N'Active', CAST(N'2025-11-18 19:31:18.063' AS DateTime), NULL)
+INSERT [dbo].[TaiKhoan] ([TenDangNhap], [MatKhau], [Quyen], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (N'test', N'1', N'User', N'Deleted', CAST(N'2025-11-07 21:57:14.933' AS DateTime), CAST(N'2025-11-09 09:04:42.867' AS DateTime))
+INSERT [dbo].[TaiKhoan] ([TenDangNhap], [MatKhau], [Quyen], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (N'user1', N'9e4ce44914c3de695137a377f3bb9f56', N'User', N'Active', CAST(N'2025-11-07 21:57:02.010' AS DateTime), CAST(N'2025-11-18 19:29:33.250' AS DateTime))
+SET IDENTITY_INSERT [dbo].[TheLoai] ON 
+
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (1, N'Công nghệ & Tin học', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), CAST(N'2025-11-08 00:03:25.080' AS DateTime))
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (2, N'Học tập & Kinh nghiệm học', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (3, N'Đời sống & Xã hội', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (4, N'Giải trí & Âm nhạc', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (5, N'Thể thao & Sức khỏe', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (6, N'Khoa học & Công nghệ', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (7, N'Phần mềm & Ứng dụng', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (8, N'Lập trình & Phát triển web', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (9, N'Trò chơi & eSports', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (10, N'Thời trang & Làm đẹp', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (11, N'Ẩm thực & Nấu ăn', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (12, N'Du lịch & Khám phá', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (13, N'Sự kiện & Tin tức', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (14, N'Giao lưu & Kết bạn', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (15, N'Góp ý & Hỏi đáp', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (16, N'Thông báo từ quản trị viên', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (17, N'Khác', N'Active', CAST(N'2025-11-07 21:57:02.020' AS DateTime), NULL)
+INSERT [dbo].[TheLoai] ([MaTheLoai], [TenTheLoai], [TrangThai], [ThoiDiemTao], [ThoiDiemCapNhat]) VALUES (18, N'Tuyệt & Đỉnh', N'Deleted', CAST(N'2025-11-08 00:03:40.753' AS DateTime), CAST(N'2025-11-08 00:03:49.780' AS DateTime))
+SET IDENTITY_INSERT [dbo].[TheLoai] OFF
+SET ANSI_PADDING ON
+
+GO
+/****** Object:  Index [uq_danhgiabaiviet]    Script Date: 04/12/2025 11:34:15 SA ******/
+ALTER TABLE [dbo].[DanhGiaBaiViet] ADD  CONSTRAINT [uq_danhgiabaiviet] UNIQUE NONCLUSTERED 
+(
+	[MaBaiViet] ASC,
+	[TenDangNhap] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+
+GO
+/****** Object:  Index [uq_luotthichbinhluan]    Script Date: 04/12/2025 11:34:15 SA ******/
+ALTER TABLE [dbo].[LuotThichBinhLuan] ADD  CONSTRAINT [uq_luotthichbinhluan] UNIQUE NONCLUSTERED 
+(
+	[MaBinhLuan] ASC,
+	[TenDangNhap] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+
+GO
+/****** Object:  Index [UQ__TaiKhoan__55F68FC094B4B270]    Script Date: 04/12/2025 11:34:15 SA ******/
+ALTER TABLE [dbo].[TaiKhoan] ADD UNIQUE NONCLUSTERED 
+(
+	[TenDangNhap] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+
+GO
+/****** Object:  Index [uq_theloai]    Script Date: 04/12/2025 11:34:15 SA ******/
+ALTER TABLE [dbo].[TheLoai] ADD  CONSTRAINT [uq_theloai] UNIQUE NONCLUSTERED 
+(
+	[TenTheLoai] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[BaiViet] ADD  DEFAULT (N'Active') FOR [TrangThai]
+GO
+ALTER TABLE [dbo].[BaiViet] ADD  DEFAULT (getdate()) FOR [ThoiDiemTao]
+GO
+ALTER TABLE [dbo].[BinhLuan] ADD  DEFAULT ((0)) FOR [SoLuotThich]
+GO
+ALTER TABLE [dbo].[BinhLuan] ADD  DEFAULT (N'Active') FOR [TrangThai]
+GO
+ALTER TABLE [dbo].[BinhLuan] ADD  DEFAULT (getdate()) FOR [ThoiDiemTao]
+GO
+ALTER TABLE [dbo].[DanhGiaBaiViet] ADD  DEFAULT (getdate()) FOR [ThoiDiemDanhGia]
+GO
+ALTER TABLE [dbo].[LuotThichBinhLuan] ADD  DEFAULT (getdate()) FOR [ThoiDiemThich]
+GO
+ALTER TABLE [dbo].[TaiKhoan] ADD  DEFAULT (N'User') FOR [Quyen]
+GO
+ALTER TABLE [dbo].[TaiKhoan] ADD  DEFAULT (N'Active') FOR [TrangThai]
+GO
+ALTER TABLE [dbo].[TaiKhoan] ADD  DEFAULT (getdate()) FOR [ThoiDiemTao]
+GO
+ALTER TABLE [dbo].[TheLoai] ADD  DEFAULT (N'Active') FOR [TrangThai]
+GO
+ALTER TABLE [dbo].[TheLoai] ADD  DEFAULT (getdate()) FOR [ThoiDiemTao]
+GO
+ALTER TABLE [dbo].[BaiViet]  WITH CHECK ADD  CONSTRAINT [fk_baiviet_taikhoan] FOREIGN KEY([TaiKhoanTao])
+REFERENCES [dbo].[TaiKhoan] ([TenDangNhap])
+GO
+ALTER TABLE [dbo].[BaiViet] CHECK CONSTRAINT [fk_baiviet_taikhoan]
+GO
+ALTER TABLE [dbo].[BaiViet]  WITH CHECK ADD  CONSTRAINT [fk_baiviet_theloai] FOREIGN KEY([MaTheLoai])
+REFERENCES [dbo].[TheLoai] ([MaTheLoai])
+GO
+ALTER TABLE [dbo].[BaiViet] CHECK CONSTRAINT [fk_baiviet_theloai]
+GO
+ALTER TABLE [dbo].[BinhLuan]  WITH CHECK ADD  CONSTRAINT [fk_binhluan_baiviet] FOREIGN KEY([MaBaiViet])
+REFERENCES [dbo].[BaiViet] ([MaBaiViet])
+GO
+ALTER TABLE [dbo].[BinhLuan] CHECK CONSTRAINT [fk_binhluan_baiviet]
+GO
+ALTER TABLE [dbo].[BinhLuan]  WITH CHECK ADD  CONSTRAINT [fk_binhluan_taikhoan] FOREIGN KEY([TaiKhoanTao])
+REFERENCES [dbo].[TaiKhoan] ([TenDangNhap])
+GO
+ALTER TABLE [dbo].[BinhLuan] CHECK CONSTRAINT [fk_binhluan_taikhoan]
+GO
+ALTER TABLE [dbo].[DanhGiaBaiViet]  WITH CHECK ADD  CONSTRAINT [fk_danhgiabaiviet_baiviet] FOREIGN KEY([MaBaiViet])
+REFERENCES [dbo].[BaiViet] ([MaBaiViet])
+GO
+ALTER TABLE [dbo].[DanhGiaBaiViet] CHECK CONSTRAINT [fk_danhgiabaiviet_baiviet]
+GO
+ALTER TABLE [dbo].[DanhGiaBaiViet]  WITH CHECK ADD  CONSTRAINT [fk_danhgiabaiviet_taikhoan] FOREIGN KEY([TenDangNhap])
+REFERENCES [dbo].[TaiKhoan] ([TenDangNhap])
+GO
+ALTER TABLE [dbo].[DanhGiaBaiViet] CHECK CONSTRAINT [fk_danhgiabaiviet_taikhoan]
+GO
+ALTER TABLE [dbo].[LuotThichBinhLuan]  WITH CHECK ADD  CONSTRAINT [fk_luotthichbinhluan_binhluan] FOREIGN KEY([MaBinhLuan])
+REFERENCES [dbo].[BinhLuan] ([MaBinhLuan])
+GO
+ALTER TABLE [dbo].[LuotThichBinhLuan] CHECK CONSTRAINT [fk_luotthichbinhluan_binhluan]
+GO
+ALTER TABLE [dbo].[LuotThichBinhLuan]  WITH CHECK ADD  CONSTRAINT [fk_luotthichbinhluan_taikhoan] FOREIGN KEY([TenDangNhap])
+REFERENCES [dbo].[TaiKhoan] ([TenDangNhap])
+GO
+ALTER TABLE [dbo].[LuotThichBinhLuan] CHECK CONSTRAINT [fk_luotthichbinhluan_taikhoan]
+GO
+ALTER TABLE [dbo].[BaiViet]  WITH CHECK ADD CHECK  (([DanhGia]>=(0) AND [DanhGia]<=(5)))
+GO
+ALTER TABLE [dbo].[BaiViet]  WITH CHECK ADD CHECK  (([TrangThai]=N'Hidden' OR [TrangThai]=N'Deleted' OR [TrangThai]=N'Active'))
+GO
+ALTER TABLE [dbo].[BinhLuan]  WITH CHECK ADD CHECK  (([SoLuotThich]>=(0)))
+GO
+ALTER TABLE [dbo].[BinhLuan]  WITH CHECK ADD CHECK  (([TrangThai]=N'Hidden' OR [TrangThai]=N'Deleted' OR [TrangThai]=N'Active'))
+GO
+ALTER TABLE [dbo].[DanhGiaBaiViet]  WITH CHECK ADD CHECK  (([Diem]>=(0) AND [Diem]<=(5)))
+GO
+ALTER TABLE [dbo].[TaiKhoan]  WITH CHECK ADD CHECK  (([Quyen]=N'User' OR [Quyen]=N'Admin'))
+GO
+ALTER TABLE [dbo].[TaiKhoan]  WITH CHECK ADD CHECK  (([TrangThai]=N'Hidden' OR [TrangThai]=N'Deleted' OR [TrangThai]=N'Active'))
+GO
+ALTER TABLE [dbo].[TheLoai]  WITH CHECK ADD CHECK  (([TrangThai]=N'Hidden' OR [TrangThai]=N'Deleted' OR [TrangThai]=N'Active'))
+GO
+/****** Object:  Trigger [dbo].[trg_BaiViet_SoftDelete]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_BaiViet_SoftDelete]
+ON [dbo].[BaiViet]
+INSTEAD OF DELETE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	-- Bình luận
+	UPDATE bl
+	SET bl.TrangThai = N'Deleted',
+		bl.ThoiDiemCapNhat = GETDATE()
+	FROM BinhLuan bl
+	INNER JOIN DELETED d ON bl.MaBaiViet = d.MaBaiViet
+
+	-- Lượt thích
+	DELETE ltbl
+	FROM LuotThichBinhLuan ltbl
+	INNER JOIN BinhLuan bl ON ltbl.MaBinhLuan = bl.MaBinhLuan
+	INNER JOIN DELETED d ON bl.MaBaiViet = d.MaBaiViet
+
+	-- Đánh giá
+	DELETE dgbv
+	FROM DanhGiaBaiViet dgbv
+	INNER JOIN DELETED d ON dgbv.MaBaiViet = d.MaBaiViet
+	
+	-- Xóa mềm bài viết
+    UPDATE bv
+    SET bv.TrangThai = N'Deleted',
+        bv.ThoiDiemCapNhat = GETDATE()
+    FROM BaiViet bv
+	INNER JOIN DELETED d ON bv.MaBaiViet = d.MaBaiViet
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_BaiViet_Update]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_BaiViet_Update]
+ON [dbo].[BaiViet]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Ngăn không cho trigger kích hoạt đệ quy
+    IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    UPDATE bv
+    SET ThoiDiemCapNhat = GETDATE()
+	FROM BaiViet bv
+	INNER JOIN INSERTED i ON bv.MaBaiViet = i.MaBaiViet;
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_BinhLuan_SoftDelete]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_BinhLuan_SoftDelete]
+ON [dbo].[BinhLuan]
+INSTEAD OF DELETE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	-- Lượt thích
+	DELETE ltbl
+	FROM LuotThichBinhLuan ltbl
+	INNER JOIN DELETED d ON ltbl.MaBinhLuan = d.MaBinhLuan
+
+	-- Xóa mềm bình luận
+	UPDATE BinhLuan
+	SET TrangThai = N'Deleted',
+		ThoiDiemCapNhat = GETDATE()
+	WHERE MaBinhLuan IN (SELECT MaBinhLuan FROM DELETED);
+	
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_BinhLuan_Update]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_BinhLuan_Update]
+ON [dbo].[BinhLuan]
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+	IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    UPDATE bl
+    SET TieuDe = 
+        CASE 
+            WHEN LEN(i.NoiDung) <= 50 THEN i.NoiDung
+            ELSE LEFT(i.NoiDung, 50) + N'...'
+        END,
+		ThoiDiemCapNhat = GETDATE()
+    FROM BinhLuan bl
+    INNER JOIN INSERTED i ON bl.MaBinhLuan = i.MaBinhLuan
+    LEFT JOIN DELETED d ON bl.MaBinhLuan = d.MaBinhLuan
+    WHERE i.NoiDung != ISNULL(d.NoiDung, '') OR d.NoiDung IS NULL;
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_DanhGiaBaiViet_Delete]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_DanhGiaBaiViet_Delete]
+ON [dbo].[DanhGiaBaiViet]
+AFTER DELETE
+AS
+BEGIN
+	SET NOCOUNT ON;
+    UPDATE bv SET DanhGia = (
+        SELECT AVG(CAST(Diem AS DECIMAL(5,2)))
+        FROM DanhGiaBaiViet WHERE MaBaiViet = bv.MaBaiViet
+    )
+    FROM BaiViet bv
+    WHERE MaBaiViet IN (SELECT MaBaiViet FROM DELETED);
+
+    -- Nếu không còn đánh giá → NULL
+    UPDATE BaiViet SET DanhGia = NULL
+    WHERE MaBaiViet IN (SELECT MaBaiViet FROM DELETED)
+      AND NOT EXISTS (SELECT 1 FROM DanhGiaBaiViet WHERE MaBaiViet = BaiViet.MaBaiViet);
+END;
+
+GO
+/****** Object:  Trigger [dbo].[trg_DanhGiaBaiViet_Insert]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TRIGGER [dbo].[trg_DanhGiaBaiViet_Insert]
+ON [dbo].[DanhGiaBaiViet]
+AFTER INSERT
+AS
+BEGIN
+	SET NOCOUNT ON;
+    UPDATE bv SET DanhGia = (
+        SELECT AVG(CAST(Diem AS DECIMAL(5,2)))
+        FROM DanhGiaBaiViet WHERE MaBaiViet = i.MaBaiViet
+    )
+    FROM BaiViet bv
+    INNER JOIN INSERTED i ON bv.MaBaiViet = i.MaBaiViet;
+END;
+
+GO
+/****** Object:  Trigger [dbo].[trg_LuotThichBinhLuan_Delete]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TRIGGER [dbo].[trg_LuotThichBinhLuan_Delete]
+ON [dbo].[LuotThichBinhLuan]
+AFTER DELETE
+AS
+BEGIN
+	SET NOCOUNT ON;
+    UPDATE bl SET SoLuotThich = CASE WHEN SoLuotThich > 0 THEN SoLuotThich - 1 ELSE 0 END
+    FROM BinhLuan bl
+    INNER JOIN DELETED d ON bl.MaBinhLuan = d.MaBinhLuan;
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_LuotThichBinhLuan_Insert]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_LuotThichBinhLuan_Insert]
+ON [dbo].[LuotThichBinhLuan]
+AFTER INSERT
+AS
+BEGIN
+	SET NOCOUNT ON;
+    UPDATE bl SET SoLuotThich = SoLuotThich + 1
+    FROM BinhLuan bl
+    INNER JOIN INSERTED i ON bl.MaBinhLuan = i.MaBinhLuan;
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_TaiKhoan_SoftDelete]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_TaiKhoan_SoftDelete]
+ON [dbo].[TaiKhoan]
+INSTEAD OF DELETE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	-- Bài viết
+	UPDATE bv
+	SET bv.TrangThai = N'Deleted',
+		bv.ThoiDiemCapNhat = GETDATE()
+	FROM BaiViet bv
+	INNER JOIN DELETED d ON bv.TaiKhoanTao = d.TenDangNhap
+	
+	-- Bình luận
+	UPDATE bl
+	SET bl.TrangThai = N'Deleted',
+		bl.ThoiDiemCapNhat = GETDATE()
+	FROM BinhLuan bl
+	INNER JOIN DELETED d ON bl.TaiKhoanTao = d.TenDangNhap
+
+	-- Lượt thích
+	DELETE ltbl
+	FROM LuotThichBinhLuan ltbl
+	INNER JOIN DELETED d ON ltbl.TenDangNhap = d.TenDangNhap
+
+	-- Đánh giá
+	DELETE dgbv
+	FROM DanhGiaBaiViet dgbv
+	INNER JOIN DELETED d ON dgbv.TenDangNhap = d.TenDangNhap
+	
+	-- Tài khoản
+	UPDATE tk
+	SET tk.TrangThai = N'Deleted',
+		tk.ThoiDiemCapNhat = GETDATE()
+	FROM TaiKhoan tk
+	INNER JOIN DELETED d ON tk.TenDangNhap = d.TenDangNhap
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_TaiKhoan_Update]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_TaiKhoan_Update]
+ON [dbo].[TaiKhoan]
+AFTER UPDATE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	-- Ngăn không cho trigger kích hoạt đệ quy
+    IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    UPDATE tk
+    SET ThoiDiemCapNhat = GETDATE()
+    FROM TaiKhoan tk
+    INNER JOIN INSERTED i ON tk.TenDangNhap = i.TenDangNhap;
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_TheLoai_SoftDelete]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_TheLoai_SoftDelete]
+ON [dbo].[TheLoai]
+INSTEAD OF DELETE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	-- Bài viết
+	UPDATE bv
+	SET bv.TrangThai = N'Deleted',
+		bv.ThoiDiemCapNhat = GETDATE()
+	FROM BaiViet bv
+	INNER JOIN DELETED d ON bv.MaTheLoai = d.MaTheLoai
+
+	-- Bình luận
+	UPDATE bl
+	SET bl.TrangThai = N'Deleted',
+		bl.ThoiDiemCapNhat = GETDATE()
+	FROM BinhLuan bl
+	INNER JOIN BaiViet bv ON bl.MaBaiViet = bv.MaBaiViet
+	INNER JOIN DELETED d ON bv.MaTheLoai = d.MaTheLoai
+
+	-- Lượt thích
+	DELETE ltbl
+	FROM LuotThichBinhLuan ltbl
+	INNER JOIN BinhLuan bl ON ltbl.MaBinhLuan = bl.MaBinhLuan
+	INNER JOIN BaiViet bv ON bl.MaBaiViet = bv.MaBaiViet
+	INNER JOIN DELETED d ON bv.MaTheLoai = d.MaTheLoai
+
+	-- Đánh giá
+	DELETE dgbv
+	FROM DanhGiaBaiViet dgbv
+	INNER JOIN BaiViet bv ON dgbv.MaBaiViet = bv.MaBaiViet
+	INNER JOIN DELETED d ON bv.MaTheLoai = d.MaTheLoai
+	
+	-- Thể loại
+	UPDATE tl
+	SET tl.TrangThai = N'Deleted',
+		tl.ThoiDiemCapNhat = GETDATE()
+	FROM TheLoai tl
+	INNER JOIN DELETED d ON tl.MaTheLoai = d.MaTheLoai
+END
+
+GO
+/****** Object:  Trigger [dbo].[trg_TheLoai_Update]    Script Date: 04/12/2025 11:34:15 SA ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[trg_TheLoai_Update]
+ON [dbo].[TheLoai]
+AFTER UPDATE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	-- Ngăn không cho trigger kích hoạt đệ quy
+    IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    UPDATE tl
+    SET ThoiDiemCapNhat = GETDATE()
+    FROM TheLoai tl
+    INNER JOIN INSERTED i ON tl.MaTheLoai = i.MaTheLoai;
+END
+
+GO
+USE [master]
+GO
+ALTER DATABASE [22T1020362_Forum] SET  READ_WRITE 
+GO
+- DBConfig.java:
+package Config;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class DBConfig {
+    // Thông tin kết nối SQL Server
+    private final String url = "jdbc:sqlserver://DESKTOP-GAFBKMF:1433;databaseName=22T1020362_Forum;encrypt=false;trustServerCertificate=true";
+    private final String user = "sa";
+    private final String pass = "sa";
+    private Connection cn;
+
+    public Connection getCn() {
+        return this.cn;
+    }
+
+    // 1. Private constructor (Singleton)
+    private DBConfig() {
+        try {
+            // Nạp driver của SQL Server
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            // Kết nối
+            cn = DriverManager.getConnection(url, user, pass);
+            System.out.println("Kết nối SQL Server thành công!");
+        } catch (ClassNotFoundException e) {
+            System.out.println("Không tìm thấy driver SQL Server. Hãy đảm bảo đã thêm mssql-jdbc-*.jar vào WEB-INF/lib");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            System.out.println("Kết nối SQL Server thất bại. Kiểm tra lại thông tin cấu hình!");
+            e.printStackTrace();
+        }
+    }
+
+    // 2. Instance duy nhất
+    private static DBConfig instance = null;
+
+    // 3. Hàm getInstance()
+    public static DBConfig getInstance() {
+        if (instance == null) {
+            instance = new DBConfig();
+        }
+        return instance;
+    }
+
+}
+- BaiViet.java:
+package Modal.BaiViet;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+
+public class BaiViet {
+	private long MaBaiViet;
+	private String TieuDe;
+	private String NoiDung;
+	private String Url;
+	private String TaiKhoanTao;
+	private int MaTheLoai;
+	private BigDecimal DanhGia;
+	private String TrangThai;
+	private Timestamp ThoiDiemTao;
+	private Timestamp ThoiDiemCapNhat;
+	public BaiViet() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	public BaiViet(long maBaiViet, String tieuDe, String noiDung, String url, String taiKhoanTao, int maTheLoai,
+			BigDecimal danhGia, String trangThai, Timestamp thoiDiemTao, Timestamp thoiDiemCapNhat) {
+		super();
+		MaBaiViet = maBaiViet;
+		TieuDe = tieuDe;
+		NoiDung = noiDung;
+		Url = url;
+		TaiKhoanTao = taiKhoanTao;
+		MaTheLoai = maTheLoai;
+		DanhGia = danhGia;
+		TrangThai = trangThai;
+		ThoiDiemTao = thoiDiemTao;
+		ThoiDiemCapNhat = thoiDiemCapNhat;
+	}
+	public long getMaBaiViet() {
+		return MaBaiViet;
+	}
+	public void setMaBaiViet(long maBaiViet) {
+		MaBaiViet = maBaiViet;
+	}
+	public String getTieuDe() {
+		return TieuDe;
+	}
+	public void setTieuDe(String tieuDe) {
+		TieuDe = tieuDe;
+	}
+	public String getNoiDung() {
+		return NoiDung;
+	}
+	public void setNoiDung(String noiDung) {
+		NoiDung = noiDung;
+	}
+	public String getUrl() {
+		return Url;
+	}
+	public void setUrl(String url) {
+		Url = url;
+	}
+	public String getTaiKhoanTao() {
+		return TaiKhoanTao;
+	}
+	public void setTaiKhoanTao(String taiKhoanTao) {
+		TaiKhoanTao = taiKhoanTao;
+	}
+	public int getMaTheLoai() {
+		return MaTheLoai;
+	}
+	public void setMaTheLoai(int maTheLoai) {
+		MaTheLoai = maTheLoai;
+	}
+	public BigDecimal getDanhGia() {
+		return DanhGia;
+	}
+	public void setDanhGia(BigDecimal danhGia) {
+		DanhGia = danhGia;
+	}
+	public String getTrangThai() {
+		return TrangThai;
+	}
+	public void setTrangThai(String trangThai) {
+		TrangThai = trangThai;
+	}
+	public Timestamp getThoiDiemTao() {
+		return ThoiDiemTao;
+	}
+	public void setThoiDiemTao(Timestamp thoiDiemTao) {
+		ThoiDiemTao = thoiDiemTao;
+	}
+	public Timestamp getThoiDiemCapNhat() {
+		return ThoiDiemCapNhat;
+	}
+	public void setThoiDiemCapNhat(Timestamp thoiDiemCapNhat) {
+		ThoiDiemCapNhat = thoiDiemCapNhat;
+	}
+	
+}
+- BaiVietBO.java:
+package Modal.BaiViet;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Comparator;
+
+import Modal.TheLoai.TheLoai;
+import Modal.TheLoai.TheLoaiBO;
+
+public class BaiVietBO {
+    private BaiVietDAO dao = new BaiVietDAO();
+    ArrayList<BaiViet> ds;
+
+    public ArrayList<BaiViet> readDB() throws Exception {
+        ds = dao.readDB();
+        return ds;
+    }
+
+    public void createDB(String TieuDe, String NoiDung, String Url, String TaiKhoanTao, int MaTheLoai) throws Exception {
+        if (TieuDe == null || TieuDe.trim().isEmpty()) {
+            throw new Exception("Tiêu đề không được để trống!");
+        }
+        if (NoiDung == null || NoiDung.trim().isEmpty()) {
+            throw new Exception("Nội dung không được để trống!");
+        }
+        if (TaiKhoanTao == null || TaiKhoanTao.trim().isEmpty()) {
+            throw new Exception("Tài khoản tạo không được để trống!");
+        }
+        if (MaTheLoai < 1) {
+            throw new Exception("Thể loại không được để trống!");
+        }
+
+        BaiViet bv = new BaiViet((long) -1, TieuDe, NoiDung, Url, TaiKhoanTao, MaTheLoai, null, null, null, null);
+        dao.createDB(bv);
+    }
+
+    public void updateDB(long MaBaiViet, String TieuDe, String NoiDung, String Url, int MaTheLoai, BigDecimal DanhGia, String TrangThai) throws Exception {
+        if (MaBaiViet < 1) {
+            throw new Exception("Mã bài viết không được để trống!");
+        }
+        if (TieuDe == null || TieuDe.trim().isEmpty()) {
+            throw new Exception("Tiêu đề không được để trống!");
+        }
+        if (NoiDung == null || NoiDung.trim().isEmpty()) {
+            throw new Exception("Nội dung không được để trống!");
+        }
+        if (MaTheLoai < 1) {
+            throw new Exception("Thể loại không được để trống!");
+        }
+        if (TrangThai == null || TrangThai.trim().isEmpty()) {
+            throw new Exception("Trạng thái không được để trống!");
+        }
+        if (dao.findByMaBaiViet(MaBaiViet) == null) {
+            throw new Exception("Bài viết không tồn tại!");
+        }
+
+        BaiViet bv = new BaiViet(MaBaiViet, TieuDe, NoiDung, Url, null, MaTheLoai, DanhGia, TrangThai, null, null);
+        dao.updateDB(bv);
+    }
+
+    public void deleteDB(long MaBaiViet) throws Exception {
+        if (MaBaiViet < 1) {
+            throw new Exception("Mã bài viết không được để trống!");
+        }
+        if (dao.findByMaBaiViet(MaBaiViet) == null) {
+            throw new Exception("Bài viết không tồn tại!");
+        }
+
+        dao.deleteDB(MaBaiViet);
+    }
+
+    // Tìm theo tiêu đề, nội dung, tài khoản tạo, thể loại, đánh giá, thời điểm tạo, thời điểm cập nhật
+    public ArrayList<BaiViet> findDB_user(ArrayList<BaiViet> dsBaiViet, String key) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>();
+        if (key == null || key.trim().isEmpty() || dsBaiViet == null) {
+            return dsBaiViet != null ? new ArrayList<>(dsBaiViet) : temp;
+        }
+
+        // Lấy ds thể loại
+        TheLoaiBO tlbo = new TheLoaiBO();
+        ArrayList<TheLoai> dstl = tlbo.readDB();
+
+        for (BaiViet bv : dsBaiViet) {
+            String tenTheLoai = "";
+            for (TheLoai tl : dstl) {
+                if (tl.getMaTheLoai() == bv.getMaTheLoai()) {
+                    tenTheLoai = tl.getTenTheLoai();
+                    break;
+                }
+            }
+
+            if ((bv.getTieuDe() != null && bv.getTieuDe().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getNoiDung() != null && bv.getNoiDung().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getTaiKhoanTao() != null && bv.getTaiKhoanTao().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (tenTheLoai != null && tenTheLoai.trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getDanhGia() != null && bv.getDanhGia().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getThoiDiemTao() != null && bv.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getThoiDiemCapNhat() != null && bv.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))) {
+                temp.add(bv);
+            }
+        }
+
+        return temp;
+    }
+
+    // Tìm theo tiêu đề, nội dung, tài khoản tạo, thể loại, đánh giá, trạng thái, thời điểm tạo, thời điểm cập nhật
+    public ArrayList<BaiViet> findDB_admin(String key) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>();
+        if (key == null || key.trim().isEmpty()) {
+            return temp;
+        }
+
+        // Lấy ds thể loại
+        TheLoaiBO tlbo = new TheLoaiBO();
+        ArrayList<TheLoai> dstl = tlbo.readDB();
+
+        for (BaiViet bv : readDB()) {
+            String tenTheLoai = "";
+            for (TheLoai tl : dstl) {
+                if (tl.getMaTheLoai() == bv.getMaTheLoai()) {
+                    tenTheLoai = tl.getTenTheLoai();
+                    break;
+                }
+            }
+
+            if ((bv.getTieuDe() != null && bv.getTieuDe().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getNoiDung() != null && bv.getNoiDung().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getTaiKhoanTao() != null && bv.getTaiKhoanTao().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (tenTheLoai != null && tenTheLoai.trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getDanhGia() != null && bv.getDanhGia().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getTrangThai() != null && bv.getTrangThai().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getThoiDiemTao() != null && bv.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bv.getThoiDiemCapNhat() != null && bv.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))) {
+                temp.add(bv);
+            }
+        }
+
+        return temp;
+    }
+
+    // Sắp xếp giảm dần, bài viết đánh giá cao nhất lên đầu
+    public ArrayList<BaiViet> sortDB_danhGia_cao(ArrayList<BaiViet> dsBaiViet) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+        temp.sort(
+            Comparator.comparing(
+                BaiViet::getDanhGia,
+                Comparator.nullsLast(BigDecimal::compareTo)
+            ).reversed()
+        );
+        return temp;
+    }
+
+    // Sắp xếp tăng dần, bài viết đánh giá thấp nhất lên đầu
+    public ArrayList<BaiViet> sortDB_danhGia_thap(ArrayList<BaiViet> dsBaiViet) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+        temp.sort(
+            Comparator.comparing(
+                BaiViet::getDanhGia,
+                Comparator.nullsLast(BigDecimal::compareTo)
+            )
+        );
+        return temp;
+    }
+
+    // Sắp xếp theo thời điểm tạo gần đây nhất (muộn nhất lên đầu)
+    public ArrayList<BaiViet> sortDB_thoiDiemTao_ganNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+        temp.sort(
+            Comparator.comparing(
+                BaiViet::getThoiDiemTao,
+                Comparator.nullsLast(Timestamp::compareTo)
+            ).reversed()
+        );
+        return temp;
+    }
+
+    // Sắp xếp theo thời điểm tạo xa nhất (sớm nhất lên đầu)
+    public ArrayList<BaiViet> sortDB_thoiDiemTao_xaNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+        temp.sort(
+            Comparator.comparing(
+                BaiViet::getThoiDiemTao,
+                Comparator.nullsLast(Timestamp::compareTo)
+            )
+        );
+        return temp;
+    }
+
+    // Sắp xếp theo thời điểm cập nhật gần đây nhất (muộn nhất lên đầu, null xuống cuối)
+    public ArrayList<BaiViet> sortDB_thoiDiemCapNhat_ganNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+        temp.sort(
+            Comparator.comparing(
+                BaiViet::getThoiDiemCapNhat,
+                Comparator.nullsLast(Timestamp::compareTo)
+            ).reversed()
+        );
+        return temp;
+    }
+
+    // Sắp xếp theo thời điểm cập nhật xa nhất (sớm nhất lên đầu, null xuống cuối)
+    public ArrayList<BaiViet> sortDB_thoiDiemCapNhat_xaNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+        temp.sort(
+            Comparator.comparing(
+                BaiViet::getThoiDiemCapNhat,
+                Comparator.nullsLast(Timestamp::compareTo)
+            )
+        );
+        return temp;
+    }
+
+    // Lọc danh sách bài viết theo tài khoản tạo
+    public ArrayList<BaiViet> filterDB_taiKhoanTao(String taiKhoanTao) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>();
+        if (taiKhoanTao == null || taiKhoanTao.trim().isEmpty()) {
+            return temp;
+        }
+
+        for (BaiViet bv : readDB()) {
+            if (bv.getTaiKhoanTao().equals(taiKhoanTao)) {
+                temp.add(bv);
+            }
+        }
+        return temp;
+    }
+
+    // Lọc danh sách bài viết theo mã thể loại
+    public ArrayList<BaiViet> filterDB_maTheLoai(int maTheLoai) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>();
+        if (maTheLoai < 1) {
+            return temp;
+        }
+
+        for (BaiViet bv : readDB()) {
+            if (bv.getMaTheLoai() == maTheLoai) {
+                temp.add(bv);
+            }
+        }
+        return temp;
+    }
+
+    // Lọc danh sách bài viết theo trạng thái
+    public ArrayList<BaiViet> filterDB_trangThai(String trangThai) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>();
+        if (trangThai == null || trangThai.trim().isEmpty()) {
+            return temp;
+        }
+
+        for (BaiViet bv : readDB()) {
+            if (bv.getTrangThai().equals(trangThai)) {
+                temp.add(bv);
+            }
+        }
+        return temp;
+    }
+}
+- BaiVietDAO.java:
+package Modal.BaiViet;
+
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+
+import Config.DBConfig;
+import Modal.BaiViet.BaiViet;
+
+public class BaiVietDAO {
+	public ArrayList<BaiViet> readDB() throws Exception {
+		ArrayList<BaiViet> ds = new ArrayList<BaiViet>();
+		String sql = "SELECT * FROM BaiViet;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		ResultSet rs = pr.executeQuery();
+		while(rs.next()) {
+			long MaBaiViet = rs.getLong("MaBaiViet");
+			String TieuDe = rs.getNString("TieuDe");
+			String NoiDung = rs.getNString("NoiDung");
+			String Url = rs.getNString("Url");
+			String TaiKhoanTao = rs.getNString("TaiKhoanTao");
+			int MaTheLoai = rs.getInt("MaTheLoai");
+			BigDecimal DanhGia = rs.getBigDecimal("DanhGia");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			ds.add(new BaiViet(MaBaiViet, TieuDe, NoiDung, Url, TaiKhoanTao, MaTheLoai, DanhGia, TrangThai, ThoiDiemTao, ThoiDiemCapNhat));
+		}
+		
+		pr.close();
+		rs.close();
+		return ds;
+	}
+	
+	public void createDB(BaiViet bv) throws Exception {
+		String sql = "INSERT INTO BaiViet (TieuDe, NoiDung, Url, TaiKhoanTao, MaTheLoai) VALUES (?, ?, ?, ?, ?);";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, bv.getTieuDe());
+		pr.setNString(2, bv.getNoiDung());
+		pr.setNString(3, bv.getUrl());
+		pr.setNString(4, bv.getTaiKhoanTao());
+		pr.setInt(5, bv.getMaTheLoai());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void updateDB(BaiViet bv) throws Exception {
+		String sql = "UPDATE BaiViet SET TieuDe = ?, NoiDung = ?, Url = ?, MaTheLoai = ?, DanhGia = ?, TrangThai = ? WHERE MaBaiViet = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, bv.getTieuDe());
+		pr.setNString(2, bv.getNoiDung());
+		pr.setNString(3, bv.getUrl());
+		pr.setInt(4, bv.getMaTheLoai());
+		pr.setBigDecimal(5, bv.getDanhGia());
+		pr.setNString(6, bv.getTrangThai());
+		pr.setLong(7, bv.getMaBaiViet());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void deleteDB(long MaBaiViet) throws Exception {
+		String sql = "DELETE FROM BaiViet WHERE MaBaiViet = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, MaBaiViet);
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public BaiViet findByMaBaiViet(long maBaiViet) throws Exception {
+		String sql = "SELECT * FROM BaiViet WHERE MaBaiViet = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, maBaiViet);
+		ResultSet rs = pr.executeQuery();
+		BaiViet bv = null;
+		if(rs.next()) {
+			long MaBaiViet = rs.getLong("MaBaiViet");
+			String TieuDe = rs.getNString("TieuDe");
+			String NoiDung = rs.getNString("NoiDung");
+			String Url = rs.getNString("Url");
+			String TaiKhoanTao = rs.getNString("TaiKhoanTao");
+			int MaTheLoai = rs.getInt("MaTheLoai");
+			BigDecimal DanhGia = rs.getBigDecimal("DanhGia");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			bv = new BaiViet(MaBaiViet, TieuDe, NoiDung, Url, TaiKhoanTao, MaTheLoai, DanhGia, TrangThai, ThoiDiemTao, ThoiDiemCapNhat);
+		}
+		
+		pr.close();
+		rs.close();
+		return bv;
+	}
+}
+- BinhLuan.java:
+package Modal.BinhLuan;
+
+import java.sql.Timestamp;
+
+public class BinhLuan {
+	private long MaBinhLuan;
+	private String TieuDe;
+	private String NoiDung;
+	private String Url;
+	private String TaiKhoanTao;
+	private long MaBaiViet;
+	private int SoLuotThich;
+	private String TrangThai;
+	private Timestamp ThoiDiemTao;
+	private Timestamp ThoiDiemCapNhat;
+	public BinhLuan() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	public BinhLuan(long maBinhLuan, String tieuDe, String noiDung, String url, String taiKhoanTao, long maBaiViet,
+			int soLuotThich, String trangThai, Timestamp thoiDiemTao, Timestamp thoiDiemCapNhat) {
+		super();
+		MaBinhLuan = maBinhLuan;
+		TieuDe = tieuDe;
+		NoiDung = noiDung;
+		Url = url;
+		TaiKhoanTao = taiKhoanTao;
+		MaBaiViet = maBaiViet;
+		SoLuotThich = soLuotThich;
+		TrangThai = trangThai;
+		ThoiDiemTao = thoiDiemTao;
+		ThoiDiemCapNhat = thoiDiemCapNhat;
+	}
+	public long getMaBinhLuan() {
+		return MaBinhLuan;
+	}
+	public void setMaBinhLuan(long maBinhLuan) {
+		MaBinhLuan = maBinhLuan;
+	}
+	public String getTieuDe() {
+		return TieuDe;
+	}
+	public void setTieuDe(String tieuDe) {
+		TieuDe = tieuDe;
+	}
+	public String getNoiDung() {
+		return NoiDung;
+	}
+	public void setNoiDung(String noiDung) {
+		NoiDung = noiDung;
+	}
+	public String getUrl() {
+		return Url;
+	}
+	public void setUrl(String url) {
+		Url = url;
+	}
+	public String getTaiKhoanTao() {
+		return TaiKhoanTao;
+	}
+	public void setTaiKhoanTao(String taiKhoanTao) {
+		TaiKhoanTao = taiKhoanTao;
+	}
+	public long getMaBaiViet() {
+		return MaBaiViet;
+	}
+	public void setMaBaiViet(long maBaiViet) {
+		MaBaiViet = maBaiViet;
+	}
+	public int getSoLuotThich() {
+		return SoLuotThich;
+	}
+	public void setSoLuotThich(int soLuotThich) {
+		SoLuotThich = soLuotThich;
+	}
+	public String getTrangThai() {
+		return TrangThai;
+	}
+	public void setTrangThai(String trangThai) {
+		TrangThai = trangThai;
+	}
+	public Timestamp getThoiDiemTao() {
+		return ThoiDiemTao;
+	}
+	public void setThoiDiemTao(Timestamp thoiDiemTao) {
+		ThoiDiemTao = thoiDiemTao;
+	}
+	public Timestamp getThoiDiemCapNhat() {
+		return ThoiDiemCapNhat;
+	}
+	public void setThoiDiemCapNhat(Timestamp thoiDiemCapNhat) {
+		ThoiDiemCapNhat = thoiDiemCapNhat;
+	}
+	
+}
+- BinhLuanBO.java:
+package Modal.BinhLuan;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Comparator;
+
+import Modal.BaiViet.BaiViet;
+import Modal.BaiViet.BaiVietBO;
+
+public class BinhLuanBO {
+	private BinhLuanDAO dao = new BinhLuanDAO();
+	ArrayList<BinhLuan> ds;
+	
+	public ArrayList<BinhLuan> readDB() throws Exception {
+		ds = dao.readDB();
+		return ds;
+	}
+	
+	public void createDB(String NoiDung, String Url, String TaiKhoanTao, long MaBaiViet) throws Exception {
+		if(NoiDung == null || NoiDung.trim().isEmpty()) {
+			throw new Exception("Nội dung không được để trống!");
+		}
+		if(TaiKhoanTao == null || TaiKhoanTao.trim().isEmpty()) {
+			throw new Exception("Tài khoản tạo không được để trống!");
+		}
+		if((Object) MaBaiViet == null || MaBaiViet < 1) {
+			throw new Exception("Mã bài viết không được để trống!");
+		}
+		
+		BinhLuan bl = new BinhLuan((long) -1, null, NoiDung, Url, TaiKhoanTao, MaBaiViet, 0, null, null, null);
+		dao.createDB(bl);
+	}
+	
+	public void updateDB(long MaBinhLuan, String NoiDung, String Url, int SoLuotThich, String TrangThai) throws Exception {
+		if((Object) MaBinhLuan == null || MaBinhLuan < 1) {
+			throw new Exception("Mã bình luận không được để trống!");
+		}
+		if(NoiDung == null || NoiDung.trim().isEmpty()) {
+			throw new Exception("Nội dung không được để trống!");
+		}
+		if((Object) SoLuotThich == null || SoLuotThich < 0) {
+			throw new Exception("Số lượt thích không hợp lệ!");
+		}
+		if(TrangThai == null || TrangThai.trim().isEmpty()) {
+			throw new Exception("Trạng thái không được để trống!");
+		}
+		if(dao.findByMaBinhLuan(MaBinhLuan) == null) {
+			throw new Exception("Bình luận không tồn tại!");
+		}
+		
+		BinhLuan bl = new BinhLuan(MaBinhLuan, null, NoiDung, Url, null, -1, SoLuotThich, TrangThai, null, null);
+		dao.updateDB(bl);
+	}
+	
+	public void deleteDB(long MaBinhLuan) throws Exception {
+		if((Object) MaBinhLuan == null || MaBinhLuan < 1) {
+			throw new Exception("Mã bình luận không được để trống!");
+		}
+		if(dao.findByMaBinhLuan(MaBinhLuan) == null) {
+			throw new Exception("Bình luận không tồn tại!");
+		}
+		
+		dao.deleteDB(MaBinhLuan);
+	}
+	
+	// Tìm theo tiêu đề, nội dung, tài khoản tạo, tiêu đề bài viết, nội dung bài viết, số lượt thích, thời điểm tạo, thời điểm cập nhật
+	public ArrayList<BinhLuan> findDB_user(ArrayList<BinhLuan> dsBinhLuan, String key) throws Exception {
+        ArrayList<BinhLuan> temp = new ArrayList<>();
+        if (key == null || key.trim().isEmpty() || dsBinhLuan == null) {
+            return dsBinhLuan != null ? new ArrayList<>(dsBinhLuan) : temp;
+        }
+
+        // Lấy danh sách bài viết
+        BaiVietBO bvbo = new BaiVietBO();
+        ArrayList<BaiViet> dsbv = bvbo.readDB();
+
+        for (BinhLuan bl : dsBinhLuan) {
+            String tieuDeBaiViet = "";
+            String noiDungBaiViet = "";
+            for (BaiViet bv : dsbv) {
+                if (bv.getMaBaiViet() == bl.getMaBaiViet()) {
+                    tieuDeBaiViet = bv.getTieuDe();
+                    noiDungBaiViet = bv.getNoiDung();
+                    break;
+                }
+            }
+
+            if ((bl.getTieuDe() != null && bl.getTieuDe().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bl.getNoiDung() != null && bl.getNoiDung().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bl.getTaiKhoanTao() != null && bl.getTaiKhoanTao().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (tieuDeBaiViet != null && tieuDeBaiViet.trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (noiDungBaiViet != null && noiDungBaiViet.trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (String.valueOf(bl.getSoLuotThich()).trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bl.getThoiDiemTao() != null && bl.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
+                    || (bl.getThoiDiemCapNhat() != null && bl.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))) {
+                temp.add(bl);
+            }
+        }
+
+        return temp;
+    }
+	
+	// Tìm theo tiêu đề, nội dung, tài khoản tạo, tiêu đề bài viết, nội dung bài viết, số lượt thích, trạng thái, thời điểm tạo, thời điểm cập nhật
+	public ArrayList<BinhLuan> findDB_admin(String key) throws Exception {
+		ArrayList<BinhLuan> temp = new ArrayList<BinhLuan>();
+		
+		// Lấy danh sách bài viết
+		BaiVietBO bvbo = new BaiVietBO();
+		ArrayList<BaiViet> dsbv = bvbo.readDB();
+		
+		for(BinhLuan bl: readDB()) {
+			String tieuDeBaiViet = "";
+			String noiDungBaiViet = "";
+			for(BaiViet bv: dsbv) {
+				// Tìm tiêu đề bài viết tương ứng bình luận
+				if(bv.getMaBaiViet() == bl.getMaBaiViet()) {
+					tieuDeBaiViet = bv.getTieuDe();
+					noiDungBaiViet = bv.getNoiDung();
+					break;
+				}
+			}
+			
+			if(bl.getTieuDe().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| bl.getNoiDung().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| bl.getTaiKhoanTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tieuDeBaiViet.trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| noiDungBaiViet.trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| String.valueOf(bl.getSoLuotThich()).trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| bl.getTrangThai().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| bl.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| bl.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
+			) {
+				temp.add(bl);
+			}
+		}
+		
+		return temp;
+	}
+	
+	// Sắp xếp giảm dần, bình luận có số lượt thích cao nhất lên đầu
+	public ArrayList<BinhLuan> sortDB_soLuotThich_cao(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+        temp.sort(Comparator.comparingInt(BinhLuan::getSoLuotThich).reversed());
+        return temp;
+    }
+
+    // Sắp xếp tăng dần, bình luận có số lượt thích thấp nhất lên đầu
+    public ArrayList<BinhLuan> sortDB_soLuotThich_thap(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+        temp.sort(Comparator.comparingInt(BinhLuan::getSoLuotThich));
+        return temp;
+    }
+
+    // Sắp xếp theo thời điểm tạo gần đây nhất (muộn nhất lên đầu)
+    public ArrayList<BinhLuan> sortDB_thoiDiemTao_ganNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+        temp.sort(
+            Comparator.comparing(
+                BinhLuan::getThoiDiemTao,
+                Comparator.nullsLast(Timestamp::compareTo)
+            ).reversed()
+        );
+        return temp;
+    }
+
+    // Sắp xếp theo thời điểm tạo xa nhất (sớm nhất lên đầu)
+    public ArrayList<BinhLuan> sortDB_thoiDiemTao_xaNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+        temp.sort(
+            Comparator.comparing(
+                BinhLuan::getThoiDiemTao,
+                Comparator.nullsLast(Timestamp::compareTo)
+            )
+        );
+        return temp;
+    }
+
+    // Sắp xếp theo thời điểm cập nhật gần đây nhất (muộn nhất lên đầu, null xuống cuối)
+    public ArrayList<BinhLuan> sortDB_thoiDiemCapNhat_ganNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+        temp.sort(
+            Comparator.comparing(
+                BinhLuan::getThoiDiemCapNhat,
+                Comparator.nullsLast(Timestamp::compareTo)
+            ).reversed()
+        );
+        return temp;
+    }
+
+    // Sắp xếp theo thời điểm cập nhật xa nhất (sớm nhất lên đầu, null xuống cuối)
+    public ArrayList<BinhLuan> sortDB_thoiDiemCapNhat_xaNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+        temp.sort(
+            Comparator.comparing(
+                BinhLuan::getThoiDiemCapNhat,
+                Comparator.nullsLast(Timestamp::compareTo)
+            )
+        );
+        return temp;
+    }
+	
+	// Lọc danh sách bình luận theo tài khoản tạo
+	public ArrayList<BinhLuan> filterDB_taiKhoanTao(String taiKhoanTao) throws Exception {
+		ArrayList<BinhLuan> temp = new ArrayList<BinhLuan>();
+		if(taiKhoanTao == null || taiKhoanTao.trim().isEmpty()) {
+			return temp;
+		}
+		
+		for(BinhLuan bl: readDB()) {
+			if(bl.getTaiKhoanTao().equals(taiKhoanTao)) {
+				temp.add(bl);
+			}
+		}
+		return temp;
+	}
+	
+	// Lọc danh sách bình luận theo mã bài viết
+	public ArrayList<BinhLuan> filterDB_maBaiViet(long maBaiViet, String trangThaiBaiViet) throws Exception {
+		ArrayList<BinhLuan> temp = new ArrayList<BinhLuan>();
+	
+		//Không tìm thấy -> ds rỗng
+		if( (Object) maBaiViet == null || maBaiViet == -1) {
+			return temp;
+		}
+		
+		//Lọc bình luận theo tiêu đề bài viết
+		for(BinhLuan bl: readDB()) {
+			if(bl.getMaBaiViet() == maBaiViet) {
+				boolean f = false;
+				if("Active".equals(trangThaiBaiViet) || "Hidden".equals(trangThaiBaiViet)) {
+					if("Active".equals(bl.getTrangThai())) f = true;
+				}
+				else {
+					f = true;
+				}
+				if(f) temp.add(bl);
+			}
+		}
+		return temp;
+	}
+	
+	// Lọc danh sách bình luận theo trạng thái
+	public ArrayList<BinhLuan> filterDB_trangThai(String trangThai) throws Exception {
+		ArrayList<BinhLuan> temp = new ArrayList<BinhLuan>();
+		if(trangThai == null || trangThai.trim().isEmpty()) {
+			return temp;
+		}
+		
+		for(BinhLuan bl: readDB()) {
+			if(bl.getTrangThai().equals(trangThai)) {
+				temp.add(bl);
+			}
+		}
+		return temp;
+	}
+}
+- BinhLuanDAO.java:
+package Modal.BinhLuan;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+
+import Config.DBConfig;
+
+public class BinhLuanDAO {
+	public ArrayList<BinhLuan> readDB() throws Exception {
+		ArrayList<BinhLuan> ds = new ArrayList<BinhLuan>();
+		String sql = "SELECT * FROM BinhLuan;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		ResultSet rs = pr.executeQuery();
+		while(rs.next()) {
+			long MaBinhLuan = rs.getLong("MaBinhLuan");
+			String TieuDe = rs.getNString("TieuDe");
+			String NoiDung = rs.getNString("NoiDung");
+			String Url = rs.getNString("Url");
+			String TaiKhoanTao = rs.getNString("TaiKhoanTao");
+			long MaBaiViet = rs.getLong("MaBaiViet");
+			int SoLuotThich = rs.getInt("SoLuotThich");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			ds.add(new BinhLuan(MaBinhLuan, TieuDe, NoiDung, Url, TaiKhoanTao, MaBaiViet, SoLuotThich, TrangThai, ThoiDiemTao, ThoiDiemCapNhat));
+		}
+		
+		pr.close();
+		rs.close();
+		return ds;
+	}
+	
+	public void createDB(BinhLuan bl) throws Exception {
+		String sql = "INSERT INTO BinhLuan (NoiDung, Url, TaiKhoanTao, MaBaiViet) VALUES (?, ?, ?, ?);";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, bl.getNoiDung());
+		pr.setNString(2, bl.getUrl());
+		pr.setNString(3, bl.getTaiKhoanTao());
+		pr.setLong(4, bl.getMaBaiViet());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void updateDB(BinhLuan bl) throws Exception {
+		String sql = "UPDATE BinhLuan SET NoiDung = ?, Url = ?, SoLuotThich = ?, TrangThai = ? WHERE MaBinhLuan = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, bl.getNoiDung());
+		pr.setNString(2, bl.getUrl());
+		pr.setInt(3, bl.getSoLuotThich());
+		pr.setNString(4, bl.getTrangThai());
+		pr.setLong(5, bl.getMaBinhLuan());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void deleteDB(long MaBinhLuan) throws Exception {
+		String sql = "DELETE FROM BinhLuan WHERE MaBinhLuan = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, MaBinhLuan);
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public BinhLuan findByMaBinhLuan(long maBinhLuan) throws Exception {
+		String sql = "SELECT * FROM BinhLuan WHERE MaBinhLuan = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, maBinhLuan);
+		ResultSet rs = pr.executeQuery();
+		BinhLuan bl = null;
+		if(rs.next()) {
+			long MaBinhLuan = rs.getLong("MaBinhLuan");
+			String TieuDe = rs.getNString("TieuDe");
+			String NoiDung = rs.getNString("NoiDung");
+			String Url = rs.getNString("Url");
+			String TaiKhoanTao = rs.getNString("TaiKhoanTao");
+			long MaBaiViet = rs.getLong("MaBaiViet");
+			int SoLuotThich = rs.getInt("SoLuotThich");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			bl = new BinhLuan(MaBinhLuan, TieuDe, NoiDung, Url, TaiKhoanTao, MaBaiViet, SoLuotThich, TrangThai, ThoiDiemTao, ThoiDiemCapNhat);
+		}
+		
+		pr.close();
+		rs.close();
+		return bl;
+	}
+	
+	public ArrayList<BinhLuan> findByMaBaiViet(long maBaiViet) throws Exception {
+		ArrayList<BinhLuan> ds = new ArrayList<BinhLuan>();
+		String sql = "SELECT * FROM BinhLuan WHERE MaBaiViet = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, maBaiViet);
+		ResultSet rs = pr.executeQuery();
+		while(rs.next()) {
+			long MaBinhLuan = rs.getLong("MaBinhLuan");
+			String TieuDe = rs.getNString("TieuDe");
+			String NoiDung = rs.getNString("NoiDung");
+			String Url = rs.getNString("Url");
+			String TaiKhoanTao = rs.getNString("TaiKhoanTao");
+			long MaBaiViet = rs.getLong("MaBaiViet");
+			int SoLuotThich = rs.getInt("SoLuotThich");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			ds.add(new BinhLuan(MaBinhLuan, TieuDe, NoiDung, Url, TaiKhoanTao, MaBaiViet, SoLuotThich, TrangThai, ThoiDiemTao, ThoiDiemCapNhat));
+		}
+		
+		pr.close();
+		rs.close();
+		return ds;
+	}
+}
+- DanhGiaBaiViet.java:
+package Modal.DanhGiaBaiViet;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+
+public class DanhGiaBaiViet {
+    private long MaDanhGia;
+    private long MaBaiViet;
+    private String TenDangNhap;
+    private BigDecimal Diem;
+    private Timestamp ThoiDiemDanhGia;
+
+    public DanhGiaBaiViet() {
+        super();
+    }
+
+    public DanhGiaBaiViet(long maDanhGia, long maBaiViet, String tenDangNhap, BigDecimal diem, Timestamp thoiDiemDanhGia) {
+        super();
+        this.MaDanhGia = maDanhGia;
+        this.MaBaiViet = maBaiViet;
+        this.TenDangNhap = tenDangNhap;
+        this.Diem = diem;
+        this.ThoiDiemDanhGia = thoiDiemDanhGia;
+    }
+
+    public long getMaDanhGia() {
+        return MaDanhGia;
+    }
+
+    public void setMaDanhGia(long maDanhGia) {
+        this.MaDanhGia = maDanhGia;
+    }
+
+    public long getMaBaiViet() {
+        return MaBaiViet;
+    }
+
+    public void setMaBaiViet(long maBaiViet) {
+        this.MaBaiViet = maBaiViet;
+    }
+
+    public String getTenDangNhap() {
+        return TenDangNhap;
+    }
+
+    public void setTenDangNhap(String tenDangNhap) {
+        this.TenDangNhap = tenDangNhap;
+    }
+
+    public BigDecimal getDiem() {
+        return Diem;
+    }
+
+    public void setDiem(BigDecimal diem) {
+        this.Diem = diem;
+    }
+
+    public Timestamp getThoiDiemDanhGia() {
+        return ThoiDiemDanhGia;
+    }
+
+    public void setThoiDiemDanhGia(Timestamp thoiDiemDanhGia) {
+        this.ThoiDiemDanhGia = thoiDiemDanhGia;
+    }
+}
+- DanhGiaBaiVietBO.java:
+package Modal.DanhGiaBaiViet;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+
+public class DanhGiaBaiVietBO {
+    private DanhGiaBaiVietDAO dao = new DanhGiaBaiVietDAO();
+    ArrayList<DanhGiaBaiViet> ds;
+
+    public ArrayList<DanhGiaBaiViet> readDB() throws Exception {
+        ds = dao.readDB();
+        return ds;
+    }
+
+    public void createDB(long MaBaiViet, String TenDangNhap, BigDecimal Diem) throws Exception {
+        if ((Object) MaBaiViet == null || MaBaiViet < 1) {
+            throw new Exception("Mã bài viết không được để trống");
+        }
+        if (TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+            throw new Exception("Tên đăng nhập không được để trống");
+        }
+        if (Diem.compareTo((BigDecimal.valueOf((long) 0))) < 0 || Diem.compareTo((BigDecimal.valueOf((long) 5))) > 0) {
+            throw new Exception("Điểm đánh giá phải nằm trong khoảng từ 0 đến 5");
+        }
+        DanhGiaBaiViet dgbv = new DanhGiaBaiViet(-1, MaBaiViet, TenDangNhap, Diem, null);
+        dao.createDB(dgbv);
+    }
+
+    public void updateDB(long MaDanhGia, long MaBaiViet, String TenDangNhap, BigDecimal Diem) throws Exception {
+        if ((Object) MaDanhGia == null || MaDanhGia < 1) {
+            throw new Exception("Mã đánh giá không được để trống");
+        }
+        if ((Object) MaBaiViet == null || MaBaiViet < 1) {
+            throw new Exception("Mã bài viết không được để trống");
+        }
+        if (TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+            throw new Exception("Tên đăng nhập không được để trống");
+        }
+        if (Diem.compareTo((BigDecimal.valueOf((long) 0))) < 0 || Diem.compareTo((BigDecimal.valueOf((long) 5))) > 0) {
+            throw new Exception("Điểm đánh giá phải nằm trong khoảng từ 0 đến 5");
+        }
+        if (dao.findByMaDanhGia(MaDanhGia) == null) {
+            throw new Exception("Đánh giá không tồn tại!");
+        }
+
+        DanhGiaBaiViet dgbv = new DanhGiaBaiViet(MaDanhGia, MaBaiViet, TenDangNhap, Diem, null);
+        dao.updateDB(dgbv);
+    }
+
+    public void deleteDB(long MaDanhGia) throws Exception {
+        if ((Object) MaDanhGia == null || MaDanhGia < 1) {
+            throw new Exception("Mã đánh giá không được để trống!");
+        }
+        if (dao.findByMaDanhGia(MaDanhGia) == null) {
+            throw new Exception("Đánh giá không tồn tại!");
+        }
+
+        dao.deleteDB(MaDanhGia);
+    }
+    
+	public void deleteDBByMaBaiVietVaTenDangNhap(long MaBaiViet, String TenDangNhap) throws Exception {
+		if((Object) MaBaiViet == null || MaBaiViet < 1) {
+			throw new Exception("Mã bài viết không được để trống");
+		}
+		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+			throw new Exception("Tên đăng nhập không được để trống");
+		}
+		if(dao.findByMaBaiVietVaTenDangNhap(MaBaiViet, TenDangNhap) == null) {
+			throw new Exception("Đánh giá không tồn tại");
+		}
+		
+		dao.deleteDBByMaBaiVietVaTenDangNhap(MaBaiViet, TenDangNhap);
+	}
+
+    // Tìm theo tài khoản đánh giá
+    public DanhGiaBaiViet findDB(String TenDangNhap) throws Exception {
+        if (TenDangNhap == null || TenDangNhap.trim().isEmpty()) return null;
+        for (DanhGiaBaiViet dgbv : readDB()) {
+            if (dgbv.getTenDangNhap().equals(TenDangNhap)) {
+                return dgbv;
+            }
+        }
+        return null;
+    }
+}
+- DanhGiaBaiVietDAO.java:
+package Modal.DanhGiaBaiViet;
+
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+
+import Config.DBConfig;
+import Modal.LuotThichBinhLuan.LuotThichBinhLuan;
+
+public class DanhGiaBaiVietDAO {
+    public ArrayList<DanhGiaBaiViet> readDB() throws Exception {
+        ArrayList<DanhGiaBaiViet> ds = new ArrayList<DanhGiaBaiViet>();
+        String sql = "SELECT * FROM DanhGiaBaiViet";
+        PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+        ResultSet rs = pr.executeQuery();
+        while (rs.next()) {
+            long MaDanhGia = rs.getLong("MaDanhGia");
+            long MaBaiViet = rs.getLong("MaBaiViet");
+            String TenDangNhap = rs.getNString("TenDangNhap");
+            BigDecimal Diem = rs.getBigDecimal("Diem");
+            Timestamp ThoiDiemDanhGia = rs.getTimestamp("ThoiDiemDanhGia");
+            ds.add(new DanhGiaBaiViet(MaDanhGia, MaBaiViet, TenDangNhap, Diem, ThoiDiemDanhGia));
+        }
+
+        pr.close();
+        rs.close();
+        return ds;
+    }
+
+    public void createDB(DanhGiaBaiViet dgbv) throws Exception {
+        String sql = "INSERT INTO DanhGiaBaiViet (MaBaiViet, TenDangNhap, Diem) VALUES (?, ?, ?)";
+        PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+        pr.setLong(1, dgbv.getMaBaiViet());
+        pr.setNString(2, dgbv.getTenDangNhap());
+        pr.setBigDecimal(3, dgbv.getDiem());
+        pr.executeUpdate();
+        pr.close();
+    }
+
+    public void updateDB(DanhGiaBaiViet dgbv) throws Exception {
+        String sql = "UPDATE DanhGiaBaiViet SET MaBaiViet = ?, TenDangNhap = ?, Diem = ? WHERE MaDanhGia = ?";
+        PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+        pr.setLong(1, dgbv.getMaBaiViet());
+        pr.setNString(2, dgbv.getTenDangNhap());
+        pr.setBigDecimal(3, dgbv.getDiem());
+        pr.setLong(4, dgbv.getMaDanhGia());
+        pr.executeUpdate();
+        pr.close();
+    }
+
+    public void deleteDB(long maDanhGia) throws Exception {
+        String sql = "DELETE FROM DanhGiaBaiViet WHERE MaDanhGia = ?";
+        PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+        pr.setLong(1, maDanhGia);
+        pr.executeUpdate();
+        pr.close();
+    }
+    
+	public void deleteDBByMaBaiVietVaTenDangNhap(long maBaiViet, String tenDangNhap) throws Exception {
+	    String sql = "DELETE FROM DanhGiaBaiViet WHERE MaBaiViet = ? AND TenDangNhap = ?";
+	    PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+	    pr.setLong(1, maBaiViet);
+	    pr.setNString(2, tenDangNhap);
+	    pr.executeUpdate();
+	    pr.close();
+	}
+
+    public DanhGiaBaiViet findByMaDanhGia(long maDanhGia) throws Exception {
+        String sql = "SELECT * FROM DanhGiaBaiViet WHERE MaDanhGia = ?";
+        PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+        pr.setLong(1, maDanhGia);
+        ResultSet rs = pr.executeQuery();
+        DanhGiaBaiViet dgbv = null;
+        if (rs.next()) {
+            long MaDanhGia = rs.getLong("MaDanhGia");
+            long MaBaiViet = rs.getLong("MaBaiViet");
+            String TenDangNhap = rs.getNString("TenDangNhap");
+            BigDecimal Diem = rs.getBigDecimal("Diem");
+            Timestamp ThoiDiemDanhGia = rs.getTimestamp("ThoiDiemDanhGia");
+            dgbv = new DanhGiaBaiViet(MaDanhGia, MaBaiViet, TenDangNhap, Diem, ThoiDiemDanhGia);
+        }
+
+        pr.close();
+        rs.close();
+        return dgbv;
+    }
+    
+	public DanhGiaBaiViet findByMaBaiVietVaTenDangNhap(long maBaiViet, String tenDangNhap) throws Exception {
+		String sql = "SELECT * FROM DanhGiaBaiViet WHERE MaBaiViet = ? AND TenDangNhap = ?";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, maBaiViet);
+		pr.setNString(2, tenDangNhap);
+		ResultSet rs = pr.executeQuery();
+		DanhGiaBaiViet dgbv = null;
+		if(rs.next()) {
+            long MaDanhGia = rs.getLong("MaDanhGia");
+            long MaBaiViet = rs.getLong("MaBaiViet");
+            String TenDangNhap = rs.getNString("TenDangNhap");
+            BigDecimal Diem = rs.getBigDecimal("Diem");
+            Timestamp ThoiDiemDanhGia = rs.getTimestamp("ThoiDiemDanhGia");
+			dgbv = new DanhGiaBaiViet(MaDanhGia, MaBaiViet, TenDangNhap, Diem, ThoiDiemDanhGia);
+		}
+		
+		pr.close();
+		rs.close();
+		return dgbv;
+	}
+}
+- LuotThichBinhLuan.java:
+package Modal.LuotThichBinhLuan;
+
+import java.sql.Timestamp;
+
+public class LuotThichBinhLuan {
+	private long MaLuotThich;
+	private long MaBinhLuan;
+	private String TenDangNhap;
+	private Timestamp ThoiDiemThich;
+	public LuotThichBinhLuan() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	public LuotThichBinhLuan(long maLuotThich, long maBinhLuan, String tenDangNhap, Timestamp thoiDiemThich) {
+		super();
+		MaLuotThich = maLuotThich;
+		MaBinhLuan = maBinhLuan;
+		TenDangNhap = tenDangNhap;
+		ThoiDiemThich = thoiDiemThich;
+	}
+	public long getMaLuotThich() {
+		return MaLuotThich;
+	}
+	public void setMaLuotThich(long maLuotThich) {
+		MaLuotThich = maLuotThich;
+	}
+	public long getMaBinhLuan() {
+		return MaBinhLuan;
+	}
+	public void setMaBinhLuan(long maBinhLuan) {
+		MaBinhLuan = maBinhLuan;
+	}
+	public String getTenDangNhap() {
+		return TenDangNhap;
+	}
+	public void setTenDangNhap(String tenDangNhap) {
+		TenDangNhap = tenDangNhap;
+	}
+	public Timestamp getThoiDiemThich() {
+		return ThoiDiemThich;
+	}
+	public void setThoiDiemThich(Timestamp thoiDiemThich) {
+		ThoiDiemThich = thoiDiemThich;
+	}
+	
+}
+- LuotThichBinhLuanBO.java:
+package Modal.LuotThichBinhLuan;
+
+import java.util.ArrayList;
+
+public class LuotThichBinhLuanBO {
+	private LuotThichBinhLuanDAO dao = new LuotThichBinhLuanDAO();
+	ArrayList<LuotThichBinhLuan> ds;
+	
+	public ArrayList<LuotThichBinhLuan> readDB() throws Exception {
+		ds = dao.readDB();
+		return ds;
+	}
+	
+	public void createDB(long MaBinhLuan, String TenDangNhap) throws Exception {
+		if((Object) MaBinhLuan == null || MaBinhLuan < 1) {
+			throw new Exception("Mã bình luận không được để trống");
+		}
+		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+			throw new Exception("Tên đăng nhập không được để trống");
+		}
+		LuotThichBinhLuan ltbl = new LuotThichBinhLuan(-1, MaBinhLuan, TenDangNhap, null);
+		dao.createDB(ltbl);
+	}
+	
+	public void deleteDB(long MaLuotThich) throws Exception {
+		if((Object) MaLuotThich == null || MaLuotThich < 1) {
+			throw new Exception("Mã lượt thích không được để trống!");
+		}
+		if(dao.findByMaLuotThich(MaLuotThich) == null) {
+			throw new Exception("Lượt thích không tồn tại!");
+		}
+		
+		dao.deleteDB(MaLuotThich);		
+	}
+	
+	public void deleteDBByMaBinhLuanVaTenDangNhap(long MaBinhLuan, String TenDangNhap) throws Exception {
+		if((Object) MaBinhLuan == null || MaBinhLuan < 1) {
+			throw new Exception("Mã bình luận không được để trống");
+		}
+		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+			throw new Exception("Tên đăng nhập không được để trống");
+		}
+		if(dao.findByMaBinhLuanVaTenDangNhap(MaBinhLuan, TenDangNhap) == null) {
+			throw new Exception("Lượt thích không tồn tại");
+		}
+		
+		dao.deleteDBByMaBinhLuanVaTenDangNhap(MaBinhLuan, TenDangNhap);
+	}
+	
+	// Tìm theo tài khoản thích
+	public LuotThichBinhLuan findDB(String TenDangNhap) throws Exception {
+		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) return null;
+		for(LuotThichBinhLuan ltbl: readDB()) {
+			if(ltbl.getTenDangNhap().equals(TenDangNhap)) {
+				return ltbl;
+			}
+		}
+		return null;
+	}
+}
+- LuotThichBinhLuanDAO.java:
+package Modal.LuotThichBinhLuan;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+
+import Config.DBConfig;
+
+public class LuotThichBinhLuanDAO {
+	public ArrayList<LuotThichBinhLuan> readDB() throws Exception {
+		ArrayList<LuotThichBinhLuan> ds = new ArrayList<LuotThichBinhLuan>();
+		String sql = "SELECT * FROM LuotThichBinhLuan";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		ResultSet rs = pr.executeQuery();
+		while(rs.next()) {
+			long MaLuotThich = rs.getLong("MaLuotThich");
+			long MaBinhLuan = rs.getLong("MaBinhLuan");
+			String TenDangNhap = rs.getNString("TenDangNhap");
+			Timestamp ThoiDiemThich = rs.getTimestamp("ThoiDiemThich");
+			ds.add(new LuotThichBinhLuan(MaLuotThich, MaBinhLuan, TenDangNhap, ThoiDiemThich));
+		}
+		
+		pr.close();
+		rs.close();
+		return ds;
+	}
+	
+	public void createDB(LuotThichBinhLuan ltbl) throws Exception {
+		String sql = "INSERT INTO LuotThichBinhLuan (MaBinhLuan, TenDangNhap) VALUES (?, ?)";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, ltbl.getMaBinhLuan());
+		pr.setNString(2, ltbl.getTenDangNhap());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void updateDB(LuotThichBinhLuan ltbl) throws Exception {
+		// Không cần
+	}
+	
+	public void deleteDB(long maLuotThich) throws Exception {
+		String sql = "DELETE FROM LuotThichBinhLuan WHERE MaLuotThich = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, maLuotThich);
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void deleteDBByMaBinhLuanVaTenDangNhap(long maBinhLuan, String tenDangNhap) throws Exception {
+	    String sql = "DELETE FROM LuotThichBinhLuan WHERE MaBinhLuan = ? AND TenDangNhap = ?";
+	    PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+	    pr.setLong(1, maBinhLuan);
+	    pr.setNString(2, tenDangNhap);
+	    pr.executeUpdate();
+	    pr.close();
+	}
+	
+	public LuotThichBinhLuan findByMaLuotThich(long maLuotThich) throws Exception {
+		String sql = "SELECT * FROM LuotThichBinhLuan WHERE MaLuotThich = ?";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, maLuotThich);
+		ResultSet rs = pr.executeQuery();
+		LuotThichBinhLuan ltbl = null;
+		if(rs.next()) {
+			long MaLuotThich = rs.getLong("MaLuotThich");
+			long MaBinhLuan = rs.getLong("MaBinhLuan");
+			String TenDangNhap = rs.getNString("TenDangNhap");
+			Timestamp ThoiDiemThich = rs.getTimestamp("ThoiDiemThich");
+			ltbl = new LuotThichBinhLuan(MaLuotThich, MaBinhLuan, TenDangNhap, ThoiDiemThich);
+		}
+		
+		pr.close();
+		rs.close();
+		return ltbl;
+	}
+	
+	public LuotThichBinhLuan findByMaBinhLuanVaTenDangNhap(long maBinhLuan, String tenDangNhap) throws Exception {
+		String sql = "SELECT * FROM LuotThichBinhLuan WHERE MaBinhLuan = ? AND TenDangNhap = ?";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setLong(1, maBinhLuan);
+		pr.setNString(2, tenDangNhap);
+		ResultSet rs = pr.executeQuery();
+		LuotThichBinhLuan ltbl = null;
+		if(rs.next()) {
+			long MaLuotThich = rs.getLong("MaLuotThich");
+			long MaBinhLuan = rs.getLong("MaBinhLuan");
+			String TenDangNhap = rs.getNString("TenDangNhap");
+			Timestamp ThoiDiemThich = rs.getTimestamp("ThoiDiemThich");
+			ltbl = new LuotThichBinhLuan(MaLuotThich, MaBinhLuan, TenDangNhap, ThoiDiemThich);
+		}
+		
+		pr.close();
+		rs.close();
+		return ltbl;
+	}
+}
+- TaiKhoan.java:
+package Modal.TaiKhoan;
+
+import java.sql.Timestamp;
+
+public class TaiKhoan {
+	private String TenDangNhap;
+	private String MatKhau;
+	private String Quyen;
+	private String TrangThai;
+	private Timestamp ThoiDiemTao;
+	private Timestamp ThoiDiemCapNhat;
+	public TaiKhoan() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	public TaiKhoan(String tenDangNhap, String matKhau, String quyen, String trangThai, Timestamp thoiDiemTao,
+			Timestamp thoiDiemCapNhat) {
+		super();
+		TenDangNhap = tenDangNhap;
+		MatKhau = matKhau;
+		Quyen = quyen;
+		TrangThai = trangThai;
+		ThoiDiemTao = thoiDiemTao;
+		ThoiDiemCapNhat = thoiDiemCapNhat;
+	}
+	public String getTenDangNhap() {
+		return TenDangNhap;
+	}
+	public void setTenDangNhap(String tenDangNhap) {
+		TenDangNhap = tenDangNhap;
+	}
+	public String getMatKhau() {
+		return MatKhau;
+	}
+	public void setMatKhau(String matKhau) {
+		MatKhau = matKhau;
+	}
+	public String getQuyen() {
+		return Quyen;
+	}
+	public void setQuyen(String quyen) {
+		Quyen = quyen;
+	}
+	public String getTrangThai() {
+		return TrangThai;
+	}
+	public void setTrangThai(String trangThai) {
+		TrangThai = trangThai;
+	}
+	public Timestamp getThoiDiemTao() {
+		return ThoiDiemTao;
+	}
+	public void setThoiDiemTao(Timestamp thoiDiemTao) {
+		ThoiDiemTao = thoiDiemTao;
+	}
+	public Timestamp getThoiDiemCapNhat() {
+		return ThoiDiemCapNhat;
+	}
+	public void setThoiDiemCapNhat(Timestamp thoiDiemCapNhat) {
+		ThoiDiemCapNhat = thoiDiemCapNhat;
+	}
+
+	
+	
+}
+- TaiKhoanBO.java:
+package Modal.TaiKhoan;
+
+import java.util.ArrayList;
+
+public class TaiKhoanBO {
+	private TaiKhoanDAO dao = new TaiKhoanDAO();
+	ArrayList<TaiKhoan> ds;
+	
+	public ArrayList<TaiKhoan> readDB() throws Exception {
+		ds = dao.readDB();
+		return ds;
+	}
+	
+	public void createDB(String TenDangNhap, String MatKhau, String Quyen) throws Exception {
+		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+			throw new Exception("Tên đăng nhập không được để trống!");
+		}
+		if(MatKhau == null || MatKhau.trim().isEmpty()) {
+			throw new Exception("Mật khẩu không được để trống!");
+		}
+		if(dao.findByTenDangNhap(TenDangNhap) != null) {
+			throw new Exception("Tên đăng nhập đã tồn tại!");
+		}
+		
+		TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, null, null, null);
+		dao.createDB(tk);
+	}
+	
+	public void updateDB(String TenDangNhap, String MatKhau, String Quyen, String TrangThai) throws Exception {
+		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+			throw new Exception("Tên đăng nhập không được để trống!");
+		}
+		if(MatKhau == null || MatKhau.trim().isEmpty()) {
+			throw new Exception("Mật khẩu không được để trống!");
+		}
+		if(TrangThai == null || TrangThai.trim().isEmpty()) {
+			throw new Exception("Trạng thái không được để trống!");
+		}
+		if(dao.findByTenDangNhap(TenDangNhap) == null) {
+			throw new Exception("Tài khoản không tồn tại!");
+		}
+		
+		TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, TrangThai, null, null);
+		dao.updateDB(tk);
+	}
+	
+	public void deleteDB(String TenDangNhap) throws Exception {
+		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+			throw new Exception("Tên đăng nhập không được để trống!");
+		}
+		if(dao.findByTenDangNhap(TenDangNhap) == null) {
+			throw new Exception("Tài khoản không tồn tại!");
+		}
+		
+		dao.deleteDB(TenDangNhap);
+	}
+	
+	// Tìm theo tên tài khoản / quyền / trạng thái / thời điểm tạo / thời điểm cập nhật
+	public ArrayList<TaiKhoan> findDB(String key) throws Exception {
+		ArrayList<TaiKhoan> temp = new ArrayList<TaiKhoan>();
+		for(TaiKhoan tk: readDB()) {
+			if(tk.getTenDangNhap().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tk.getQuyen().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tk.getTrangThai().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tk.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| (tk.getThoiDiemCapNhat() != null && tk.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
+			) {
+				temp.add(tk);
+			}
+		}
+		
+		return temp;
+	}
+	
+	// Nếu tài khoản chưa tồn tại thì đăng ký thành công 
+	public TaiKhoan checkRegisterDB(String TenDangNhap) throws Exception {
+		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
+		return tk;
+	}
+	
+	// Nếu tài khoản tồn tại và đang hoạt động thì trả về tk và đăng nhập thành công
+	public TaiKhoan checkLoginDB(String TenDangNhap, String MatKhau) throws Exception {
+		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
+		if(tk != null && tk.getMatKhau().equals(MatKhau) && tk.getTrangThai().equals("Active")) {
+			return tk;
+		}
+		
+		return null;
+	}
+	
+	public void forgetPassDB(String TenDangNhap, String MatKhauMoi, String NhapLaiMatKhauMoi) throws Exception {
+		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
+		if(tk == null || tk.getTrangThai().equals("Deleted")) {
+			throw new Exception("Tài khoản không tồn tại!");
+		}
+		if(MatKhauMoi == null || MatKhauMoi.trim().isEmpty()) {
+			throw new Exception("Mật khẩu mới không được để trống!");
+		}
+		if(NhapLaiMatKhauMoi == null || NhapLaiMatKhauMoi.trim().isEmpty()) {
+			throw new Exception("Xin hãy nhập lại mật khẩu mới!");
+		}
+		if(!NhapLaiMatKhauMoi.equals(MatKhauMoi)) {
+			throw new Exception("Nhập lại mật khẩu mới chưa khớp với mật khẩu mới!");
+		}
+		
+		tk.setMatKhau(MatKhauMoi);
+		dao.updateDB(tk);
+	}
+	
+	public void changePassDB(String TenDangNhap, String MatKhauCu, String MatKhauMoi) throws Exception {
+		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
+		if(tk == null || tk.getTrangThai().equals("Deleted")) {
+			throw new Exception("Tài khoản không tồn tại!");
+		}
+		if(!tk.getMatKhau().equals(MatKhauCu)) {
+			throw new Exception("Mật khẩu cũ không đúng!");
+		}
+		if(MatKhauMoi == null || MatKhauMoi.trim().isEmpty()) {
+			throw new Exception("Mật khẩu mới không được để trống!");
+		}
+		if(MatKhauMoi.equals(MatKhauCu)) {
+			throw new Exception("Mật khẩu mới không được trùng mật khẩu cũ!");
+		}
+		
+		tk.setMatKhau(MatKhauMoi);
+		dao.updateDB(tk);
+	}
+}
+- TaiKhoanDAO.java:
+package Modal.TaiKhoan;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+
+import Config.DBConfig;
+
+public class TaiKhoanDAO {
+	public ArrayList<TaiKhoan> readDB() throws Exception {
+		ArrayList<TaiKhoan> ds = new ArrayList<TaiKhoan>();
+		String sql = "SELECT * FROM TaiKhoan;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		ResultSet rs = pr.executeQuery();
+		while(rs.next()) {
+			String TenDangNhap = rs.getNString("TenDangNhap");
+			String MatKhau = rs.getNString("MatKhau");
+			String Quyen = rs.getNString("Quyen");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			ds.add(new TaiKhoan(TenDangNhap, MatKhau, Quyen, TrangThai, ThoiDiemTao, ThoiDiemCapNhat));
+		}
+		
+		pr.close();
+		rs.close();
+		return ds;
+	}
+	
+	public void createDB(TaiKhoan tk) throws Exception {
+		String sql = "INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Quyen) VALUES (?, ?, ?);";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, tk.getTenDangNhap());
+		pr.setNString(2, tk.getMatKhau());
+		pr.setNString(3, tk.getQuyen());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void updateDB(TaiKhoan tk) throws Exception {
+		String sql = "UPDATE TaiKhoan SET MatKhau = ?, Quyen = ?, TrangThai = ? WHERE TenDangNhap = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, tk.getMatKhau());
+		pr.setNString(2, tk.getQuyen());
+		pr.setNString(3, tk.getTrangThai());
+		pr.setNString(4, tk.getTenDangNhap());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void deleteDB(String TenDangNhap) throws Exception {
+		String sql = "DELETE FROM TaiKhoan WHERE TenDangNhap = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, TenDangNhap);
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public TaiKhoan findByTenDangNhap(String tenDangNhap) throws Exception {
+		String sql = "SELECT * FROM TaiKhoan WHERE TenDangNhap = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, tenDangNhap);
+		ResultSet rs = pr.executeQuery();
+		TaiKhoan tk = null;
+		if(rs.next()) {
+			String TenDangNhap = rs.getNString("TenDangNhap");
+			String MatKhau = rs.getNString("MatKhau");
+			String Quyen = rs.getNString("Quyen");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, TrangThai, ThoiDiemTao, ThoiDiemCapNhat);
+		}
+		
+		pr.close();
+		rs.close();
+		return tk;
+	}
+}
+- TheLoai.java:
+package Modal.TheLoai;
+
+import java.sql.Timestamp;
+
+public class TheLoai {
+	private int MaTheLoai;
+	private String TenTheLoai;
+	private String TrangThai;
+	private Timestamp ThoiDiemTao;
+	private Timestamp ThoiDiemCapNhat;
+	public TheLoai() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	public TheLoai(int maTheLoai, String tenTheLoai, String trangThai, Timestamp thoiDiemTao,
+			Timestamp thoiDiemCapNhat) {
+		super();
+		MaTheLoai = maTheLoai;
+		TenTheLoai = tenTheLoai;
+		TrangThai = trangThai;
+		ThoiDiemTao = thoiDiemTao;
+		ThoiDiemCapNhat = thoiDiemCapNhat;
+	}
+	public int getMaTheLoai() {
+		return MaTheLoai;
+	}
+	public void setMaTheLoai(int maTheLoai) {
+		MaTheLoai = maTheLoai;
+	}
+	public String getTenTheLoai() {
+		return TenTheLoai;
+	}
+	public void setTenTheLoai(String tenTheLoai) {
+		TenTheLoai = tenTheLoai;
+	}
+	public String getTrangThai() {
+		return TrangThai;
+	}
+	public void setTrangThai(String trangThai) {
+		TrangThai = trangThai;
+	}
+	public Timestamp getThoiDiemTao() {
+		return ThoiDiemTao;
+	}
+	public void setThoiDiemTao(Timestamp thoiDiemTao) {
+		ThoiDiemTao = thoiDiemTao;
+	}
+	public Timestamp getThoiDiemCapNhat() {
+		return ThoiDiemCapNhat;
+	}
+	public void setThoiDiemCapNhat(Timestamp thoiDiemCapNhat) {
+		ThoiDiemCapNhat = thoiDiemCapNhat;
+	}
+	
+	
+}
+- TheLoaiBO.java:
+package Modal.TheLoai;
+
+import java.util.ArrayList;
+
+import Modal.TheLoai.TheLoai;
+import Modal.TheLoai.TheLoaiDAO;
+
+public class TheLoaiBO {
+	private TheLoaiDAO dao = new TheLoaiDAO();
+	ArrayList<TheLoai> ds;
+	
+	public ArrayList<TheLoai> readDB() throws Exception {
+		ds = dao.readDB();
+		return ds;
+	}
+	
+	public ArrayList<TheLoai> readDB2() throws Exception {
+		ds = dao.readDB();
+		ArrayList<TheLoai> temp = new ArrayList<TheLoai>();
+		for(TheLoai tl: ds) {
+			if("Active".equals(tl.getTrangThai())) temp.add(tl);
+		}
+		return temp;
+	}
+	
+	public void createDB(String TenTheLoai) throws Exception {
+		if(TenTheLoai == null || TenTheLoai.trim().isEmpty()) {
+			throw new Exception("Tên thể loại không được để trống!");
+		}
+		if(dao.findByTenTheLoai(TenTheLoai) != null) {
+			throw new Exception("Thể loại đã tồn tại!");
+		}
+		
+		TheLoai tl = new TheLoai(-1, TenTheLoai, null, null, null);
+		dao.createDB(tl);
+	}
+	
+	public void updateDB(int MaTheLoai, String TenTheLoai, String TrangThai) throws Exception {
+		if(TenTheLoai == null || TenTheLoai.trim().isEmpty()) {
+			throw new Exception("Tên thể loại không được để trống!");
+		}
+		if(TrangThai == null || TrangThai.trim().isEmpty()) {
+			throw new Exception("Trạng thái không được để trống!");
+		}
+		if(dao.findByMaTheLoai(MaTheLoai) == null) {
+			throw new Exception("Thể loại không tồn tại!");
+		}
+		
+		TheLoai tl = new TheLoai(MaTheLoai, TenTheLoai, TrangThai, null, null);
+		dao.updateDB(tl);
+	}
+	
+	public void deleteDB(int MaTheLoai) throws Exception {
+		if(dao.findByMaTheLoai(MaTheLoai) == null) {
+			throw new Exception("Thể loại không tồn tại!");
+		}
+		
+		dao.deleteDB(MaTheLoai);
+	}
+	
+	// Tìm theo mã / tên thể loại / trạng thái / thời điểm tạo / thời điểm cập nhật
+	public ArrayList<TheLoai> findDB(String key) throws Exception {
+		ArrayList<TheLoai> temp = new ArrayList<TheLoai>();
+		for(TheLoai tl: ds) {
+			if( tl.getTenTheLoai().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| String.valueOf(tl.getMaTheLoai()).trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tl.getTrangThai().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| tl.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| (tl.getThoiDiemCapNhat() != null && tl.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
+			) {
+				temp.add(tl);
+			}
+		}
+		
+		return temp;
+	}
+	
+}
+- TheLoaiDAO.java:
+package Modal.TheLoai;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+
+import Config.DBConfig;
+import Modal.TheLoai.TheLoai;
+
+public class TheLoaiDAO {
+	public ArrayList<TheLoai> readDB() throws Exception {
+		ArrayList<TheLoai> ds = new ArrayList<TheLoai>();
+		String sql = "SELECT * FROM TheLoai;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		ResultSet rs = pr.executeQuery();
+		while(rs.next()) {
+			int MaTheLoai = rs.getInt("MaTheLoai");
+			String TenTheLoai = rs.getNString("TenTheLoai");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			ds.add(new TheLoai(MaTheLoai, TenTheLoai, TrangThai, ThoiDiemTao, ThoiDiemCapNhat));
+		}
+		
+		pr.close();
+		rs.close();
+		return ds;
+	}
+	
+	public void createDB(TheLoai tl) throws Exception {
+		String sql = "INSERT INTO TheLoai (TenTheLoai) VALUES (?);";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, tl.getTenTheLoai());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void updateDB(TheLoai tl) throws Exception {
+		String sql = "UPDATE TheLoai SET TenTheLoai = ?, TrangThai = ? WHERE MaTheLoai = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setNString(1, tl.getTenTheLoai());
+		pr.setNString(2, tl.getTrangThai());
+		pr.setInt(3, tl.getMaTheLoai());
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public void deleteDB(int MaTheLoai) throws Exception {
+		String sql = "DELETE FROM TheLoai WHERE MaTheLoai = ?;";
+		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+		pr.setInt(1, MaTheLoai);
+		pr.executeUpdate();
+		pr.close();
+	}
+	
+	public TheLoai findByMaTheLoai(int maTheLoai) throws Exception {
+	    String sql = "SELECT * FROM TheLoai WHERE MaTheLoai = ?";
+	    PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+	    pr.setInt(1, maTheLoai);
+	    ResultSet rs = pr.executeQuery();
+	    
+	    TheLoai tl = null;
+	    if (rs.next()) {
+	        int MaTheLoai = rs.getInt("MaTheLoai");
+	        String TenTheLoai = rs.getNString("TenTheLoai");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+	        tl = new TheLoai(MaTheLoai, TenTheLoai, TrangThai, ThoiDiemTao, ThoiDiemCapNhat);
+	    }
+
+	    rs.close();
+	    pr.close();
+	    return tl;
+	}
+	
+	public TheLoai findByTenTheLoai(String tenTheLoai) throws Exception {
+	    String sql = "SELECT * FROM TheLoai WHERE TenTheLoai = ?";  // bỏ dấu '
+	    PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+	    pr.setNString(1, tenTheLoai);
+	    ResultSet rs = pr.executeQuery();
+	    
+	    TheLoai tl = null;
+	    if (rs.next()) {
+	        int MaTheLoai = rs.getInt("MaTheLoai");
+	        String TenTheLoai = rs.getNString("TenTheLoai");
+			String TrangThai = rs.getNString("TrangThai");
+			Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
+			Timestamp ThoiDiemCapNhat = rs.getTimestamp("ThoiDiemCapNhat");
+			tl = new TheLoai(MaTheLoai, TenTheLoai, TrangThai, ThoiDiemTao, ThoiDiemCapNhat);
+	    }
+
+	    rs.close();
+	    pr.close();
+	    return tl;
+	}
+
+}
+- md5.java:
+package Support;
+
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+public class md5 {
+	public static String ecrypt(String text) throws NoSuchAlgorithmException, UnsupportedEncodingException {
+		String enrtext; 
+		MessageDigest msd = MessageDigest.getInstance("MD5"); 
+		byte[] srctextbyte=text.getBytes("UTF-8"); 
+		byte[] enrtextbyte=msd.digest(srctextbyte); 
+		BigInteger big = new BigInteger(1, enrtextbyte); 
+		enrtext=big.toString(16); 
+		return enrtext; 
+	}
+}
+- 

@@ -44,7 +44,7 @@ public class XuLyDangNhapController extends HttpServlet {
 		String tenDangNhap = (String) request.getAttribute("tenDangNhapLogin");
 		String matKhau = (String) request.getAttribute("matKhau");
 		String ghiNhoDangNhap = (String) request.getAttribute("ghiNhoDangNhap");
-		String captchaAnswer = request.getParameter("captcha");
+		String captchaAnswer = request.getParameter("captchaDangNhap");
 		
 		// Lấy số lần đăng nhập sai
 	    Integer loginAttempts = (Integer) session.getAttribute("loginAttempts");
@@ -58,6 +58,8 @@ public class XuLyDangNhapController extends HttpServlet {
 	        
 	        // Kiểm tra xem captcha có tồn tại không
 	        if (captcha == null) {
+	        	loginAttempts++;
+			    session.setAttribute("loginAttempts", loginAttempts);
 	            session.setAttribute("errorDangNhap", "Phiên làm việc hết hạn. Vui lòng thử lại.");
 	            response.sendRedirect(request.getContextPath() + "/DangNhapController");
 	            return;
@@ -65,6 +67,8 @@ public class XuLyDangNhapController extends HttpServlet {
 	        
 	        // Kiểm tra captcha có được nhập không
 	        if (captchaAnswer == null || captchaAnswer.trim().isEmpty()) {
+	        	loginAttempts++;
+			    session.setAttribute("loginAttempts", loginAttempts);
 	            session.setAttribute("errorDangNhap", "Vui lòng nhập mã Captcha");
 	            session.setAttribute("tenDangNhapLogin", tenDangNhap);
 	            response.sendRedirect(request.getContextPath() + "/DangNhapController");
@@ -73,6 +77,8 @@ public class XuLyDangNhapController extends HttpServlet {
 	        
 	        // Kiểm tra captcha có đúng không
 	        if (!captcha.isCorrect(captchaAnswer)) {
+	        	loginAttempts++;
+			    session.setAttribute("loginAttempts", loginAttempts);
 	            session.setAttribute("errorDangNhap", "Mã Captcha không đúng");
 	            session.setAttribute("tenDangNhapLogin", tenDangNhap);
 	            response.sendRedirect(request.getContextPath() + "/DangNhapController");
@@ -102,6 +108,8 @@ public class XuLyDangNhapController extends HttpServlet {
 		// Nếu có lỗi validation, quay lại trang đăng nhập
 		if(hasError) {
 		    // Lưu lỗi vào session thay vì request
+			loginAttempts++;
+		    session.setAttribute("loginAttempts", loginAttempts);
 		    session.setAttribute("errorTenDangNhap", errorTenDangNhap);
 		    session.setAttribute("errorMatKhau", errorMatKhau);
 		    session.setAttribute("tenDangNhapLogin", tenDangNhap);
@@ -118,7 +126,6 @@ public class XuLyDangNhapController extends HttpServlet {
 			
 		    // MÃ HÓA mật khẩu người dùng nhập vào để so sánh
 		    String encryptedPass = md5.ecrypt(matKhau.trim());
-		    System.out.println(encryptedPass);
 			
 			// Gọi hàm checkLoginDB từ TaiKhoanBO
 			TaiKhoan tk = tkbo.checkLoginDB(tenDangNhap.trim(), encryptedPass);

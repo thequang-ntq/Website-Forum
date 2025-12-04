@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import nl.captcha.Captcha;
+
 /**
  * Servlet implementation class DangXuatController
  */
@@ -37,6 +39,21 @@ public class DangXuatController extends HttpServlet {
 		session.removeAttribute("user");
 		session.removeAttribute("account");
 		session.removeAttribute("quyen");
+		
+		//Reset captcha
+		session.removeAttribute(Captcha.NAME);
+		
+		//Reset số lần đăng nhập, tên đn
+		session.removeAttribute("loginAttempts");
+        session.removeAttribute("tenDangNhapLogin");
+        
+        // Reset số lần đăng ký, tên đn
+        session.removeAttribute("registerAttempts");
+        session.removeAttribute("tenDangNhapReg");
+        
+        // Reset số lần sai quên mk, tên đn
+        session.removeAttribute("forgetpassAttempts");
+        session.removeAttribute("tenDangNhapForget");
 		
 		response.sendRedirect(request.getContextPath() + "/DangNhapController");
 	}

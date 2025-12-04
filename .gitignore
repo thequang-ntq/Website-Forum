@@ -71,8 +71,5 @@ work/
 temp/
 out/
 
-# storage
-src/main/webapp/storage
-
 # Allow library jars in WEB-INF/lib
 !src/main/webapp/WEB-INF/lib/*.jar

@@ -1,12 +1,6 @@
 // Đợi DOM load xong mới chạy script
 document.addEventListener('DOMContentLoaded', function() {
 	
-	function refreshCaptcha() {
-		// Thêm timestamp để tránh cache
-		const img = document.getElementById('captchaImage');
-		img.src = '<%= request.getContextPath() %>/simpleCaptcha.jpg?t=' + new Date().getTime();
-	}
-	
 	// Tự động đóng sau 3 giây
 	setTimeout(function() {
 	    var alert = document.getElementById('MyAlert');

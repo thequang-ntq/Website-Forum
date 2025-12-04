@@ -15,8 +15,6 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 	<link rel="stylesheet" href="${pageContext.request.contextPath}/pages/login_page/style.css">
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-	<script src="${pageContext.request.contextPath}/pages/login_page/script.js"></script>
 </head>
 <body>
 	<%
@@ -171,7 +169,7 @@
 		                	Xác thực bảo mật
 		                </label>
 		                <div class="d-flex align-items-center justify-content-center mb-3">
-		                    <img src="<%= request.getContextPath() %>/CaptchaImage.jpg" 
+		                    <img src="<%= request.getContextPath() %>/simpleCaptcha.jpg" 
 		                         alt="Captcha" 
 		                         class="captcha-image"
 		                         id="captchaImage"/>
@@ -183,7 +181,7 @@
 		                    </button>
 		                </div>
 		                <input
-		                    name="captcha"
+		                    name="captchaDangNhap"
 		                    type="text"
 		                    class="form-control captcha-input"
 		                    required
@@ -231,6 +229,15 @@
 			<p class="mb-0">&copy; 2025 Website Forum. All rights reserved.</p>
 		</div>
 	</div>
-
+	
+	<script>
+		function refreshCaptcha() {
+			// Thêm timestamp để tránh cache
+			const img = document.getElementById('captchaImage');
+			img.src = '<%= request.getContextPath() %>/simpleCaptcha.jpg?t=' + new Date().getTime();
+		}	
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="${pageContext.request.contextPath}/pages/login_page/script.js"></script>
 </body>
 </html>

@@ -1,4 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@page import="nl.captcha.noise.CurvedLineNoiseProducer"%>
+<%@page import="nl.captcha.backgrounds.GradiatedBackgroundProducer"%>
+<%@page import="java.awt.Color"%>
+<%@page import="java.awt.Font"%>
+<%@page import="java.util.Arrays"%>
+<%@page import="nl.captcha.text.renderer.DefaultWordRenderer"%>
+<%@page import="nl.captcha.Captcha"%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -12,6 +19,27 @@
 	<script src="${pageContext.request.contextPath}/pages/register_page/script.js"></script>
 </head>
 <body>
+	<%
+		// Kiểm tra số lần đăng ký sai
+		Integer registerAttempts = (Integer) session.getAttribute("registerAttempts");
+		if (registerAttempts == null) {
+			registerAttempts = 0;
+		}
+		boolean showCaptcha = registerAttempts >= 3;
+		
+		// Tạo captcha nếu cần
+		if (showCaptcha) {
+			Captcha captcha = new Captcha.Builder(200, 60)
+				.addText(new DefaultWordRenderer(
+					Arrays.asList(new Color(0, 0, 0)),
+					Arrays.asList(new Font("Arial", Font.BOLD, 40))
+				))
+				.addBackground(new GradiatedBackgroundProducer())
+				.addNoise(new CurvedLineNoiseProducer())
+				.build();
+			session.setAttribute(Captcha.NAME, captcha);
+		}
+	%>
 	<div class="register-container">
 		<div class="register-card">
 			<!-- Logo/Brand Section -->
@@ -22,6 +50,16 @@
 				<h2 class="brand-title">Đăng ký tài khoản</h2>
 				<p class="text-muted">Tạo tài khoản mới để tham gia cộng đồng</p>
 			</div>
+
+			<!-- Hiển thị cảnh báo số lần đăng ký -->
+	        <% if(showCaptcha) { %>
+	        <div class="text-center">
+	        	<span class="warning-badge">
+	        		<i class="bi bi-exclamation-triangle-fill"></i> 
+	        		Đã đăng ký sai <%= registerAttempts %> lần!
+	        	</span>
+	        </div>
+	        <% } %>
 
 			<!-- Error Message -->
 			<% String error = (String) session.getAttribute("errorDangKy"); %>
@@ -134,6 +172,41 @@
 						} 
 					%>
 				</div>
+				
+				<!-- Hiển thị Captcha khi đăng ký sai >= 3 lần -->
+	            <% if(showCaptcha) { %>
+		            <div class="captcha-container">
+		                <label class="form-label fw-bold text-center d-block mb-2">
+		                	<i class="bi bi-shield-lock-fill text-danger"></i> 
+		                	Xác thực bảo mật
+		                </label>
+		                <div class="d-flex align-items-center justify-content-center mb-3">
+		                    <img src="<%= request.getContextPath() %>/simpleCaptcha.jpg" 
+		                         alt="Captcha" 
+		                         class="captcha-image"
+		                         id="captchaImage"/>
+		                    <button type="button" 
+		                            class="btn btn-link refresh-captcha ms-2" 
+		                            onclick="refreshCaptcha()"
+		                            title="Tải lại Captcha">
+		                        <i class="bi bi-arrow-clockwise"></i>
+		                    </button>
+		                </div>
+		                <input
+		                    name="captchaDangKy"
+		                    type="text"
+		                    class="form-control captcha-input"
+		                    required
+		                    placeholder="Nhập mã xác thực"
+		                    autocomplete="off"
+		                    maxlength="6"
+		                />
+		                <small class="text-muted d-block text-center mt-2">
+		                	<i class="bi bi-info-circle"></i> 
+		                	Nhập đúng mã trong hình để tiếp tục
+		                </small>
+		            </div>
+	            <% } %>	
 
 				<!-- Register Button -->
 				<button type="submit" name="btnRegister" class="btn btn-primary w-100 btn-register">
@@ -157,6 +230,12 @@
 			<p class="mb-0">&copy; 2025 Website Forum. All rights reserved.</p>
 		</div>
 	</div>
-
+	<script>
+		function refreshCaptcha() {
+			// Thêm timestamp để tránh cache
+			const img = document.getElementById('captchaImage');
+			img.src = '<%= request.getContextPath() %>/simpleCaptcha.jpg?t=' + new Date().getTime();
+		}	
+	</script>
 </body>
 </html>

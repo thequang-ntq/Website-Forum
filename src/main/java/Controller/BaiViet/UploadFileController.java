@@ -69,23 +69,36 @@ public class UploadFileController extends HttpServlet {
             String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
             
             // Đường dẫn thư mục storage
-            String uploadPath = request.getServletContext().getRealPath("") + File.separator + "storage";
+            String uploadPath = request.getServletContext().getRealPath("") + "storage";
+            String uploadPath2 = null;
+            Path filePath2 = null;
             if (uploadPath.contains(".metadata") && System.getProperty("os.name").toLowerCase().contains("win")) {
-                uploadPath = "D:\\Nam4\\JavaNangCao\\WebsiteForum\\src\\main\\webapp\\storage";
+                uploadPath2 = "D:/Nam4/JavaNangCao" + request.getContextPath() + "/src/main/webapp/storage";
             }
 
-            
             // Tạo thư mục nếu chưa tồn tại
             File uploadDir = new File(uploadPath);
             if (!uploadDir.exists()) {
                 uploadDir.mkdirs();
             }
+            if(uploadPath2 != null) {
+	            File uploadDir2 = new File(uploadPath2);
+	            if (!uploadDir2.exists()) {
+	                uploadDir2.mkdirs();
+	            }
+            }
             
             // Đường dẫn file đầy đủ
             Path filePath = Paths.get(uploadPath, uniqueFileName);
+            if(uploadPath2 != null) {
+            	filePath2 = Paths.get(uploadPath2, uniqueFileName);
+            }
             
             // Lưu file
             Files.copy(filePart.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            if(filePath2 != null) {
+            	Files.copy(filePart.getInputStream(), filePath2, StandardCopyOption.REPLACE_EXISTING);
+            }
             
             // Trả về đường dẫn tương đối
             String relativeUrl = "storage/" + uniqueFileName;

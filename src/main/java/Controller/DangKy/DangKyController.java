@@ -44,11 +44,13 @@ public class DangKyController extends HttpServlet {
 			String tenDangNhap = request.getParameter("tenDangNhapReg");
 			String matKhau = request.getParameter("matKhau");
 			String nhapLaiMatKhau = request.getParameter("nhapLaiMatKhau");
+			String captchaAnswer = request.getParameter("captchaDangKy");
 			
 			// Set vào request attribute để chuyển sang XuLyDangKyController
 			request.setAttribute("tenDangNhapReg", tenDangNhap);
 			request.setAttribute("matKhau", matKhau);
 			request.setAttribute("nhapLaiMatKhau", nhapLaiMatKhau);
+			request.setAttribute("captchaDangKy", captchaAnswer);
 			
 			// Forward sang XuLyDangKyController để xử lý
 			RequestDispatcher rd = request.getRequestDispatcher("/XuLyDangKyController");

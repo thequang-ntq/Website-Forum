@@ -12,6 +12,7 @@ import javax.servlet.http.HttpSession;
 import Modal.TaiKhoan.TaiKhoan;
 import Modal.TaiKhoan.TaiKhoanBO;
 import Support.md5;
+import nl.captcha.Captcha;
 
 /**
  * Servlet implementation class XuLyDangKyController
@@ -43,6 +44,47 @@ public class XuLyDangKyController extends HttpServlet {
 		String tenDangNhap = (String) request.getAttribute("tenDangNhapReg");
 		String matKhau = (String) request.getAttribute("matKhau");
 		String nhapLaiMatKhau = (String) request.getAttribute("nhapLaiMatKhau");
+		String captchaAnswer = request.getParameter("captchaDangKy");
+		
+		// Lấy số lần đăng ký sai
+	    Integer registerAttempts = (Integer) session.getAttribute("registerAttempts");
+	    if (registerAttempts == null) {
+	        registerAttempts = 0;
+	    }
+	    
+	    // Nếu đã đăng ký sai >= 3 lần, kiểm tra captcha
+	    if (registerAttempts >= 3) {
+	        Captcha captcha = (Captcha) session.getAttribute(Captcha.NAME);
+	        
+	        // Kiểm tra xem captcha có tồn tại không
+	        if (captcha == null) {
+	        	registerAttempts++;
+			    session.setAttribute("registerAttempts", registerAttempts);
+	            session.setAttribute("errorDangKy", "Phiên làm việc hết hạn. Vui lòng thử lại.");
+	            response.sendRedirect(request.getContextPath() + "/DangKyController");
+	            return;
+	        }
+	        
+	        // Kiểm tra captcha có được nhập không
+	        if (captchaAnswer == null || captchaAnswer.trim().isEmpty()) {
+	        	registerAttempts++;
+			    session.setAttribute("registerAttempts", registerAttempts);
+	            session.setAttribute("errorDangKy", "Vui lòng nhập mã Captcha");
+	            session.setAttribute("tenDangNhapReg", tenDangNhap);
+	            response.sendRedirect(request.getContextPath() + "/DangKyController");
+	            return;
+	        }
+	        
+	        // Kiểm tra captcha có đúng không
+	        if (!captcha.isCorrect(captchaAnswer)) {
+	        	registerAttempts++;
+			    session.setAttribute("registerAttempts", registerAttempts);
+	            session.setAttribute("errorDangKy", "Mã Captcha không đúng");
+	            session.setAttribute("tenDangNhapReg", tenDangNhap);
+	            response.sendRedirect(request.getContextPath() + "/DangKyController");
+	            return;
+	        }
+	    }
 		
 		// Khởi tạo các biến lỗi
 		String errorTenDangNhap = null;
@@ -75,6 +117,8 @@ public class XuLyDangKyController extends HttpServlet {
 		
 		// Nếu có lỗi validation, quay lại trang đăng ký
 		if(hasError) {
+			registerAttempts++;
+		    session.setAttribute("registerAttempts", registerAttempts);
 			session.setAttribute("errorTenDangNhap", errorTenDangNhap);
 			session.setAttribute("errorMatKhau", errorMatKhau);
 			session.setAttribute("errorNhapLaiMatKhau", errorNhapLaiMatKhau);
@@ -96,7 +140,9 @@ public class XuLyDangKyController extends HttpServlet {
 			// Kiểm tra kết quả đăng ký
 			if(tk != null) {
 				// Tài khoản đã tồn tại
-				errorDangKy = "Tên đăng nhập đã tồn tại!";
+				errorDangKy = "Tài khoản đã tồn tại!";
+				registerAttempts++;
+			    session.setAttribute("registerAttempts", registerAttempts);
 				session.setAttribute("errorDangKy", errorDangKy);
 				session.setAttribute("tenDangNhapReg", tenDangNhap);
 				
@@ -104,6 +150,11 @@ public class XuLyDangKyController extends HttpServlet {
 			} else {
 				// Đăng ký thành công - thêm tài khoản vào database
 				tkbo.createDB(tenDangNhap.trim(), encryptedPass, "User");
+				
+				// Reset số lần đăng ký sai khi đăng nhập thành công
+	            session.removeAttribute("registerAttempts");
+	            session.removeAttribute(Captcha.NAME);
+	            session.removeAttribute("tenDangNhapReg");
 				
 				// Lưu thông báo thành công vào session
 				session.setAttribute("successDangKy", "Đăng ký tài khoản thành công! Vui lòng đăng nhập.");

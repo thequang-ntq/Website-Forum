@@ -28,6 +28,7 @@ public class DangNhapController extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// Set UTF-8 encoding
+		//admin1, mkadmin
 		request.setCharacterEncoding("UTF-8");
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/html; charset=UTF-8");
@@ -43,11 +44,14 @@ public class DangNhapController extends HttpServlet {
 			// Lấy dữ liệu từ form
 			String tenDangNhap = request.getParameter("tenDangNhapLogin");
 			String matKhau = request.getParameter("matKhau");
-			String ghiNhoDangNhap = request.getParameter("ghiNhoDangNhap");			
+			String ghiNhoDangNhap = request.getParameter("ghiNhoDangNhap");
+			String captchaAnswer = request.getParameter("captchaDangNhap");
+			
 			// Set vào request attribute để chuyển sang XuLyDangNhapController
 			request.setAttribute("tenDangNhapLogin", tenDangNhap);
 			request.setAttribute("matKhau", matKhau);
 			request.setAttribute("ghiNhoDangNhap", ghiNhoDangNhap);
+			request.setAttribute("captchaDangNhap", captchaAnswer);
 			
 			// Forward sang XuLyDangNhapController để xử lý
 			RequestDispatcher rd = request.getRequestDispatcher("/XuLyDangNhapController");

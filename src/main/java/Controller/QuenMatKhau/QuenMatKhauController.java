@@ -44,11 +44,13 @@ public class QuenMatKhauController extends HttpServlet {
 			String tenDangNhap = request.getParameter("tenDangNhapForget");
 			String matKhauMoi = request.getParameter("matKhauMoi");
 			String nhapLaiMatKhauMoi = request.getParameter("nhapLaiMatKhauMoi");
+			String captchaAnswer = request.getParameter("captchaLayLaiMK");
 			
 			// Set vào request attribute để chuyển sang XuLyQuenMatKhauController
 			request.setAttribute("tenDangNhapForget", tenDangNhap);
 			request.setAttribute("matKhauMoi", matKhauMoi);
 			request.setAttribute("nhapLaiMatKhauMoi", nhapLaiMatKhauMoi);
+			request.setAttribute("captchaLayLaiMK", captchaAnswer);
 			
 			// Forward sang XuLyQuenMatKhauController để xử lý
 			RequestDispatcher rd = request.getRequestDispatcher("/XuLyQuenMatKhauController");
