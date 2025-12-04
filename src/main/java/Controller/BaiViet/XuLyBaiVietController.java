@@ -1,5 +1,6 @@
 package Controller.BaiViet;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import Modal.BaiViet.BaiViet;
 import Modal.BaiViet.BaiVietBO;
 
 @WebServlet("/XuLyBaiVietController")
@@ -53,7 +55,7 @@ public class XuLyBaiVietController extends HttpServlet {
 				// Thêm bài viết
 				String tieuDe = request.getParameter("tieuDe");
 				String noiDung = request.getParameter("noiDung");
-				String url = request.getParameter("url"); // URL từ hidden field sau khi upload
+				String url = request.getParameter("url");
 				String taiKhoanTao = account;
 				String maTheLoaiStr = request.getParameter("maTheLoai");
 				
@@ -72,8 +74,6 @@ public class XuLyBaiVietController extends HttpServlet {
 					session.setAttribute("messageType", "error");
 				} else {
 					int maTheLoai = Integer.parseInt(maTheLoaiStr);
-					
-					// URL có thể null hoặc empty
 					String finalUrl = (url != null && !url.trim().isEmpty()) ? url.trim() : null;
 					
 					bvbo.createDB(tieuDe.trim(), noiDung.trim(), finalUrl, taiKhoanTao, maTheLoai);
@@ -117,17 +117,29 @@ public class XuLyBaiVietController extends HttpServlet {
 					session.setAttribute("message", "Trạng thái không được để trống!");
 					session.setAttribute("messageType", "error");
 				} else {
-					// Xử lý URL
+					// Lấy thông tin bài viết cũ
+					BaiViet bvCu = null;
+					for(BaiViet bv : bvbo.readDB()) {
+						if(bv.getMaBaiViet() == maBaiViet) {
+							bvCu = bv;
+							break;
+						}
+					}
+					
 					String finalUrl = null;
+					
+					// Nếu có upload file mới
 					if(url != null && !url.trim().isEmpty()) {
 						finalUrl = url.trim();
-					} else if("true".equals(keepOldFile)) {
-						// Giữ file cũ - lấy URL cũ từ DB
-						finalUrl = bvbo.readDB().stream()
-							.filter(bv -> bv.getMaBaiViet() == maBaiViet)
-							.findFirst()
-							.map(bv -> bv.getUrl())
-							.orElse(null);
+						
+						// Xóa file cũ (nếu có)
+						if(bvCu != null && bvCu.getUrl() != null && !bvCu.getUrl().isEmpty()) {
+							deleteOldFile(request, bvCu.getUrl());
+						}
+					} 
+					// Nếu giữ file cũ
+					else if("true".equals(keepOldFile) && bvCu != null) {
+						finalUrl = bvCu.getUrl();
 					}
 					
 					bvbo.updateDB(maBaiViet, tieuDe.trim(), noiDung.trim(), finalUrl, maTheLoai, danhGia, trangThai);
@@ -139,6 +151,7 @@ public class XuLyBaiVietController extends HttpServlet {
 				// Xóa bài viết
 				long maBaiViet = Long.parseLong(request.getParameter("maBaiViet"));
 				bvbo.deleteDB(maBaiViet);
+				
 				session.setAttribute("message", "Xóa bài viết thành công!");
 				session.setAttribute("messageType", "success");
 			}
@@ -151,6 +164,42 @@ public class XuLyBaiVietController extends HttpServlet {
 		
 		// Redirect về trang bài viết
 		response.sendRedirect(request.getContextPath() + "/BaiVietController");
+	}
+	
+	/**
+	 * Xóa file cũ ở cả server và local
+	 */
+	private void deleteOldFile(HttpServletRequest request, String filePath) {
+		if(filePath == null || filePath.trim().isEmpty()) {
+			return;
+		}
+		
+		try {
+			// Xóa file trên server
+			String serverPath = request.getServletContext().getRealPath("") + filePath;
+			File serverFile = new File(serverPath);
+			if(serverFile.exists()) {
+				boolean deleted = serverFile.delete();
+				if(deleted) {
+					System.out.println("Đã xóa file trên server: " + serverPath);
+				}
+			}
+			
+			// Xóa file trên local (nếu là Windows)
+			if(serverPath.contains(".metadata") && System.getProperty("os.name").toLowerCase().contains("win")) {
+				String localPath = "D:/Nam4/JavaNangCao" + request.getContextPath() + "/src/main/webapp/" + filePath;
+				File localFile = new File(localPath);
+				if(localFile.exists()) {
+					boolean deleted = localFile.delete();
+					if(deleted) {
+						System.out.println("Đã xóa file trên local: " + localPath);
+					}
+				}
+			}
+		} catch(Exception e) {
+			System.err.println("Lỗi khi xóa file: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

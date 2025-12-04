@@ -1,7 +1,7 @@
 package Controller.BinhLuan;
 
+import java.io.File;
 import java.io.IOException;
-import java.math.BigDecimal;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -11,37 +11,28 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import Modal.BinhLuan.BinhLuan;
 import Modal.BinhLuan.BinhLuanBO;
+import Modal.BinhLuan.BinhLuanDAO;
 
-/**
- * Servlet implementation class XuLyBinhLuanController
- */
 @WebServlet("/XuLyBinhLuanController")
 @MultipartConfig
 public class XuLyBinhLuanController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-    private BinhLuanBO blbo = new BinhLuanBO();  
+    private BinhLuanBO blbo = new BinhLuanBO();
+    private BinhLuanDAO bldao = new BinhLuanDAO();
 	
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
     public XuLyBinhLuanController() {
         super();
-        // TODO Auto-generated constructor stub
     }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// Set UTF-8 encoding
 		request.setCharacterEncoding("UTF-8");
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/html; charset=UTF-8");
 		
 		HttpSession session = request.getSession();
 		
-		// Kiểm tra đăng nhập và quyền Admin
 		String account = (String) session.getAttribute("account");
 		String quyen = (String) session.getAttribute("quyen");
 		
@@ -55,18 +46,15 @@ public class XuLyBinhLuanController extends HttpServlet {
 			return;
 		}
 		
-		// Lấy tham số action
 		String action = request.getParameter("action");
 		
 		try {
 			if("create".equals(action)) {
-				// Thêm 
 				String noiDung = request.getParameter("noiDung");
 				String url = request.getParameter("url");
-				String taiKhoanTao = account; // Lấy từ session
+				String taiKhoanTao = account;
 				String maBaiVietStr = request.getParameter("maBaiViet");
 				
-				// Validate
 				if(noiDung == null || noiDung.trim().isEmpty()) {
 					session.setAttribute("message", "Nội dung không được để trống!");
 					session.setAttribute("messageType", "error");
@@ -75,18 +63,27 @@ public class XuLyBinhLuanController extends HttpServlet {
 					session.setAttribute("messageType", "error");
 				} else {
 					long maBaiViet = Long.parseLong(maBaiVietStr);
-					blbo.createDB(noiDung.trim(), url, taiKhoanTao, maBaiViet);
+					String finalUrl = (url != null && !url.trim().isEmpty()) ? url.trim() : null;
+					blbo.createDB(noiDung.trim(), finalUrl, taiKhoanTao, maBaiViet);
 					session.setAttribute("message", "Thêm bình luận thành công!");
 					session.setAttribute("messageType", "success");
 				}
 				
 			} else if("update".equals(action)) {
-				// Sửa bình luận
 				long maBinhLuan = Long.parseLong(request.getParameter("maBinhLuan"));
 				String noiDung = request.getParameter("noiDung");
 				String url = request.getParameter("url");
+				String keepOldFile = request.getParameter("keepOldFile");
 				String soLuotThichStr = request.getParameter("soLuotThich");
 				String trangThai = request.getParameter("trangThai");
+				
+				BinhLuan blCheck = bldao.findByMaBinhLuan(maBinhLuan);
+				if(blCheck == null) {
+					session.setAttribute("message", "Bình luận không tồn tại!");
+					session.setAttribute("messageType", "error");
+					response.sendRedirect(request.getContextPath() + "/BinhLuanController");
+					return;
+				}
 				
 				int soLuotThich = -1;
 				if(soLuotThichStr != null && !soLuotThichStr.trim().isEmpty()) {
@@ -99,7 +96,6 @@ public class XuLyBinhLuanController extends HttpServlet {
 					}
 				}
 				
-				// Validate
 				if(noiDung == null || noiDung.trim().isEmpty()) {
 					session.setAttribute("message", "Nội dung không được để trống!");
 					session.setAttribute("messageType", "error");
@@ -107,13 +103,24 @@ public class XuLyBinhLuanController extends HttpServlet {
 					session.setAttribute("message", "Trạng thái không được để trống!");
 					session.setAttribute("messageType", "error");
 				} else {
-					blbo.updateDB(maBinhLuan, noiDung.trim(), url, soLuotThich, trangThai);
+					String finalUrl = null;
+					
+					if(url != null && !url.trim().isEmpty()) {
+						finalUrl = url.trim();
+						
+						if(blCheck.getUrl() != null && !blCheck.getUrl().isEmpty()) {
+							deleteOldFile(request, blCheck.getUrl());
+						}
+					} else if("true".equals(keepOldFile)) {
+						finalUrl = blCheck.getUrl();
+					}
+					
+					blbo.updateDB(maBinhLuan, noiDung.trim(), finalUrl, soLuotThich, trangThai);
 					session.setAttribute("message", "Cập nhật bình luận thành công!");
 					session.setAttribute("messageType", "success");
 				}
 				
 			} else if("delete".equals(action)) {
-				// Xóa bình luận
 				long maBinhLuan = Long.parseLong(request.getParameter("maBinhLuan"));
 				blbo.deleteDB(maBinhLuan);
 				session.setAttribute("message", "Xóa bình luận thành công!");
@@ -126,16 +133,41 @@ public class XuLyBinhLuanController extends HttpServlet {
 			session.setAttribute("messageType", "error");
 		}
 		
-		// Redirect về trang bài viết
 		response.sendRedirect(request.getContextPath() + "/BinhLuanController");
 	}
-
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
+	
+	private void deleteOldFile(HttpServletRequest request, String filePath) {
+		if(filePath == null || filePath.trim().isEmpty()) {
+			return;
+		}
+		
+		try {
+			String serverPath = request.getServletContext().getRealPath("") + filePath;
+			File serverFile = new File(serverPath);
+			if(serverFile.exists()) {
+				boolean deleted = serverFile.delete();
+				if(deleted) {
+					System.out.println("Đã xóa file trên server: " + serverPath);
+				}
+			}
+			
+			if(serverPath.contains(".metadata") && System.getProperty("os.name").toLowerCase().contains("win")) {
+				String localPath = "D:/Nam4/JavaNangCao" + request.getContextPath() + "/src/main/webapp/" + filePath;
+				File localFile = new File(localPath);
+				if(localFile.exists()) {
+					boolean deleted = localFile.delete();
+					if(deleted) {
+						System.out.println("Đã xóa file trên local: " + localPath);
+					}
+				}
+			}
+		} catch(Exception e) {
+			System.err.println("Lỗi khi xóa file: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		doGet(request, response);
+	}
 }

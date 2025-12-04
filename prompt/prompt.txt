@@ -3437,4 +3437,2597 @@ public class md5 {
 		return enrtext; 
 	}
 }
-- 
+- UploadFileController.java:
+package Controller.BaiViet;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
+
+@WebServlet("/UploadFileController")
+@MultipartConfig(
+    fileSizeThreshold = 1024 * 1024 * 2, // 2MB
+    maxFileSize = 1024 * 1024 * 50,      // 50MB
+    maxRequestSize = 1024 * 1024 * 100   // 100MB
+)
+public class UploadFileController extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+    
+    // Các định dạng file được phép
+    private static final String[] ALLOWED_IMAGE_TYPES = {
+        "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"
+    };
+    
+    private static final String[] ALLOWED_VIDEO_TYPES = {
+        "video/mp4", "video/webm", "video/ogg"
+    };
+    
+    public UploadFileController() {
+        super();
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        request.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json; charset=UTF-8");
+        
+        try {
+            // Lấy file từ request
+            Part filePart = request.getPart("file");
+            
+            if (filePart == null || filePart.getSize() == 0) {
+                response.getWriter().write("{\"success\": false, \"message\": \"Vui lòng chọn file!\"}");
+                return;
+            }
+            
+            // Kiểm tra loại file
+            String contentType = filePart.getContentType();
+            if (!isValidFileType(contentType)) {
+                response.getWriter().write("{\"success\": false, \"message\": \"Định dạng file không được hỗ trợ!\"}");
+                return;
+            }
+            
+            // Lấy tên file gốc
+            String fileName = getFileName(filePart);
+            
+            // Tạo tên file mới (unique) để tránh trùng lặp
+            String fileExtension = fileName.substring(fileName.lastIndexOf("."));
+            String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+            
+            // Đường dẫn thư mục storage
+            String uploadPath = request.getServletContext().getRealPath("") + "storage";
+            String uploadPath2 = null;
+            Path filePath2 = null;
+            if (uploadPath.contains(".metadata") && System.getProperty("os.name").toLowerCase().contains("win")) {
+                uploadPath2 = "D:/Nam4/JavaNangCao" + request.getContextPath() + "/src/main/webapp/storage";
+            }
+
+            // Tạo thư mục nếu chưa tồn tại
+            File uploadDir = new File(uploadPath);
+            if (!uploadDir.exists()) {
+                uploadDir.mkdirs();
+            }
+            if(uploadPath2 != null) {
+	            File uploadDir2 = new File(uploadPath2);
+	            if (!uploadDir2.exists()) {
+	                uploadDir2.mkdirs();
+	            }
+            }
+            
+            // Đường dẫn file đầy đủ
+            Path filePath = Paths.get(uploadPath, uniqueFileName);
+            if(uploadPath2 != null) {
+            	filePath2 = Paths.get(uploadPath2, uniqueFileName);
+            }
+            
+            // Lưu file
+            Files.copy(filePart.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            if(filePath2 != null) {
+            	Files.copy(filePart.getInputStream(), filePath2, StandardCopyOption.REPLACE_EXISTING);
+            }
+            
+            // Trả về đường dẫn tương đối
+            String relativeUrl = "storage/" + uniqueFileName;
+            
+            response.getWriter().write("{\"success\": true, \"url\": \"" + relativeUrl + "\", \"fileName\": \"" + fileName + "\"}");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.getWriter().write("{\"success\": false, \"message\": \"Lỗi khi tải file: " + e.getMessage() + "\"}");
+        }
+    }
+    
+    // Kiểm tra loại file hợp lệ
+    private boolean isValidFileType(String contentType) {
+        for (String type : ALLOWED_IMAGE_TYPES) {
+            if (type.equals(contentType)) {
+                return true;
+            }
+        }
+        for (String type : ALLOWED_VIDEO_TYPES) {
+            if (type.equals(contentType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // Lấy tên file từ Part
+    private String getFileName(Part part) {
+        String contentDisposition = part.getHeader("content-disposition");
+        String[] tokens = contentDisposition.split(";");
+        for (String token : tokens) {
+            if (token.trim().startsWith("filename")) {
+                return token.substring(token.indexOf("=") + 2, token.length() - 1);
+            }
+        }
+        return "";
+    }
+}
+- BaiVietController.java:
+package Controller.BaiViet;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import Modal.BaiViet.BaiViet;
+import Modal.BaiViet.BaiVietBO;
+import Modal.TheLoai.TheLoai;
+import Modal.TheLoai.TheLoaiBO;
+import Modal.BinhLuan.BinhLuan;
+import Modal.BinhLuan.BinhLuanBO;
+
+@WebServlet("/BaiVietController")
+public class BaiVietController extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+	private BaiVietBO bvbo = new BaiVietBO();
+	private TheLoaiBO tlbo = new TheLoaiBO();
+	private BinhLuanBO blbo = new BinhLuanBO();
+       
+	public BaiVietController() {
+		super();
+	}
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// Set UTF-8 encoding
+		request.setCharacterEncoding("UTF-8");
+		response.setCharacterEncoding("UTF-8");
+		response.setContentType("text/html; charset=UTF-8");
+		
+		HttpSession session = request.getSession();
+		
+		// Kiểm tra đăng nhập
+		String account = (String) session.getAttribute("account");
+		String quyen = (String) session.getAttribute("quyen");
+		
+		if(account == null || account.trim().isEmpty()) {
+			response.sendRedirect(request.getContextPath() + "/DangNhapController");
+			return;
+		}
+		
+		// Kiểm tra quyền Admin
+		if(!"Admin".equals(quyen)) {
+			response.sendRedirect(request.getContextPath() + "/TrangChuController");
+			return;
+		}
+		
+		try {
+			// Lấy tham số tìm kiếm
+			String searchKey = request.getParameter("search");
+			
+			ArrayList<BaiViet> dsBaiViet;
+			
+			// Nếu có từ khóa tìm kiếm
+			if(searchKey != null && !searchKey.trim().isEmpty()) {
+				dsBaiViet = bvbo.findDB_admin(searchKey.trim());
+				request.setAttribute("searchKey", searchKey);
+			} else {
+				// Lấy toàn bộ danh sách
+				dsBaiViet = bvbo.readDB();
+			}
+			
+			// Sắp xếp theo MaBaiViet tăng dần
+			dsBaiViet.sort((a, b) -> Long.compare(a.getMaBaiViet(), b.getMaBaiViet()));
+			
+			// Lấy danh sách thể loại cho dropdown
+			ArrayList<TheLoai> dsTheLoai = tlbo.readDB2();
+			request.setAttribute("dsTheLoai", dsTheLoai);
+			
+			// === PHÂN TRANG ===
+			int itemsPerPage = 8; // 8 bài viết mỗi trang
+			int currentPage = 1;
+			
+			// Lấy số trang từ URL
+			String pageParam = request.getParameter("page");
+			if(pageParam != null && !pageParam.trim().isEmpty()) {
+				try {
+					currentPage = Integer.parseInt(pageParam);
+					if(currentPage < 1) currentPage = 1;
+				} catch(NumberFormatException e) {
+					currentPage = 1;
+				}
+			}
+			
+			// Tính tổng số trang
+			int totalItems = dsBaiViet.size();
+			int totalPages = (int) Math.ceil((double) totalItems / itemsPerPage);
+			
+			// Đảm bảo currentPage không vượt quá totalPages
+			if(currentPage > totalPages && totalPages > 0) {
+				currentPage = totalPages;
+			}
+			
+			// Lấy danh sách cho trang hiện tại
+			int startIndex = (currentPage - 1) * itemsPerPage;
+			int endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+			
+			ArrayList<BaiViet> dsBaiVietPhanTrang = new ArrayList<>();
+			if(totalItems > 0) {
+				dsBaiVietPhanTrang = new ArrayList<>(dsBaiViet.subList(startIndex, endIndex));
+			}
+			
+			// Truyền dữ liệu phân trang
+			request.setAttribute("dsBaiViet", dsBaiVietPhanTrang);
+			request.setAttribute("currentPage", currentPage);
+			request.setAttribute("totalPages", totalPages);
+			request.setAttribute("totalItems", totalItems);
+			request.setAttribute("startIndex", startIndex);
+			
+			// Lấy thông báo từ session (nếu có)
+			String message = (String) session.getAttribute("message");
+			String messageType = (String) session.getAttribute("messageType");
+			
+			if(message != null) {
+				request.setAttribute("message", message);
+				request.setAttribute("messageType", messageType);
+				// Xóa thông báo khỏi session
+				session.removeAttribute("message");
+				session.removeAttribute("messageType");
+			}
+			
+			// Forward đến trang PostPage
+			request.getRequestDispatcher("/pages/post_page/PostPage.jsp").forward(request, response);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			request.setAttribute("error", "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại!");
+			request.getRequestDispatcher("/pages/post_page/PostPage.jsp").forward(request, response);
+		}
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		doGet(request, response);
+	}
+}
+- XuLyBaiVietController.java:
+package Controller.BaiViet;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import Modal.BaiViet.BaiVietBO;
+
+@WebServlet("/XuLyBaiVietController")
+@MultipartConfig
+public class XuLyBaiVietController extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+	private BaiVietBO bvbo = new BaiVietBO();
+       
+	public XuLyBaiVietController() {
+		super();
+	}
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// Set UTF-8 encoding
+		request.setCharacterEncoding("UTF-8");
+		response.setCharacterEncoding("UTF-8");
+		response.setContentType("text/html; charset=UTF-8");
+		
+		HttpSession session = request.getSession();
+		
+		// Kiểm tra đăng nhập và quyền Admin
+		String account = (String) session.getAttribute("account");
+		String quyen = (String) session.getAttribute("quyen");
+		
+		if(account == null || account.trim().isEmpty()) {
+			response.sendRedirect(request.getContextPath() + "/DangNhapController");
+			return;
+		}
+		
+		if(!"Admin".equals(quyen)) {
+			response.sendRedirect(request.getContextPath() + "/TrangChuController");
+			return;
+		}
+		
+		// Lấy tham số action
+		String action = request.getParameter("action");
+		
+		try {
+			if("create".equals(action)) {
+				// Thêm bài viết
+				String tieuDe = request.getParameter("tieuDe");
+				String noiDung = request.getParameter("noiDung");
+				String url = request.getParameter("url"); // URL từ hidden field sau khi upload
+				String taiKhoanTao = account;
+				String maTheLoaiStr = request.getParameter("maTheLoai");
+				
+				// Validate
+				if(tieuDe == null || tieuDe.trim().isEmpty()) {
+					session.setAttribute("message", "Tiêu đề không được để trống!");
+					session.setAttribute("messageType", "error");
+				} else if(tieuDe.trim().length() > 255) {
+					session.setAttribute("message", "Tiêu đề không được quá 255 ký tự!");
+					session.setAttribute("messageType", "error");
+				} else if(noiDung == null || noiDung.trim().isEmpty()) {
+					session.setAttribute("message", "Nội dung không được để trống!");
+					session.setAttribute("messageType", "error");
+				} else if(maTheLoaiStr == null || maTheLoaiStr.trim().isEmpty()) {
+					session.setAttribute("message", "Thể loại không được để trống!");
+					session.setAttribute("messageType", "error");
+				} else {
+					int maTheLoai = Integer.parseInt(maTheLoaiStr);
+					
+					// URL có thể null hoặc empty
+					String finalUrl = (url != null && !url.trim().isEmpty()) ? url.trim() : null;
+					
+					bvbo.createDB(tieuDe.trim(), noiDung.trim(), finalUrl, taiKhoanTao, maTheLoai);
+					session.setAttribute("message", "Thêm bài viết thành công!");
+					session.setAttribute("messageType", "success");
+				}
+				
+			} else if("update".equals(action)) {
+				// Sửa bài viết
+				long maBaiViet = Long.parseLong(request.getParameter("maBaiViet"));
+				String tieuDe = request.getParameter("tieuDe");
+				String noiDung = request.getParameter("noiDung");
+				String url = request.getParameter("url");
+				String keepOldFile = request.getParameter("keepOldFile");
+				int maTheLoai = Integer.parseInt(request.getParameter("maTheLoai"));
+				String danhGiaStr = request.getParameter("danhGia");
+				String trangThai = request.getParameter("trangThai");
+				
+				BigDecimal danhGia = null;
+				if(danhGiaStr != null && !danhGiaStr.trim().isEmpty()) {
+					danhGia = new BigDecimal(danhGiaStr);
+					if(danhGia.compareTo(BigDecimal.ZERO) < 0 || danhGia.compareTo(new BigDecimal("5")) > 0) {
+						session.setAttribute("message", "Đánh giá phải từ 0 đến 5!");
+						session.setAttribute("messageType", "error");
+						response.sendRedirect(request.getContextPath() + "/BaiVietController");
+						return;
+					}
+				}
+				
+				// Validate
+				if(tieuDe == null || tieuDe.trim().isEmpty()) {
+					session.setAttribute("message", "Tiêu đề không được để trống!");
+					session.setAttribute("messageType", "error");
+				} else if(tieuDe.trim().length() > 255) {
+					session.setAttribute("message", "Tiêu đề không được quá 255 ký tự!");
+					session.setAttribute("messageType", "error");
+				} else if(noiDung == null || noiDung.trim().isEmpty()) {
+					session.setAttribute("message", "Nội dung không được để trống!");
+					session.setAttribute("messageType", "error");
+				} else if(trangThai == null || trangThai.trim().isEmpty()) {
+					session.setAttribute("message", "Trạng thái không được để trống!");
+					session.setAttribute("messageType", "error");
+				} else {
+					// Xử lý URL
+					String finalUrl = null;
+					if(url != null && !url.trim().isEmpty()) {
+						finalUrl = url.trim();
+					} else if("true".equals(keepOldFile)) {
+						// Giữ file cũ - lấy URL cũ từ DB
+						finalUrl = bvbo.readDB().stream()
+							.filter(bv -> bv.getMaBaiViet() == maBaiViet)
+							.findFirst()
+							.map(bv -> bv.getUrl())
+							.orElse(null);
+					}
+					
+					bvbo.updateDB(maBaiViet, tieuDe.trim(), noiDung.trim(), finalUrl, maTheLoai, danhGia, trangThai);
+					session.setAttribute("message", "Cập nhật bài viết thành công!");
+					session.setAttribute("messageType", "success");
+				}
+				
+			} else if("delete".equals(action)) {
+				// Xóa bài viết
+				long maBaiViet = Long.parseLong(request.getParameter("maBaiViet"));
+				bvbo.deleteDB(maBaiViet);
+				session.setAttribute("message", "Xóa bài viết thành công!");
+				session.setAttribute("messageType", "success");
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			session.setAttribute("message", e.getMessage());
+			session.setAttribute("messageType", "error");
+		}
+		
+		// Redirect về trang bài viết
+		response.sendRedirect(request.getContextPath() + "/BaiVietController");
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		doGet(request, response);
+	}
+}
+- PostPage.jsp:
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="Modal.BaiViet.BaiViet" %>
+<%@ page import="Modal.TheLoai.TheLoai" %>
+<%@ page import="Modal.BinhLuan.BinhLuan" %>
+<%@ page import="Modal.BinhLuan.BinhLuanBO" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Website Forum</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="${pageContext.request.contextPath}/pages/post_page/style.css">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+	<%
+		String quyen = (String) session.getAttribute("quyen");
+		String account = (String) session.getAttribute("account");
+		boolean isAdmin = "Admin".equals(quyen);
+		
+		ArrayList<BaiViet> dsBaiViet = (ArrayList<BaiViet>) request.getAttribute("dsBaiViet");
+		ArrayList<TheLoai> dsTheLoai = (ArrayList<TheLoai>) request.getAttribute("dsTheLoai");
+		String searchKey = (String) request.getAttribute("searchKey");
+		String message = (String) request.getAttribute("message");
+		String messageType = (String) request.getAttribute("messageType");
+		
+		// Phân trang
+		Integer currentPage = (Integer) request.getAttribute("currentPage");
+		Integer totalPages = (Integer) request.getAttribute("totalPages");
+		Integer totalItems = (Integer) request.getAttribute("totalItems");
+		Integer startIndex = (Integer) request.getAttribute("startIndex");
+		
+		if(currentPage == null) currentPage = 1;
+		if(totalPages == null) totalPages = 0;
+		if(totalItems == null) totalItems = 0;
+		if(startIndex == null) startIndex = 0;
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+		BinhLuanBO blbo = new BinhLuanBO();
+	%>
+
+	<!-- Navbar -->
+	<nav class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top">
+		<div class="container-fluid">
+			<!-- Logo -->
+			<a class="navbar-brand d-none d-lg-flex align-items-center" href="${pageContext.request.contextPath}/TrangChuController">
+				<i class="bi bi-chat-dots-fill me-2"></i>
+				<span class="fw-bold">Forum</span>
+			</a>
+
+			<!-- Mobile Toggle -->
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+
+			<!-- Nav Links -->
+			<div class="collapse navbar-collapse" id="navbarContent">
+				<ul class="navbar-nav me-auto">
+					<li class="nav-item">
+						<a class="nav-link" href="${pageContext.request.contextPath}/TrangChuController">
+							<i class="bi bi-house-fill me-1"></i>Trang chủ
+						</a>
+					</li>
+					<% if(isAdmin) { %>
+					<li class="nav-item">
+						<a class="nav-link" href="${pageContext.request.contextPath}/TaiKhoanController">
+							<i class="bi bi-tags-fill me-1"></i>Tài khoản
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="${pageContext.request.contextPath}/TheLoaiController">
+							<i class="bi bi-tags-fill me-1"></i>Thể loại
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link active" href="${pageContext.request.contextPath}/BaiVietController">
+							<i class="bi bi-file-text-fill me-1"></i>Bài viết
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="${pageContext.request.contextPath}/BinhLuanController">
+							<i class="bi bi-chat-left-text-fill me-1"></i>Bình luận
+						</a>
+					</li>
+					<% } %>
+					<li class="nav-item">
+						<a class="nav-link" href="${pageContext.request.contextPath}/BaiVietCuaToiController">
+							<i class="bi bi-journal-text me-1"></i>Bài viết của tôi
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="${pageContext.request.contextPath}/BinhLuanCuaToiController">
+							<i class="bi bi-chat-square-dots me-1"></i>Bình luận của tôi
+						</a>
+					</li>
+				</ul>
+
+				<!-- User Menu -->
+				<div class="dropdown">
+					<button class="btn btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
+						<i class="bi bi-person-circle"></i>
+						<span class="ms-2 d-none d-lg-inline"><%= account %></span>
+					</button>
+					<ul class="dropdown-menu dropdown-menu-end">
+						<li><a class="dropdown-item" href="${pageContext.request.contextPath}/ThongTinCaNhanController">
+							<i class="bi bi-person-fill me-2"></i>Thông tin cá nhân
+						</a></li>
+						<li><hr class="dropdown-divider"></li>
+						<li><a class="dropdown-item text-danger" href="${pageContext.request.contextPath}/DangXuatController">
+							<i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+						</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Main Content -->
+	<div class="container mt-5">
+		<!-- Page Title -->
+		<div class="text-center mb-4">
+			<h1 class="page-title">
+				<i class="bi bi-file-text-fill me-2"></i>Danh sách Bài viết
+			</h1>
+		</div>
+
+		<!-- Message Alert -->
+		<div id="messageAlert" class="alert-container" style="display: none;">
+			<div class="alert alert-dismissible fade" role="alert">
+				<i class="bi bi-check-circle-fill me-2"></i>
+				<span id="messageText"></span>
+			</div>
+		</div>
+
+		<!-- Search Bar -->
+		<div class="row mb-4">
+			<div class="col-lg-4 col-md-6 ms-auto">
+				<div class="search-box">
+					<input type="text" class="form-control" id="searchInput" 
+						   placeholder="Tìm kiếm bài viết..." 
+						   value="<%= searchKey != null ? searchKey : "" %>"
+						   onkeyup="handleSearch()">
+					<i class="bi bi-search search-icon"></i>
+				</div>
+			</div>
+		</div>
+
+		<!-- Post Table or Empty State -->
+		<div class="card shadow-sm table-card">
+			<div class="card-body">
+				<% if(dsBaiViet == null || dsBaiViet.isEmpty()) { %>
+					<div class="empty-state text-center py-5">
+						<i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+						<h5 class="mt-3 text-muted">
+							<% if(searchKey != null && !searchKey.trim().isEmpty()) { %>
+								Không tìm thấy bài viết nào phù hợp
+							<% } else { %>
+								Chưa có bài viết nào
+							<% } %>
+						</h5>
+					</div>
+				<% } else { %>
+					<div class="table-responsive">
+						<table class="table table-hover align-middle">
+							<thead class="table-header">
+								<tr>
+									<th width="10%" class="text-center">STT</th>
+									<th width="50%">Tiêu đề</th>
+									<th width="15%" class="text-center">Trạng thái</th>
+									<th width="25%" class="text-center">Thao tác</th>
+								</tr>
+							</thead>
+							<tbody>
+								<% 
+									int stt = startIndex + 1;
+									for(BaiViet bv : dsBaiViet) {
+										String trangThaiVN = "";
+										if("Active".equals(bv.getTrangThai())) trangThaiVN = "Hoạt động";
+										else if("Deleted".equals(bv.getTrangThai())) trangThaiVN = "Đã xóa";
+										else if("Hidden".equals(bv.getTrangThai())) trangThaiVN = "Ẩn";
+										
+										String tieuDeDisplay = bv.getTieuDe();
+										if(tieuDeDisplay.length() > 80) {
+											tieuDeDisplay = tieuDeDisplay.substring(0, 80) + "...";
+										}
+								%>
+									<tr class="table-row" onclick="showDetailModal(<%= bv.getMaBaiViet() %>)">
+										<td class="text-center fw-bold"><%= stt++ %></td>
+										<td><%= tieuDeDisplay %></td>
+										<td class="text-center">
+											<span class="badge <%= "Active".equals(bv.getTrangThai()) ? "bg-success" : ("Deleted".equals(bv.getTrangThai()) ? "bg-danger" : "bg-warning") %>">
+												<%= trangThaiVN %>
+											</span>
+										</td>
+										<td class="text-center" onclick="event.stopPropagation()">
+											<button class="btn btn-sm btn-edit me-2" 
+													onclick="showEditModal(<%= bv.getMaBaiViet() %>)">
+												<i class="bi bi-pencil-fill me-1"></i>Sửa
+											</button>
+											<button class="btn btn-sm btn-delete" 
+													onclick="showDeleteModal(<%= bv.getMaBaiViet() %>, '<%= tieuDeDisplay.replace("'", "\\'") %>')">
+												<i class="bi bi-trash-fill me-1"></i>Xóa
+											</button>
+										</td>
+									</tr>
+								<% } %>
+							</tbody>
+						</table>
+					</div>
+					
+					<!-- Pagination -->
+					<% if(totalPages > 1) { %>
+						<nav aria-label="Page navigation" class="mt-4">
+							<ul class="pagination justify-content-center">
+								<li class="page-item <%= currentPage == 1 ? "disabled" : "" %>">
+									<a class="page-link" href="<%= currentPage > 1 ? buildPaginationUrl(request, currentPage - 1) : "#" %>" aria-label="Previous">
+										<span aria-hidden="true">&laquo;</span>
+									</a>
+								</li>
+								
+								<%
+									int startPage = Math.max(1, currentPage - 2);
+									int endPage = Math.min(totalPages, currentPage + 2);
+									
+									if(currentPage <= 3) {
+										endPage = Math.min(5, totalPages);
+									}
+									
+									if(currentPage >= totalPages - 2) {
+										startPage = Math.max(1, totalPages - 4);
+									}
+									
+									if(startPage > 1) {
+								%>
+										<li class="page-item">
+											<a class="page-link" href="<%= buildPaginationUrl(request, 1) %>">1</a>
+										</li>
+										<% if(startPage > 2) { %>
+											<li class="page-item disabled">
+												<span class="page-link">...</span>
+											</li>
+										<% } %>
+								<%
+									}
+									
+									for(int i = startPage; i <= endPage; i++) {
+								%>
+										<li class="page-item <%= i == currentPage ? "active" : "" %>">
+											<a class="page-link" href="<%= buildPaginationUrl(request, i) %>"><%= i %></a>
+										</li>
+								<%
+									}
+									
+									if(endPage < totalPages) {
+										if(endPage < totalPages - 1) {
+								%>
+											<li class="page-item disabled">
+												<span class="page-link">...</span>
+											</li>
+								<%
+										}
+								%>
+										<li class="page-item">
+											<a class="page-link" href="<%= buildPaginationUrl(request, totalPages) %>"><%= totalPages %></a>
+										</li>
+								<%
+									}
+								%>
+								
+								<li class="page-item <%= currentPage == totalPages ? "disabled" : "" %>">
+									<a class="page-link" href="<%= currentPage < totalPages ? buildPaginationUrl(request, currentPage + 1) : "#" %>" aria-label="Next">
+										<span aria-hidden="true">&raquo;</span>
+									</a>
+								</li>
+							</ul>
+						</nav>
+						
+						<div class="text-center text-muted mt-2">
+							<small>
+								Trang <%= currentPage %> / <%= totalPages %> 
+								(Tổng <%= totalItems %> bài viết)
+							</small>
+						</div>
+					<% } %>
+				<% } %>
+			</div>
+		</div>
+
+		<!-- Add Button -->
+		<div class="text-center mt-4 mb-5">
+			<button class="btn btn-add" onclick="showAddModal()">
+				<i class="bi bi-plus-circle-fill me-2"></i>Thêm bài viết
+			</button>
+		</div>
+	</div>
+
+	<%!
+		private String buildPaginationUrl(HttpServletRequest request, int page) {
+			String contextPath = request.getContextPath();
+			String searchKey = request.getParameter("search");
+			
+			StringBuilder url = new StringBuilder(contextPath + "/BaiVietController?page=" + page);
+			
+			if(searchKey != null && !searchKey.trim().isEmpty()) {
+				try {
+					url.append("&search=").append(java.net.URLEncoder.encode(searchKey, "UTF-8"));
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return url.toString();
+		}
+	%>
+
+	<!-- Footer -->
+	<footer class="footer mt-5">
+		<div class="container text-center">
+			<p class="mb-0">&copy; 2025 Website Forum. All rights reserved.</p>
+		</div>
+	</footer>
+
+	<!-- Detail Modal -->
+	<div class="modal fade" id="detailModal" tabindex="-1">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title"><i class="bi bi-info-circle-fill me-2"></i>Chi tiết bài viết</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body" id="detailContent">
+					<div class="text-center py-5">
+						<div class="spinner-border text-primary" role="status"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- THAY THẾ TOÀN BỘ Add Modal -->
+	<div class="modal fade" id="addModal" tabindex="-1">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">
+						<i class="bi bi-plus-circle-fill me-2"></i>Thêm bài viết
+					</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<form id="addForm" action="${pageContext.request.contextPath}/XuLyBaiVietController" method="post">
+					<input type="hidden" name="action" value="create">
+					<input type="hidden" id="addUrlHidden" name="url" value="">
+					<div class="modal-body">
+						<div id="addError" class="alert alert-danger" style="display: none;">
+							<i class="bi bi-x-circle-fill me-2"></i>
+							<span id="addErrorText"></span>
+						</div>
+						
+						<div class="mb-3">
+							<label for="addTieuDe" class="form-label fw-bold">
+								Tiêu đề <span class="text-danger">*</span>
+							</label>
+							<input type="text" class="form-control" id="addTieuDe" 
+								   name="tieuDe" maxlength="255" 
+								   onkeyup="validateAddForm()" required>
+							<div class="invalid-feedback" id="addTieuDeError"></div>
+						</div>
+	
+						<div class="mb-3">
+							<label for="addNoiDung" class="form-label fw-bold">
+								Nội dung <span class="text-danger">*</span>
+							</label>
+							<textarea class="form-control" id="addNoiDung" name="noiDung" 
+									  rows="6" onkeyup="validateAddForm()" required></textarea>
+							<div class="invalid-feedback" id="addNoiDungError"></div>
+						</div>
+	
+						<!-- Upload File Section -->
+						<div class="mb-3">
+							<label class="form-label fw-bold">Ảnh/Video</label>
+							<div class="upload-container">
+								<input type="file" id="addFileInput" accept="image/*,video/*" 
+									   style="display: none;">
+								<button type="button" class="btn btn-upload" onclick="document.getElementById('addFileInput').click()">
+									<i class="bi bi-cloud-upload me-2"></i>Tải ảnh/video lên
+								</button>
+								<div class="file-status mt-2">
+									<i class="bi bi-file-earmark"></i>
+									<span id="addFileStatus" class="text-muted">Chưa có ảnh/video</span>
+								</div>
+								<div id="addFilePreview" class="file-preview mt-3" style="display: none;"></div>
+							</div>
+							<small class="text-muted">
+								Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video) - Tối đa 50MB
+							</small>
+						</div>
+	
+						<div class="mb-3">
+							<label for="addMaTheLoai" class="form-label fw-bold">
+								Thể loại <span class="text-danger">*</span>
+							</label>
+							<select class="form-select" id="addMaTheLoai" name="maTheLoai" 
+									onchange="validateAddForm()" required>
+								<option value="">-- Chọn thể loại --</option>
+								<% if(dsTheLoai != null && !dsTheLoai.isEmpty()) {
+									for(TheLoai tl : dsTheLoai) { %>
+										<option value="<%= tl.getMaTheLoai() %>"><%= tl.getTenTheLoai() %></option>
+								<% }
+								} %>
+							</select>
+							<div class="invalid-feedback" id="addMaTheLoaiError"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+							<i class="bi bi-x-circle me-1"></i>Hủy
+						</button>
+						<button type="submit" class="btn btn-primary" id="addSubmitBtn">
+							<i class="bi bi-check-circle me-1"></i>Thêm
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	
+	<!-- THAY THẾ TOÀN BỘ Edit Modal -->
+	<div class="modal fade" id="editModal" tabindex="-1">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">
+						<i class="bi bi-pencil-fill me-2"></i>Sửa bài viết
+					</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<form id="editForm" action="${pageContext.request.contextPath}/XuLyBaiVietController" method="post">
+					<input type="hidden" name="action" value="update">
+					<input type="hidden" id="editMaBaiViet" name="maBaiViet">
+					<input type="hidden" id="editUrlHidden" name="url" value="">
+					<input type="hidden" id="editKeepOldFile" name="keepOldFile" value="false">
+					<div class="modal-body">
+						<div id="editError" class="alert alert-danger" style="display: none;">
+							<i class="bi bi-x-circle-fill me-2"></i>
+							<span id="editErrorText"></span>
+						</div>
+						
+						<div class="mb-3">
+							<label for="editTieuDe" class="form-label fw-bold">
+								Tiêu đề <span class="text-danger">*</span>
+							</label>
+							<input type="text" class="form-control" id="editTieuDe" 
+								   name="tieuDe" maxlength="255" 
+								   onkeyup="validateEditForm()" required>
+							<div class="invalid-feedback" id="editTieuDeError"></div>
+						</div>
+	
+						<div class="mb-3">
+							<label for="editNoiDung" class="form-label fw-bold">
+								Nội dung <span class="text-danger">*</span>
+							</label>
+							<textarea class="form-control" id="editNoiDung" name="noiDung" 
+									  rows="6" onkeyup="validateEditForm()" required></textarea>
+							<div class="invalid-feedback" id="editNoiDungError"></div>
+						</div>
+	
+						<!-- Upload File Section -->
+						<div class="mb-3">
+							<label class="form-label fw-bold">Ảnh/Video</label>
+							<div class="upload-container">
+								<input type="file" id="editFileInput" accept="image/*,video/*" 
+									   style="display: none;">
+								<button type="button" class="btn btn-upload" onclick="document.getElementById('editFileInput').click()">
+									<i class="bi bi-cloud-upload me-2"></i>Tải ảnh/video lên
+								</button>
+								<div class="file-status mt-2">
+									<i class="bi bi-file-earmark"></i>
+									<span id="editFileStatus" class="text-muted">Chưa có ảnh/video</span>
+								</div>
+								<div id="editFilePreview" class="file-preview mt-3" style="display: none;"></div>
+								<button type="button" class="btn btn-sm btn-danger mt-2" id="editRemoveFileBtn" 
+										style="display: none;" onclick="removeEditFile()">
+									<i class="bi bi-trash me-1"></i>Xóa file
+								</button>
+							</div>
+							<small class="text-muted">
+								Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video) - Tối đa 50MB
+							</small>
+						</div>
+	
+						<div class="mb-3">
+							<label for="editMaTheLoai" class="form-label fw-bold">
+								Thể loại <span class="text-danger">*</span>
+							</label>
+							<select class="form-select" id="editMaTheLoai" name="maTheLoai" 
+									onchange="validateEditForm()" required>
+								<option value="">-- Chọn thể loại --</option>
+								<% if(dsTheLoai != null && !dsTheLoai.isEmpty()) {
+									for(TheLoai tl : dsTheLoai) { %>
+										<option value="<%= tl.getMaTheLoai() %>"><%= tl.getTenTheLoai() %></option>
+								<% }
+								} %>
+							</select>
+							<div class="invalid-feedback" id="editMaTheLoaiError"></div>
+						</div>
+	
+						<div class="mb-3">
+							<label for="editDanhGia" class="form-label fw-bold">Đánh giá</label>
+							<input type="number" class="form-control" id="editDanhGia" 
+								   name="danhGia" min="0" max="5" step="0.1" 
+								   placeholder="0.0 - 5.0">
+							<small class="text-muted">Để trống nếu chưa đánh giá (từ 0.0 đến 5.0)</small>
+						</div>
+	
+						<div class="mb-3">
+							<label for="editTrangThai" class="form-label fw-bold">
+								Trạng thái <span class="text-danger">*</span>
+							</label>
+							<select class="form-select" id="editTrangThai" name="trangThai" required>
+								<option value="Active">Hoạt động</option>
+								<option value="Hidden">Ẩn</option>
+								<option value="Deleted">Đã xóa</option>
+							</select>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+							<i class="bi bi-x-circle me-1"></i>Hủy
+						</button>
+						<button type="submit" class="btn btn-primary" id="editSubmitBtn">
+							<i class="bi bi-check-circle me-1"></i>Sửa
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- Delete Modal -->
+	<div class="modal fade" id="deleteModal" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header bg-danger text-white">
+					<h5 class="modal-title">
+						<i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa
+					</h5>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+				</div>
+				<form action="${pageContext.request.contextPath}/XuLyBaiVietController" method="post">
+					<input type="hidden" name="action" value="delete">
+					<input type="hidden" id="deleteMaBaiViet" name="maBaiViet">
+					<div class="modal-body">
+						<p class="mb-0">Bạn có chắc chắn muốn xóa bài viết <strong id="deleteTieuDe"></strong>?</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+							<i class="bi bi-x-circle me-1"></i>Không
+						</button>
+						<button type="submit" class="btn btn-danger">
+							<i class="bi bi-check-circle me-1"></i>Có
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- Hidden data for detail modal -->
+	<div id="postData" style="display: none;">
+		<%
+			if(dsBaiViet != null && !dsBaiViet.isEmpty()) {
+				for(BaiViet bv : dsBaiViet) {
+					String tenTheLoai = "";
+					if(dsTheLoai != null) {
+						for(TheLoai tl : dsTheLoai) {
+							if(tl.getMaTheLoai() == bv.getMaTheLoai()) {
+								tenTheLoai = tl.getTenTheLoai();
+								break;
+							}
+						}
+					}
+					
+					ArrayList<BinhLuan> dsBinhLuan = blbo.filterDB_maBaiViet(bv.getMaBaiViet(), bv.getTrangThai());
+					int soBinhLuan = (dsBinhLuan != null) ? dsBinhLuan.size() : 0;
+					
+					String trangThaiVN = "";
+					if("Active".equals(bv.getTrangThai())) trangThaiVN = "Hoạt động";
+					else if("Deleted".equals(bv.getTrangThai())) trangThaiVN = "Đã xóa";
+					else if("Hidden".equals(bv.getTrangThai())) trangThaiVN = "Ẩn";
+		%>
+			<div class="post-data-item" data-id="<%= bv.getMaBaiViet() %>"
+				 data-tieude="<%= bv.getTieuDe() %>"
+				 data-noidung="<%= bv.getNoiDung().replace("\"", "&quot;") %>"
+				 data-url="<%= bv.getUrl() != null ? bv.getUrl() : "" %>"
+				 data-taikhoantao="<%= bv.getTaiKhoanTao() %>"
+				 data-matheloai="<%= bv.getMaTheLoai() %>"
+				 data-tentheloai="<%= tenTheLoai %>"
+				 data-danhgia="<%= bv.getDanhGia() != null ? bv.getDanhGia() : "" %>"
+				 data-trangthai="<%= bv.getTrangThai() %>"
+				 data-trangthaiVN="<%= trangThaiVN %>"
+				 data-sobinhluan="<%= soBinhLuan %>"
+				 data-thoidiemtao="<%= bv.getThoiDiemTao() != null ? sdf.format(bv.getThoiDiemTao()) : "" %>"
+				 data-thoidiemcapnhat="<%= bv.getThoiDiemCapNhat() != null ? sdf.format(bv.getThoiDiemCapNhat()) : "" %>">
+			</div>
+		<%
+				}
+			}
+		%>
+	</div>
+
+	<script src="${pageContext.request.contextPath}/pages/post_page/script.js"></script>
+	<script>
+		<% if(message != null && messageType != null) { 
+			String escapedMessage = message.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r");
+		%>
+			document.addEventListener('DOMContentLoaded', function() {
+				setTimeout(function() {
+					showMessage('<%= escapedMessage %>', '<%= messageType %>');
+				}, 100);
+			});
+		<% } %>
+	</script>
+</body>
+</html>
+- script.js (Của PostPage):
+// Đợi DOM load xong
+document.addEventListener('DOMContentLoaded', function() {
+	// Initialize tooltips
+	var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+	var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+		return new bootstrap.Tooltip(tooltipTriggerEl);
+	});
+});
+
+// Handle real-time search
+let searchTimeout;
+function handleSearch() {
+	const searchInput = document.getElementById('searchInput');
+	const searchValue = searchInput.value.trim();
+	
+	// Clear previous timeout
+	clearTimeout(searchTimeout);
+	
+	// Set new timeout for search (debounce)
+	searchTimeout = setTimeout(() => {
+		const contextPath = window.location.pathname.split('/')[1];
+		let url = '/' + contextPath + '/BaiVietController';
+		
+		if(searchValue) {
+			url += '?search=' + encodeURIComponent(searchValue);
+		}
+		
+		window.location.href = url;
+	}, 300); // Wait 300ms after user stops typing
+}
+
+// Show message alert
+function showMessage(message, type) {
+	const alertContainer = document.getElementById('messageAlert');
+	const messageText = document.getElementById('messageText');
+	const alert = alertContainer.querySelector('.alert');
+	const icon = alert.querySelector('i');
+	
+	// Set message text
+	messageText.textContent = message;
+	
+	// Set alert type
+	alert.className = 'alert alert-dismissible fade show';
+	if(type === 'success') {
+		alert.classList.add('alert-success');
+		icon.className = 'bi bi-check-circle-fill me-2';
+	} else {
+		alert.classList.add('alert-danger');
+		icon.className = 'bi bi-x-circle-fill me-2';
+	}
+	
+	// Show alert
+	alertContainer.style.display = 'block';
+	
+	// Auto hide after 3 seconds
+	setTimeout(() => {
+		alertContainer.style.display = 'none';
+	}, 3000);
+}
+
+// Get post data by ID
+function getPostData(maBaiViet) {
+	const postItems = document.querySelectorAll('.post-data-item');
+	for(let item of postItems) {
+		if(item.getAttribute('data-id') == maBaiViet) {
+			return {
+				maBaiViet: item.getAttribute('data-id'),
+				tieuDe: item.getAttribute('data-tieude'),
+				noiDung: item.getAttribute('data-noidung'),
+				url: item.getAttribute('data-url'),
+				taiKhoanTao: item.getAttribute('data-taikhoantao'),
+				maTheLoai: item.getAttribute('data-matheloai'),
+				tenTheLoai: item.getAttribute('data-tentheloai'),
+				danhGia: item.getAttribute('data-danhgia'),
+				trangThai: item.getAttribute('data-trangthai'),
+				trangThaiVN: item.getAttribute('data-trangthaiVN'),
+				soBinhLuan: item.getAttribute('data-sobinhluan'),
+				thoiDiemTao: item.getAttribute('data-thoidiemtao'),
+				thoiDiemCapNhat: item.getAttribute('data-thoidiemcapnhat')
+			};
+		}
+	}
+	return null;
+}
+
+// Show Detail Modal
+function showDetailModal(maBaiViet) {
+	const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+	const content = document.getElementById('detailContent');
+	
+	// Get post data
+	const post = getPostData(maBaiViet);
+	
+	if(!post) {
+		content.innerHTML = '<div class="alert alert-danger">Không tìm thấy thông tin bài viết</div>';
+		modal.show();
+		return;
+	}
+	
+	// Build detail content
+	let html = '<div class="detail-container">';
+	
+	// Tiêu đề
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-card-heading"></i>Tiêu đề</div>';
+	html += '<div class="detail-value">' + post.tieuDe + '</div>';
+	html += '</div>';
+	
+	// Nội dung
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-file-text"></i>Nội dung</div>';
+	html += '<div class="detail-value">' + post.noiDung.replace(/\n/g, '<br>') + '</div>';
+	html += '</div>';
+	
+	// Ảnh/Video
+	if(post.url && post.url.trim() !== '') {
+		html += '<div class="detail-item">';
+		html += '<div class="detail-label"><i class="bi bi-image"></i>Media</div>';
+		html += '<div class="detail-media">';
+		
+		// Check if image
+		if(post.url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+			html += '<img src="' + post.url + '" alt="Post image" class="img-fluid">';
+		}
+		// Check if video
+		else if(post.url.match(/\.(mp4|webm|ogg)$/i)) {
+			html += '<video controls class="w-100">';
+			html += '<source src="' + post.url + '" type="video/mp4">';
+			html += 'Trình duyệt không hỗ trợ video.';
+			html += '</video>';
+		}
+		
+		html += '</div>';
+		html += '</div>';
+	}
+	
+	// Tài khoản tạo
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-person-fill"></i>Tác giả</div>';
+	html += '<div class="detail-value">' + post.taiKhoanTao + '</div>';
+	html += '</div>';
+	
+	// Thể loại
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-tag-fill"></i>Thể loại</div>';
+	html += '<div class="detail-value">' + post.tenTheLoai + '</div>';
+	html += '</div>';
+	
+	// Đánh giá
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-star-fill"></i>Đánh giá</div>';
+	html += '<div class="detail-value">';
+	if(post.danhGia && post.danhGia.trim() !== '') {
+		let rating = parseFloat(post.danhGia);
+		for(let i = 1; i <= 5; i++) {
+			if(i <= rating) {
+				html += '<i class="bi bi-star-fill text-warning"></i> ';
+			} else {
+				html += '<i class="bi bi-star text-warning"></i> ';
+			}
+		}
+		html += '<span class="ms-2">(' + rating.toFixed(1) + '/5.0)</span>';
+	} else {
+		html += '<span class="text-muted">Chưa có đánh giá</span>';
+	}
+	html += '</div>';
+	html += '</div>';
+	
+	// Trạng thái
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-info-circle-fill"></i>Trạng thái</div>';
+	html += '<div class="detail-value">';
+	let badgeClass = 'bg-success';
+	if(post.trangThai === 'Deleted') badgeClass = 'bg-danger';
+	else if(post.trangThai === 'Hidden') badgeClass = 'bg-warning';
+	html += '<span class="badge ' + badgeClass + '">' + post.trangThaiVN + '</span>';
+	html += '</div>';
+	html += '</div>';
+	
+	// Số bình luận
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-chat-fill"></i>Bình luận</div>';
+	html += '<div class="detail-value">' + post.soBinhLuan + ' bình luận</div>';
+	html += '</div>';
+	
+	// Thời điểm tạo
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-calendar-plus"></i>Thời điểm tạo</div>';
+	html += '<div class="detail-value">' + (post.thoiDiemTao || 'N/A') + '</div>';
+	html += '</div>';
+	
+	// Thời điểm cập nhật
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-calendar-check"></i>Thời điểm cập nhật</div>';
+	html += '<div class="detail-value">' + (post.thoiDiemCapNhat || 'Chưa cập nhật') + '</div>';
+	html += '</div>';
+	
+	html += '</div>';
+	
+	content.innerHTML = html;
+	modal.show();
+}
+
+// Show Add Modal
+function showAddModal() {
+	const modal = new bootstrap.Modal(document.getElementById('addModal'));
+	const form = document.getElementById('addForm');
+	const errorDiv = document.getElementById('addError');
+	const submitBtn = document.getElementById('addSubmitBtn');
+	
+	// Reset form
+	form.reset();
+	
+	// Reset validation
+	document.querySelectorAll('#addForm .form-control, #addForm .form-select').forEach(el => {
+		el.classList.remove('is-invalid');
+	});
+	document.querySelectorAll('#addForm .invalid-feedback').forEach(el => {
+		el.textContent = '';
+	});
+	
+	errorDiv.style.display = 'none';
+	submitBtn.disabled = false;
+	
+	modal.show();
+}
+
+// Show Edit Modal
+function showEditModal(maBaiViet) {
+	const modal = new bootstrap.Modal(document.getElementById('editModal'));
+	const form = document.getElementById('editForm');
+	const errorDiv = document.getElementById('editError');
+	const submitBtn = document.getElementById('editSubmitBtn');
+	
+	// Get post data
+	const post = getPostData(maBaiViet);
+	
+	if(!post) {
+		alert('Không tìm thấy thông tin bài viết');
+		return;
+	}
+	
+	// Set values
+	document.getElementById('editMaBaiViet').value = post.maBaiViet;
+	document.getElementById('editTieuDe').value = post.tieuDe;
+	document.getElementById('editNoiDung').value = post.noiDung;
+	document.getElementById('editUrl').value = post.url || '';
+	document.getElementById('editMaTheLoai').value = post.maTheLoai;
+	document.getElementById('editDanhGia').value = post.danhGia || '';
+	document.getElementById('editTrangThai').value = post.trangThai;
+	
+	// Reset validation
+	document.querySelectorAll('#editForm .form-control, #editForm .form-select').forEach(el => {
+		el.classList.remove('is-invalid');
+	});
+	document.querySelectorAll('#editForm .invalid-feedback').forEach(el => {
+		el.textContent = '';
+	});
+	
+	errorDiv.style.display = 'none';
+	submitBtn.disabled = false;
+	
+	modal.show();
+}
+
+// Show Delete Modal
+function showDeleteModal(maBaiViet, tieuDe) {
+	const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+	
+	document.getElementById('deleteMaBaiViet').value = maBaiViet;
+	document.getElementById('deleteTieuDe').textContent = tieuDe;
+	
+	modal.show();
+}
+
+// Validate Add Form
+function validateAddForm() {
+	const tieuDe = document.getElementById('addTieuDe').value.trim();
+	const noiDung = document.getElementById('addNoiDung').value.trim();
+	const maTheLoai = document.getElementById('addMaTheLoai').value;
+	const submitBtn = document.getElementById('addSubmitBtn');
+	
+	let isValid = true;
+	
+	// Validate tiêu đề
+	const tieuDeInput = document.getElementById('addTieuDe');
+	const tieuDeError = document.getElementById('addTieuDeError');
+	if(tieuDe === '') {
+		tieuDeInput.classList.add('is-invalid');
+		tieuDeError.textContent = 'Tiêu đề không được để trống';
+		isValid = false;
+	} else if(tieuDe.length > 255) {
+		tieuDeInput.classList.add('is-invalid');
+		tieuDeError.textContent = 'Tiêu đề không được quá 255 ký tự';
+		isValid = false;
+	} else {
+		tieuDeInput.classList.remove('is-invalid');
+		tieuDeError.textContent = '';
+	}
+	
+	// Validate nội dung
+	const noiDungInput = document.getElementById('addNoiDung');
+	const noiDungError = document.getElementById('addNoiDungError');
+	if(noiDung === '') {
+		noiDungInput.classList.add('is-invalid');
+		noiDungError.textContent = 'Nội dung không được để trống';
+		isValid = false;
+	} else {
+		noiDungInput.classList.remove('is-invalid');
+		noiDungError.textContent = '';
+	}
+	
+	// Validate thể loại
+	const maTheLoaiSelect = document.getElementById('addMaTheLoai');
+	const maTheLoaiError = document.getElementById('addMaTheLoaiError');
+	if(!maTheLoai || maTheLoai === '') {
+		maTheLoaiSelect.classList.add('is-invalid');
+		maTheLoaiError.textContent = 'Vui lòng chọn thể loại';
+		isValid = false;
+	} else {
+		maTheLoaiSelect.classList.remove('is-invalid');
+		maTheLoaiError.textContent = '';
+	}
+	
+	submitBtn.disabled = !isValid;
+	return isValid;
+}
+
+// Validate Edit Form
+function validateEditForm() {
+	const tieuDe = document.getElementById('editTieuDe').value.trim();
+	const noiDung = document.getElementById('editNoiDung').value.trim();
+	const maTheLoai = document.getElementById('editMaTheLoai').value;
+	const submitBtn = document.getElementById('editSubmitBtn');
+	
+	let isValid = true;
+	
+	// Validate tiêu đề
+	const tieuDeInput = document.getElementById('editTieuDe');
+	const tieuDeError = document.getElementById('editTieuDeError');
+	if(tieuDe === '') {
+		tieuDeInput.classList.add('is-invalid');
+		tieuDeError.textContent = 'Tiêu đề không được để trống';
+		isValid = false;
+	} else if(tieuDe.length > 255) {
+		tieuDeInput.classList.add('is-invalid');
+		tieuDeError.textContent = 'Tiêu đề không được quá 255 ký tự';
+		isValid = false;
+	} else {
+		tieuDeInput.classList.remove('is-invalid');
+		tieuDeError.textContent = '';
+	}
+	
+	// Validate nội dung
+	const noiDungInput = document.getElementById('editNoiDung');
+	const noiDungError = document.getElementById('editNoiDungError');
+	if(noiDung === '') {
+		noiDungInput.classList.add('is-invalid');
+		noiDungError.textContent = 'Nội dung không được để trống';
+		isValid = false;
+	} else {
+		noiDungInput.classList.remove('is-invalid');
+		noiDungError.textContent = '';
+	}
+	
+	// Validate thể loại
+	const maTheLoaiSelect = document.getElementById('editMaTheLoai');
+	const maTheLoaiError = document.getElementById('editMaTheLoaiError');
+	if(!maTheLoai || maTheLoai === '') {
+		maTheLoaiSelect.classList.add('is-invalid');
+		maTheLoaiError.textContent = 'Vui lòng chọn thể loại';
+		isValid = false;
+	} else {
+		maTheLoaiSelect.classList.remove('is-invalid');
+		maTheLoaiError.textContent = '';
+	}
+	
+	submitBtn.disabled = !isValid;
+	return isValid;
+}
+
+// Handle Add Form Submit
+document.addEventListener('DOMContentLoaded', function() {
+	const addForm = document.getElementById('addForm');
+	if(addForm) {
+		addForm.addEventListener('submit', function(e) {
+			if(!validateAddForm()) {
+				e.preventDefault();
+				const errorDiv = document.getElementById('addError');
+				const errorText = document.getElementById('addErrorText');
+				errorText.textContent = 'Vui lòng kiểm tra lại các trường đã nhập!';
+				errorDiv.style.display = 'block';
+				
+				setTimeout(() => {
+					errorDiv.style.display = 'none';
+				}, 3000);
+			}
+		});
+	}
+	
+	const editForm = document.getElementById('editForm');
+	if(editForm) {
+		editForm.addEventListener('submit', function(e) {
+			if(!validateEditForm()) {
+				e.preventDefault();
+				const errorDiv = document.getElementById('editError');
+				const errorText = document.getElementById('editErrorText');
+				errorText.textContent = 'Vui lòng kiểm tra lại các trường đã nhập!';
+				errorDiv.style.display = 'block';
+				
+				setTimeout(() => {
+					errorDiv.style.display = 'none';
+				}, 3000);
+			}
+		});
+	}
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+	if(e.key === 'Escape') {
+		const modals = document.querySelectorAll('.modal.show');
+		modals.forEach(modal => {
+			const modalInstance = bootstrap.Modal.getInstance(modal);
+			if(modalInstance) {
+				modalInstance.hide();
+			}
+		});
+	}
+});
+
+// Prevent duplicate form submission
+let isSubmitting = false;
+document.addEventListener('DOMContentLoaded', function() {
+	const forms = document.querySelectorAll('form');
+	forms.forEach(form => {
+		form.addEventListener('submit', function(e) {
+			if(isSubmitting) {
+				e.preventDefault();
+				return false;
+			}
+			isSubmitting = true;
+			
+			// Re-enable after 3 seconds (in case of error)
+			setTimeout(() => {
+				isSubmitting = false;
+			}, 3000);
+		});
+	});
+});
+
+// ============================================
+// THÊM VÀO CUỐI FILE script.js
+// ============================================
+
+// Global variables
+let addUploadedFileUrl = '';
+let editUploadedFileUrl = '';
+let editOriginalFileUrl = '';
+
+// Initialize upload listeners when DOM loaded
+document.addEventListener('DOMContentLoaded', function() {
+	// Add file input listener
+	const addFileInput = document.getElementById('addFileInput');
+	if(addFileInput) {
+		addFileInput.addEventListener('change', handleAddFileSelect);
+	}
+	
+	// Edit file input listener
+	const editFileInput = document.getElementById('editFileInput');
+	if(editFileInput) {
+		editFileInput.addEventListener('change', handleEditFileSelect);
+	}
+});
+
+// Handle Add File Select
+function handleAddFileSelect(event) {
+	const file = event.target.files[0];
+	if (!file) return;
+	
+	console.log('File selected:', file.name, file.type, file.size);
+	
+	// Validate file type
+	const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+	const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+	const allValidTypes = [...validImageTypes, ...validVideoTypes];
+	
+	if (!allValidTypes.includes(file.type)) {
+		alert('Định dạng file không được hỗ trợ! Vui lòng chọn file ảnh (.jpg, .png, .gif, .webp) hoặc video (.mp4, .webm, .ogg)');
+		event.target.value = '';
+		return;
+	}
+	
+	// Validate file size (50MB)
+	if (file.size > 50 * 1024 * 1024) {
+		alert('Kích thước file quá lớn! Vui lòng chọn file nhỏ hơn 50MB');
+		event.target.value = '';
+		return;
+	}
+	
+	// Update file status
+	document.getElementById('addFileStatus').textContent = 'Đang chuẩn bị tải lên...';
+	document.getElementById('addFileStatus').classList.remove('text-muted');
+	document.getElementById('addFileStatus').classList.add('text-primary');
+	
+	// Show preview
+	showAddFilePreview(file);
+	
+	// Upload file
+	uploadAddFile(file);
+}
+
+// Upload Add File
+function uploadAddFile(file) {
+	const formData = new FormData();
+	formData.append('file', file);
+	
+	const statusElement = document.getElementById('addFileStatus');
+	statusElement.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Đang tải lên...';
+	statusElement.classList.remove('text-success', 'text-danger', 'text-muted');
+	statusElement.classList.add('text-primary');
+	
+	const contextPath = window.location.pathname.split('/')[1];
+	
+	fetch('/' + contextPath + '/UploadFileController', {
+		method: 'POST',
+		body: formData
+	})
+	.then(response => {
+		console.log('Upload response status:', response.status);
+		return response.json();
+	})
+	.then(data => {
+		console.log('Upload response data:', data);
+		if (data.success) {
+			addUploadedFileUrl = data.url;
+			document.getElementById('addUrlHidden').value = data.url;
+			statusElement.textContent = data.fileName;
+			statusElement.classList.remove('text-primary');
+			statusElement.classList.add('text-success');
+			console.log('Upload success! URL:', data.url);
+		} else {
+			throw new Error(data.message || 'Upload thất bại');
+		}
+	})
+	.catch(error => {
+		console.error('Upload error:', error);
+		statusElement.textContent = 'Lỗi: ' + error.message;
+		statusElement.classList.remove('text-primary');
+		statusElement.classList.add('text-danger');
+		document.getElementById('addFileInput').value = '';
+		document.getElementById('addFilePreview').style.display = 'none';
+		addUploadedFileUrl = '';
+	});
+}
+
+// Show Add File Preview
+function showAddFilePreview(file) {
+	const preview = document.getElementById('addFilePreview');
+	preview.innerHTML = '';
+	preview.style.display = 'block';
+	
+	const reader = new FileReader();
+	
+	if (file.type.startsWith('image/')) {
+		reader.onload = function(e) {
+			const img = document.createElement('img');
+			img.src = e.target.result;
+			img.className = 'preview-image';
+			img.style.maxWidth = '100%';
+			img.style.maxHeight = '400px';
+			img.style.objectFit = 'contain';
+			img.style.borderRadius = '12px';
+			preview.appendChild(img);
+		};
+		reader.readAsDataURL(file);
+	} else if (file.type.startsWith('video/')) {
+		reader.onload = function(e) {
+			const video = document.createElement('video');
+			video.src = e.target.result;
+			video.controls = true;
+			video.className = 'preview-video';
+			video.style.width = '100%';
+			video.style.maxHeight = '400px';
+			video.style.borderRadius = '12px';
+			preview.appendChild(video);
+		};
+		reader.readAsDataURL(file);
+	}
+}
+
+// Handle Edit File Select
+function handleEditFileSelect(event) {
+	const file = event.target.files[0];
+	if (!file) return;
+	
+	console.log('Edit file selected:', file.name, file.type, file.size);
+	
+	// Validate file type
+	const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+	const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+	const allValidTypes = [...validImageTypes, ...validVideoTypes];
+	
+	if (!allValidTypes.includes(file.type)) {
+		alert('Định dạng file không được hỗ trợ! Vui lòng chọn file ảnh (.jpg, .png, .gif, .webp) hoặc video (.mp4, .webm, .ogg)');
+		event.target.value = '';
+		return;
+	}
+	
+	// Validate file size (50MB)
+	if (file.size > 50 * 1024 * 1024) {
+		alert('Kích thước file quá lớn! Vui lòng chọn file nhỏ hơn 50MB');
+		event.target.value = '';
+		return;
+	}
+	
+	// Update file status
+	document.getElementById('editFileStatus').textContent = 'Đang chuẩn bị tải lên...';
+	document.getElementById('editFileStatus').classList.remove('text-muted');
+	document.getElementById('editFileStatus').classList.add('text-primary');
+	
+	// Show preview
+	showEditFilePreview(file);
+	
+	// Show remove button
+	document.getElementById('editRemoveFileBtn').style.display = 'inline-block';
+	
+	// Mark that we're uploading a new file
+	document.getElementById('editKeepOldFile').value = 'false';
+	
+	// Upload file
+	uploadEditFile(file);
+}
+
+// Upload Edit File
+function uploadEditFile(file) {
+	const formData = new FormData();
+	formData.append('file', file);
+	
+	const statusElement = document.getElementById('editFileStatus');
+	statusElement.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Đang tải lên...';
+	statusElement.classList.remove('text-success', 'text-danger', 'text-muted');
+	statusElement.classList.add('text-primary');
+	
+	const contextPath = window.location.pathname.split('/')[1];
+	
+	fetch('/' + contextPath + '/UploadFileController', {
+		method: 'POST',
+		body: formData
+	})
+	.then(response => {
+		console.log('Edit upload response status:', response.status);
+		return response.json();
+	})
+	.then(data => {
+		console.log('Edit upload response data:', data);
+		if (data.success) {
+			editUploadedFileUrl = data.url;
+			document.getElementById('editUrlHidden').value = data.url;
+			statusElement.textContent = data.fileName;
+			statusElement.classList.remove('text-primary');
+			statusElement.classList.add('text-success');
+			console.log('Edit upload success! URL:', data.url);
+		} else {
+			throw new Error(data.message || 'Upload thất bại');
+		}
+	})
+	.catch(error => {
+		console.error('Edit upload error:', error);
+		statusElement.textContent = 'Lỗi: ' + error.message;
+		statusElement.classList.remove('text-primary');
+		statusElement.classList.add('text-danger');
+		document.getElementById('editFileInput').value = '';
+		document.getElementById('editFilePreview').style.display = 'none';
+		editUploadedFileUrl = '';
+	});
+}
+
+// Show Edit File Preview
+function showEditFilePreview(file) {
+	const preview = document.getElementById('editFilePreview');
+	preview.innerHTML = '';
+	preview.style.display = 'block';
+	
+	const reader = new FileReader();
+	
+	if (file.type.startsWith('image/')) {
+		reader.onload = function(e) {
+			const img = document.createElement('img');
+			img.src = e.target.result;
+			img.className = 'preview-image';
+			img.style.maxWidth = '100%';
+			img.style.maxHeight = '400px';
+			img.style.objectFit = 'contain';
+			img.style.borderRadius = '12px';
+			preview.appendChild(img);
+		};
+		reader.readAsDataURL(file);
+	} else if (file.type.startsWith('video/')) {
+		reader.onload = function(e) {
+			const video = document.createElement('video');
+			video.src = e.target.result;
+			video.controls = true;
+			video.className = 'preview-video';
+			video.style.width = '100%';
+			video.style.maxHeight = '400px';
+			video.style.borderRadius = '12px';
+			preview.appendChild(video);
+		};
+		reader.readAsDataURL(file);
+	}
+}
+
+// Remove Edit File
+function removeEditFile() {
+	document.getElementById('editFileInput').value = '';
+	document.getElementById('editFileStatus').textContent = 'Chưa có ảnh/video';
+	document.getElementById('editFileStatus').classList.remove('text-success');
+	document.getElementById('editFileStatus').classList.add('text-muted');
+	document.getElementById('editFilePreview').style.display = 'none';
+	document.getElementById('editRemoveFileBtn').style.display = 'none';
+	document.getElementById('editUrlHidden').value = '';
+	document.getElementById('editKeepOldFile').value = 'false';
+	editUploadedFileUrl = '';
+}
+
+// Override showAddModal
+const originalShowAddModalFunc = typeof showAddModal !== 'undefined' ? showAddModal : null;
+showAddModal = function() {
+	if(originalShowAddModalFunc) {
+		originalShowAddModalFunc();
+	} else {
+		const modal = new bootstrap.Modal(document.getElementById('addModal'));
+		const form = document.getElementById('addForm');
+		form.reset();
+		document.querySelectorAll('#addForm .form-control, #addForm .form-select').forEach(el => {
+			el.classList.remove('is-invalid');
+		});
+		document.querySelectorAll('#addForm .invalid-feedback').forEach(el => {
+			el.textContent = '';
+		});
+		document.getElementById('addError').style.display = 'none';
+		document.getElementById('addSubmitBtn').disabled = false;
+		modal.show();
+	}
+	
+	// Reset upload state
+	addUploadedFileUrl = '';
+	document.getElementById('addFileInput').value = '';
+	document.getElementById('addFileStatus').textContent = 'Chưa có ảnh/video';
+	document.getElementById('addFileStatus').classList.remove('text-success', 'text-primary');
+	document.getElementById('addFileStatus').classList.add('text-muted');
+	document.getElementById('addFilePreview').style.display = 'none';
+	document.getElementById('addUrlHidden').value = '';
+	console.log('Add modal opened, upload state reset');
+};
+
+// Override showEditModal
+const originalShowEditModalFunc = typeof showEditModal !== 'undefined' ? showEditModal : null;
+showEditModal = function(maBaiViet) {
+	const post = getPostData(maBaiViet);
+	
+	if (!post) {
+		alert('Không tìm thấy thông tin bài viết');
+		return;
+	}
+	
+	console.log('Opening edit modal for post:', maBaiViet, post);
+	
+	// Call original or create modal
+	const modal = new bootstrap.Modal(document.getElementById('editModal'));
+	const form = document.getElementById('editForm');
+	
+	// Set values
+	document.getElementById('editMaBaiViet').value = post.maBaiViet;
+	document.getElementById('editTieuDe').value = post.tieuDe;
+	document.getElementById('editNoiDung').value = post.noiDung;
+	document.getElementById('editMaTheLoai').value = post.maTheLoai;
+	document.getElementById('editDanhGia').value = post.danhGia || '';
+	document.getElementById('editTrangThai').value = post.trangThai;
+	
+	// Handle file
+	editOriginalFileUrl = post.url || '';
+	editUploadedFileUrl = '';
+	document.getElementById('editFileInput').value = '';
+	document.getElementById('editUrlHidden').value = editOriginalFileUrl;
+	document.getElementById('editKeepOldFile').value = 'true';
+	
+	const contextPath = window.location.pathname.split('/')[1];
+	
+	if (editOriginalFileUrl && editOriginalFileUrl.trim() !== '') {
+		const fileName = editOriginalFileUrl.split('/').pop();
+		document.getElementById('editFileStatus').textContent = fileName;
+		document.getElementById('editFileStatus').classList.remove('text-muted');
+		document.getElementById('editFileStatus').classList.add('text-success');
+		
+		const preview = document.getElementById('editFilePreview');
+		preview.innerHTML = '';
+		preview.style.display = 'block';
+		
+		const fullUrl = '/' + contextPath + '/' + editOriginalFileUrl;
+		
+		if (editOriginalFileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+			const img = document.createElement('img');
+			img.src = fullUrl;
+			img.className = 'preview-image';
+			img.style.maxWidth = '100%';
+			img.style.maxHeight = '400px';
+			img.style.objectFit = 'contain';
+			img.style.borderRadius = '12px';
+			preview.appendChild(img);
+		} else if (editOriginalFileUrl.match(/\.(mp4|webm|ogg)$/i)) {
+			const video = document.createElement('video');
+			video.src = fullUrl;
+			video.controls = true;
+			video.className = 'preview-video';
+			video.style.width = '100%';
+			video.style.maxHeight = '400px';
+			video.style.borderRadius = '12px';
+			preview.appendChild(video);
+		}
+		
+		document.getElementById('editRemoveFileBtn').style.display = 'inline-block';
+	} else {
+		document.getElementById('editFileStatus').textContent = 'Chưa có ảnh/video';
+		document.getElementById('editFileStatus').classList.remove('text-success');
+		document.getElementById('editFileStatus').classList.add('text-muted');
+		document.getElementById('editFilePreview').style.display = 'none';
+		document.getElementById('editRemoveFileBtn').style.display = 'none';
+	}
+	
+	// Reset validation
+	document.querySelectorAll('#editForm .form-control, #editForm .form-select').forEach(el => {
+		el.classList.remove('is-invalid');
+	});
+	document.querySelectorAll('#editForm .invalid-feedback').forEach(el => {
+		el.textContent = '';
+	});
+	
+	document.getElementById('editError').style.display = 'none';
+	document.getElementById('editSubmitBtn').disabled = false;
+	
+	modal.show();
+};
+- style.css (Của PostPage):
+@charset "UTF-8";
+
+/* =======================
+   Global Styles
+======================= */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+	background-color: #f0f2f5 !important;
+	min-height: 100vh !important;
+	display: flex !important;
+	flex-direction: column !important;
+}
+
+/* =======================
+   Navbar Styles
+======================= */
+.bg-gradient {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.navbar {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar-brand {
+	font-size: 1.5rem !important;
+	transition: transform 0.3s ease !important;
+}
+
+.navbar-brand:hover {
+	transform: scale(1.05) !important;
+}
+
+.navbar-brand i {
+	font-size: 1.8rem !important;
+}
+
+.nav-link {
+	border-radius: 8px !important;
+	margin: 0 4px !important;
+	transition: all 0.3s ease !important;
+	color: #fff !important;
+}
+
+.nav-link:hover {
+	background-color: rgba(255, 255, 255, 0.1) !important;
+	transform: translateY(-2px) !important;
+}
+
+.nav-link.active {
+	background-color: rgba(255, 255, 255, 0.25) !important;
+	font-weight: 600 !important;
+}
+
+.btn-user {
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	border: none !important;
+	color: #fff !important;
+	border-radius: 25px !important;
+	padding: 8px 16px !important;
+	transition: all 0.3s ease !important;
+}
+
+.btn-user:hover {
+	background-color: rgba(255, 255, 255, 0.35) !important;
+	transform: translateY(-2px) !important;
+}
+
+.btn-user i {
+	font-size: 1.5rem !important;
+}
+
+/* =======================
+   Page Title
+======================= */
+.page-title {
+	font-size: 2.5rem !important;
+	font-weight: 700 !important;
+	color: #2d3748 !important;
+	text-align: center !important;
+	margin-bottom: 2rem !important;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	-webkit-background-clip: text !important;
+	-webkit-text-fill-color: transparent !important;
+	background-clip: text !important;
+}
+
+/* =======================
+   Alert Container
+======================= */
+.alert-container {
+	position: fixed !important;
+	top: 80px !important;
+	left: 50% !important;
+	transform: translateX(-50%) !important;
+	z-index: 9999 !important;
+	width: 90% !important;
+	max-width: 600px !important;
+}
+
+.alert-container .alert {
+	border: none !important;
+	border-radius: 12px !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+	padding: 1rem 1.5rem !important;
+	font-weight: 500 !important;
+	opacity: 0 !important;
+	transform: translateY(-20px) !important;
+	transition: all 0.3s ease !important;
+}
+
+.alert-container .alert.show {
+	opacity: 1 !important;
+	transform: translateY(0) !important;
+}
+
+.alert-container .alert-success {
+	background-color: #d4edda !important;
+	color: #155724 !important;
+	border-left: 4px solid #28a745 !important;
+}
+
+.alert-container .alert-success i {
+	color: #28a745 !important;
+}
+
+.alert-container .alert-danger {
+	background-color: #f8d7da !important;
+	color: #721c24 !important;
+	border-left: 4px solid #dc3545 !important;
+}
+
+.alert-container .alert-danger i {
+	color: #dc3545 !important;
+}
+
+/* =======================
+   Search Box
+======================= */
+.search-box {
+	position: relative !important;
+}
+
+.search-box .form-control {
+	padding-left: 2.5rem !important;
+	border-radius: 25px !important;
+	border: 2px solid #e2e8f0 !important;
+	transition: all 0.3s ease !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+.search-box .form-control:focus {
+	border-color: #667eea !important;
+	box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+}
+
+.search-icon {
+	position: absolute !important;
+	left: 1rem !important;
+	top: 50% !important;
+	transform: translateY(-50%) !important;
+	color: #667eea !important;
+	font-size: 1.2rem !important;
+}
+
+/* =======================
+   Table Card
+======================= */
+.table-card {
+	border: none !important;
+	border-radius: 16px !important;
+	overflow: hidden !important;
+	animation: fadeInUp 0.5s ease !important;
+}
+
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.table-responsive {
+	border-radius: 12px !important;
+}
+
+.table {
+	margin-bottom: 0 !important;
+}
+
+.table-header {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+}
+
+.table-header th {
+	padding: 1rem !important;
+	font-weight: 600 !important;
+	border: none !important;
+	text-transform: uppercase !important;
+	font-size: 0.85rem !important;
+	letter-spacing: 0.5px !important;
+}
+
+.table-row {
+	transition: all 0.3s ease !important;
+	cursor: pointer !important;
+}
+
+.table-row:hover {
+	background-color: #f8f9fa !important;
+	transform: scale(1.01) !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.table-row td {
+	padding: 1rem !important;
+	vertical-align: middle !important;
+	border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* =======================
+   Empty State
+======================= */
+.empty-state {
+	padding: 4rem 2rem !important;
+}
+
+.empty-state i {
+	opacity: 0.3 !important;
+}
+
+/* =======================
+   Buttons
+======================= */
+.btn-add {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+	border: none !important;
+	padding: 12px 32px !important;
+	border-radius: 25px !important;
+	font-weight: 600 !important;
+	font-size: 1.1rem !important;
+	transition: all 0.3s ease !important;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+}
+
+.btn-add:hover {
+	transform: translateY(-2px) !important;
+	box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6) !important;
+}
+
+.btn-edit {
+	background-color: #3182ce !important;
+	color: white !important;
+	border: none !important;
+	padding: 6px 16px !important;
+	border-radius: 8px !important;
+	font-weight: 500 !important;
+	transition: all 0.3s ease !important;
+}
+
+.btn-edit:hover {
+	background-color: #2c5282 !important;
+	transform: translateY(-2px) !important;
+	box-shadow: 0 4px 8px rgba(49, 130, 206, 0.4) !important;
+}
+
+.btn-delete {
+	background-color: #e53e3e !important;
+	color: white !important;
+	border: none !important;
+	padding: 6px 16px !important;
+	border-radius: 8px !important;
+	font-weight: 500 !important;
+	transition: all 0.3s ease !important;
+}
+
+.btn-delete:hover {
+	background-color: #c53030 !important;
+	transform: translateY(-2px) !important;
+	box-shadow: 0 4px 8px rgba(229, 62, 62, 0.4) !important;
+}
+
+/* =======================
+   Modal Styles
+======================= */
+.modal-content {
+	border-radius: 16px !important;
+	border: none !important;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+.modal-header {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+	border-radius: 16px 16px 0 0 !important;
+	border: none !important;
+	padding: 1.5rem !important;
+}
+
+.modal-header .btn-close,
+.modal-header .btn-close-white {
+	filter: brightness(0) invert(1) !important;
+}
+
+.modal-body {
+	padding: 2rem !important;
+	max-height: 70vh !important;
+	overflow-y: auto !important;
+}
+
+.modal-footer {
+	border: none !important;
+	padding: 1rem 2rem 1.5rem !important;
+}
+
+.form-label {
+	color: #2d3748 !important;
+	margin-bottom: 0.5rem !important;
+}
+
+.form-control, .form-select {
+	border: 2px solid #e2e8f0 !important;
+	border-radius: 8px !important;
+	padding: 10px 16px !important;
+	transition: all 0.3s ease !important;
+}
+
+.form-control:focus, .form-select:focus {
+	border-color: #667eea !important;
+	box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+}
+
+.form-control.is-invalid, .form-select.is-invalid {
+	border-color: #e53e3e !important;
+}
+
+.invalid-feedback {
+	display: block !important;
+	color: #e53e3e !important;
+	font-size: 0.875rem !important;
+	margin-top: 0.5rem !important;
+}
+
+textarea.form-control {
+	resize: vertical !important;
+	min-height: 120px !important;
+}
+
+/* =======================
+   Detail Modal Content
+======================= */
+.detail-item {
+	margin-bottom: 1.5rem !important;
+	padding-bottom: 1rem !important;
+	border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.detail-item:last-child {
+	border-bottom: none !important;
+}
+
+.detail-label {
+	font-weight: 600 !important;
+	color: #667eea !important;
+	margin-bottom: 0.5rem !important;
+	display: flex !important;
+	align-items: center !important;
+}
+
+.detail-label i {
+	margin-right: 8px !important;
+}
+
+.detail-value {
+	color: #2d3748 !important;
+	word-wrap: break-word !important;
+}
+
+.detail-media {
+	margin-top: 1rem !important;
+	text-align: center !important;
+}
+
+.detail-media img,
+.detail-media video {
+	max-width: 100% !important;
+	border-radius: 12px !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* =======================
+   Footer
+======================= */
+.footer {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+	padding: 20px 0 !important;
+	margin-top: auto !important;
+}
+
+/* =======================
+   Dropdown
+======================= */
+.dropdown-menu {
+	border: none !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+	border-radius: 12px !important;
+	margin-top: 0.5rem !important;
+	z-index: 1050 !important;
+}
+
+.dropdown-item {
+	padding: 10px 20px !important;
+	transition: all 0.3s ease !important;
+}
+
+.dropdown-item:hover {
+	background-color: #f8f9fa !important;
+	padding-left: 25px !important;
+}
+
+.dropdown-item i {
+	width: 20px !important;
+}
+
+/* =======================
+   Pagination Styles
+======================= */
+.pagination {
+	margin-bottom: 0 !important;
+}
+
+.page-link {
+	color: #667eea !important;
+	border: 1px solid #e2e8f0 !important;
+	padding: 8px 16px !important;
+	margin: 0 4px !important;
+	border-radius: 8px !important;
+	transition: all 0.3s ease !important;
+	font-weight: 500 !important;
+}
+
+.page-link:hover {
+	background-color: #f8f9fa !important;
+	border-color: #667eea !important;
+	transform: translateY(-2px) !important;
+	box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+.page-item.active .page-link {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	border-color: #667eea !important;
+	color: white !important;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+}
+
+.page-item.disabled .page-link {
+	color: #cbd5e0 !important;
+	background-color: #f8f9fa !important;
+	border-color: #e2e8f0 !important;
+	cursor: not-allowed !important;
+}
+
+.page-item:first-child .page-link {
+	border-radius: 8px !important;
+}
+
+.page-item:last-child .page-link {
+	border-radius: 8px !important;
+}
+
+/* =======================
+   Badge Styles
+======================= */
+.badge {
+	padding: 6px 12px !important;
+	font-weight: 500 !important;
+	font-size: 0.85rem !important;
+	border-radius: 6px !important;
+}
+
+/* =======================
+   Upload File Styles
+======================= */
+.upload-container {
+	border: 2px dashed #e2e8f0 !important;
+	border-radius: 12px !important;
+	padding: 1.5rem !important;
+	text-align: center !important;
+	background-color: #f8f9fa !important;
+	transition: all 0.3s ease !important;
+}
+
+.upload-container:hover {
+	border-color: #667eea !important;
+	background-color: #f0f2ff !important;
+}
+
+.btn-upload {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+	color: white !important;
+	border: none !important;
+	padding: 10px 24px !important;
+	border-radius: 8px !important;
+	font-weight: 600 !important;
+	transition: all 0.3s ease !important;
+	box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+.btn-upload:hover {
+	transform: translateY(-2px) !important;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5) !important;
+}
+
+.file-status {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	font-size: 0.95rem !important;
+	font-weight: 500 !important;
+	padding: 8px !important;
+}
+
+.file-status i {
+	font-size: 1.2rem !important;
+}
+
+.file-preview {
+	max-width: 100% !important;
+	border-radius: 12px !important;
+	overflow: hidden !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.preview-image,
+.preview-video {
+	width: 100% !important;
+	max-height: 400px !important;
+	object-fit: contain !important;
+	border-radius: 12px !important;
+}
+
+/* Spinner for loading */
+.spinner-border-sm {
+	width: 1rem !important;
+	height: 1rem !important;
+	border-width: 0.15em !important;
+}
+
+/* Remove file button */
+.btn-sm.btn-danger {
+	padding: 6px 12px !important;
+	font-size: 0.875rem !important;
+	border-radius: 6px !important;
+}
+
+/* =======================
+   Responsive Design
+======================= */
+@media (max-width: 991px) {
+	.page-title {
+		font-size: 2rem !important;
+	}
+}
+
+@media (max-width: 767px) {
+	.page-title {
+		font-size: 1.75rem !important;
+	}
+	
+	.navbar-brand {
+		font-size: 1.2rem !important;
+	}
+	
+	.btn-add {
+		font-size: 1rem !important;
+		padding: 10px 24px !important;
+	}
+	
+	.btn-edit,
+	.btn-delete {
+		padding: 5px 12px !important;
+		font-size: 0.875rem !important;
+	}
+	
+	.table-header th {
+		font-size: 0.75rem !important;
+		padding: 0.75rem 0.5rem !important;
+	}
+	
+	.table-row td {
+		padding: 0.75rem 0.5rem !important;
+		font-size: 0.875rem !important;
+	}
+	
+	.modal-body {
+		padding: 1.5rem !important;
+	}
+	
+	.upload-container {
+		padding: 1rem !important;
+	}
+	
+	.btn-upload {
+		padding: 8px 20px !important;
+		font-size: 0.9rem !important;
+	}
+	
+	.preview-image,
+	.preview-video {
+		max-height: 300px !important;
+	}
+}
+
+@media (max-width: 576px) {
+	.navbar-brand i {
+		font-size: 1.5rem !important;
+	}
+	
+	.btn-user i {
+		font-size: 1.3rem !important;
+	}
+	
+	.alert-container {
+		width: 95% !important;
+	}
+	
+	.page-link {
+		padding: 6px 12px !important;
+		font-size: 0.875rem !important;
+		margin: 0 2px !important;
+	}
+	
+	.pagination {
+		flex-wrap: wrap !important;
+	}
+}
+
+/* =======================
+   Scrollbar
+======================= */
+::-webkit-scrollbar {
+	width: 8px !important;
+	height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+	background: #f1f1f1 !important;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #888 !important;
+	border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #555 !important;
+}
+-------------
+-> Yêu cầu:
+- Ở cấu trúc UploadFile hiện nay trong project chính, có gửi file lên 2 đường link là lên server (getRealPath) và lên local (D:/Nam4/...). Hiện giờ ở phần sửa bài viết, nếu có đổi file mới thay cho file cũ của bài viết thì khi nhấn cập nhật (xác nhận sửa) thì hãy xóa file cũ và lưu file mới ở cả 2 đường link. Tham khảo cách làm từ các file mẫu ở đầu.
+- Tiếp đó giải thích cách mà file được lưu lên server và local, và url được lưu vào csdl như nào. 
