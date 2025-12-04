@@ -2,6 +2,8 @@ package Controller.BinhLuan;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -67,6 +69,8 @@ public class XuLyBinhLuanController extends HttpServlet {
 					blbo.createDB(noiDung.trim(), finalUrl, taiKhoanTao, maBaiViet);
 					session.setAttribute("message", "Thêm bình luận thành công!");
 					session.setAttribute("messageType", "success");
+					// Dọn dẹp file orphan sau khi thêm
+                    cleanOrphanFiles(request);
 				}
 				
 			} else if("update".equals(action)) {
@@ -118,6 +122,8 @@ public class XuLyBinhLuanController extends HttpServlet {
 					blbo.updateDB(maBinhLuan, noiDung.trim(), finalUrl, soLuotThich, trangThai);
 					session.setAttribute("message", "Cập nhật bình luận thành công!");
 					session.setAttribute("messageType", "success");
+					// Dọn dẹp file orphan sau khi thêm
+                    cleanOrphanFiles(request);
 				}
 				
 			} else if("delete".equals(action)) {
@@ -125,6 +131,8 @@ public class XuLyBinhLuanController extends HttpServlet {
 				blbo.deleteDB(maBinhLuan);
 				session.setAttribute("message", "Xóa bình luận thành công!");
 				session.setAttribute("messageType", "success");
+				// Dọn dẹp file orphan sau khi thêm
+                cleanOrphanFiles(request);
 			}
 			
 		} catch (Exception e) {
@@ -135,6 +143,71 @@ public class XuLyBinhLuanController extends HttpServlet {
 		
 		response.sendRedirect(request.getContextPath() + "/BinhLuanController");
 	}
+	
+	/**
+     * Dọn dẹp file orphan: So sánh file trong storage với URL trong DB, xóa file không dùng.
+     */
+    private void cleanOrphanFiles(HttpServletRequest request) {
+        try {
+            // Bước 1: Lấy set tên file từ DB (chỉ phần filename từ URL)
+            Set<String> usedFileNames = new HashSet<>();
+            for (BinhLuan bl : blbo.readDB()) {
+                String url = bl.getUrl();
+                if (url != null && !url.trim().isEmpty()) {
+                    // Trích xuất filename từ URL (ví dụ: "storage/abc123.jpg" -> "abc123.jpg")
+                    String fileName = url.substring(url.lastIndexOf("/") + 1);
+                    if (!fileName.isEmpty()) {
+                        usedFileNames.add(fileName);
+                    }
+                }
+            }
+
+            // Bước 2: Lấy đường dẫn storage
+            String uploadPath = request.getServletContext().getRealPath("") + "storage"; // Server
+            String uploadPath2 = null;
+            if (uploadPath.contains(".metadata") && System.getProperty("os.name").toLowerCase().contains("win")) {
+                uploadPath2 = "D:/Nam4/JavaNangCao" + request.getContextPath() + "/src/main/webapp/storage"; // Local
+            }
+
+            // Bước 3: Duyệt và xóa orphan ở server
+            File serverDir = new File(uploadPath);
+            if (serverDir.exists() && serverDir.isDirectory()) {
+                File[] serverFiles = serverDir.listFiles();
+                if (serverFiles != null) {
+                    for (File file : serverFiles) {
+                        if (file.isFile() && !usedFileNames.contains(file.getName())) {
+                            // Xóa orphan
+                            if (file.delete()) {
+                                System.out.println("Đã xóa file orphan trên server: " + file.getName());
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Bước 4: Duyệt và xóa orphan ở local (nếu tồn tại)
+            if (uploadPath2 != null) {
+                File localDir = new File(uploadPath2);
+                if (localDir.exists() && localDir.isDirectory()) {
+                    File[] localFiles = localDir.listFiles();
+                    if (localFiles != null) {
+                        for (File file : localFiles) {
+                            if (file.isFile() && !usedFileNames.contains(file.getName())) {
+                                // Xóa orphan
+                                if (file.delete()) {
+                                    System.out.println("Đã xóa file orphan trên local: " + file.getName());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } 
+        catch (Exception e) {
+            System.err.println("Lỗi khi dọn dẹp file orphan: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 	
 	private void deleteOldFile(HttpServletRequest request, String filePath) {
 		if(filePath == null || filePath.trim().isEmpty()) {
