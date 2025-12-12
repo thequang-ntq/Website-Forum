@@ -68,9 +68,9 @@
 | -----------------------------------------------------|-| -----------------------------|
 | ![User_MyComment2](./images/UI/user_mycomment2.png)  || ![Info](./images/UI/info.png) |
 
-| Đổi mật khẩu                               |
-| -------------------------------------------|
-| ![ChangePass](./images/UI/changepass.png)  |
+| Đổi mật khẩu                               || Chatbot                          |
+| -------------------------------------------|-|---------------------------------|
+| ![ChangePass](./images/UI/changepass.png)  || ![Chatbot](./images/UI/chat.png) |
 
 # Cách cài đặt (Windows 11)
 
