@@ -32,6 +32,9 @@
 + Hiển thị thông tin về bài viết, bình luận theo 2 hướng: Hướng 1 là cho Admin để quản lý bài viết và bình luận; Hướng 2 là cho cả Admin và User là quản lý bài viết và bình luận của riêng tài khoản.
 + Thêm, sửa, xóa, xem, tìm kiếm bài viết và bình luận của tất cả tài khoản (Đối với Admin).
 + Thêm, sửa, xóa, xem, tìm kiếm bài viết và bình luận của riêng tài khoản đăng nhập (Đối với Admin và User).
++ Tìm kiếm AI bằng Gemini cho bài viết, bình luận (Đối với Admin) và cho bài viết và bình luận của riêng tài khoản đăng nhập (Đối với Admin và User).
++ Trình soạn thảo đối với nội dung trong tạo mới, sửa bài viết, bình luận (Đối với Admin) và bài viết và bình luận của riêng tài khoản đăng nhập (Đối với Admin và User).
++ Nhắn tin Chatbot AI (Đối với Admin và User).
 
 # Ảnh chụp giao diện người dùng
 ## Trên Desktop
@@ -77,10 +80,11 @@
 - Cài: Java JDK 23, Eclipse IDE 2024-12, Tomcat v9.0 Server, Ecipse Enterprise Java and Web Developer Tools 3.36 (Trong Eclipse Marketplace), SQL Server 2014.
 - Bước 1: Tải file zip trên link github về.
 - Bước 2: Tạo Dynamic Web Project tên: WebsiteForum trong Eclipse IDE, giải nén file zip vào trong thư mục project WebsiteForum vừa tạo.
-- Bước 3: Mở project WebsiteForum vừa giải nén file zip ở trong, trong Ecipse IDE.
-- Bước 4: Mở Java Resources - src/main/java - Controller.DanhNhap - DangNhapController.java.
-- Bước 5: Nhấn chạy (Nút Play màu xanh lá cây) trong Ecipse IDE - Chọn Tomcat 9 - Finish. 
-- Bước 6: Ecipse IDE tự động hiển thị Website trên URL: http://localhost:8080/WebsiteForum/DangNhapController của trình duyệt Web mặc định.
+- Bước 3: Mở SQL Server 2014, chạy database/sqlserver/script.sql trong SQL Server 2014,sau đó chèn thêm dữ liệu vào trong. Bắt buộc phải có dữ liệu trong bảng ApiKey nếu muốn dùng tìm kiếm AI và Chatbot AI, dòng dữ liệu đầu là APIKey của Gemini, dòng thứ hai là ApiKey của OpenAI.  
+- Bước 4: Mở project WebsiteForum vừa giải nén file zip ở trong, trong Ecipse IDE.
+- Bước 5: Mở Java Resources - src/main/java - Controller.DangNhap - DangNhapController.java.
+- Bước 6: Nhấn chạy (Nút Play màu xanh lá cây) trong Ecipse IDE - Chọn Tomcat 9 - Finish. 
+- Bước 7: Ecipse IDE tự động hiển thị Website trên URL: http://localhost:8080/WebsiteForum/DangNhapController của trình duyệt Web mặc định.
 
 # Bảng theo dõi tiến độ
 
