@@ -44,12 +44,16 @@ function initTinyMCE() {
 // AI-Enhanced Search
 async function enhanceSearch() {
     const searchInput = document.getElementById('searchInput');
+	const loadingOverlay = document.getElementById('fullPageLoading');
     const query = searchInput.value.trim();
     
     if (!query) {
         alert('Vui lòng nhập từ khóa tìm kiếm!');
         return;
     }
+
+	// Bật loading toàn màn hình
+	loadingOverlay.classList.remove('d-none');
     
     searchInput.disabled = true;
     const originalPlaceholder = searchInput.placeholder;
@@ -81,6 +85,7 @@ async function enhanceSearch() {
         console.error('AI Search error:', error);
         searchInput.closest('form').submit();
     } finally {
+		loadingOverlay.classList.add('d-none');
         searchInput.disabled = false;
         searchInput.placeholder = originalPlaceholder;
     }

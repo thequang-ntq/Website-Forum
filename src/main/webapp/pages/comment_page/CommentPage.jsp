@@ -608,5 +608,38 @@
 			});
 		<% } %>
 	</script>
+	
+	<!-- Full-screen AI Search Loading Overlay -->
+	<div id="fullPageLoading" 
+	     class="position-fixed top-0 start-0 w-100 h-100 d-none 
+	            bg-white bg-opacity-95 d-flex flex-column align-items-center justify-content-center"
+	     style="z-index: 9999; backdrop-filter: blur(8px);">
+	    <div class="text-center">
+	        <div class="spinner-border text-primary mb-4" 
+	             style="width: 4rem; height: 4rem;" role="status">
+	            <span class="visually-hidden">Loading...</span>
+	        </div>
+	        <h4 class="text-primary mb-2 fw-bold">
+	            <i class="bi bi-stars me-2"></i>AI đang tìm kiếm thông minh...
+	        </h4>
+	        <p class="text-muted">Đang phân tích và tối ưu từ khóa cho bạn</p>
+	        <div class="d-flex justify-content-center gap-2 mt-3">
+	            <div class="bg-primary opacity-25 rounded" 
+	                 style="width: 8px; height: 8px; animation: pulse 1.5s infinite;"></div>
+	            <div class="bg-primary opacity-50 rounded" 
+	                 style="width: 8px; height: 8px; animation: pulse 1.5s infinite 0.3s;"></div>
+	            <div class="bg-primary opacity-75 rounded" 
+	                 style="width: 8px; height: 8px; animation: pulse 1.5s infinite 0.6s;"></div>
+	        </div>
+	    </div>
+	</div>
+	
+	<!-- Thêm animation pulse -->
+	<style>
+	@keyframes pulse {
+	    0%, 100% { transform: scale(1); opacity: 0.5; }
+	    50% { transform: scale(1.5); opacity: 1; }
+	}
+	</style>
 </body>
 </html>

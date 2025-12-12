@@ -1,3 +1,4 @@
+- HomePage.jsp:
 <%@page import="Modal.TaiKhoan.TaiKhoan"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.ArrayList" %>
@@ -390,8 +391,8 @@
 					<div class="card-header bg-gradient text-white">
 						<h5 class="mb-0"><i class="bi bi-search me-2"></i>Tìm kiếm</h5>
 					</div>
-					<div class="card-body position-relative">
-					    <form id="searchForm" action="${pageContext.request.contextPath}/TrangChuController" method="get">
+					<div class="card-body">
+					    <form action="${pageContext.request.contextPath}/TrangChuController" method="get">
 					        <div class="input-group search-box">
 					            <input type="text" class="form-control" id="searchInput" name="search"
 					                   placeholder="Tìm kiếm bài viết..."
@@ -461,38 +462,652 @@
 	%>
 
 	<script src="${pageContext.request.contextPath}/pages/home_page/script.js"></script>
-	
-	<!-- Full-screen AI Search Loading Overlay -->
-	<div id="fullPageLoading" 
-	     class="position-fixed top-0 start-0 w-100 h-100 d-none 
-	            bg-white bg-opacity-95 d-flex flex-column align-items-center justify-content-center"
-	     style="z-index: 9999; backdrop-filter: blur(8px);">
-	    <div class="text-center">
-	        <div class="spinner-border text-primary mb-4" 
-	             style="width: 4rem; height: 4rem;" role="status">
-	            <span class="visually-hidden">Loading...</span>
-	        </div>
-	        <h4 class="text-primary mb-2 fw-bold">
-	            <i class="bi bi-stars me-2"></i>AI đang tìm kiếm thông minh...
-	        </h4>
-	        <p class="text-muted">Đang phân tích và tối ưu từ khóa cho bạn</p>
-	        <div class="d-flex justify-content-center gap-2 mt-3">
-	            <div class="bg-primary opacity-25 rounded" 
-	                 style="width: 8px; height: 8px; animation: pulse 1.5s infinite;"></div>
-	            <div class="bg-primary opacity-50 rounded" 
-	                 style="width: 8px; height: 8px; animation: pulse 1.5s infinite 0.3s;"></div>
-	            <div class="bg-primary opacity-75 rounded" 
-	                 style="width: 8px; height: 8px; animation: pulse 1.5s infinite 0.6s;"></div>
-	        </div>
-	    </div>
-	</div>
-	
-	<!-- Thêm animation pulse -->
-	<style>
-	@keyframes pulse {
-	    0%, 100% { transform: scale(1); opacity: 0.5; }
-	    50% { transform: scale(1.5); opacity: 1; }
-	}
-	</style>
 </body>
 </html>
+- style.css (Của HomePage):
+/* style.css (Của HomePage) - Full Code with Pagination Styles */
+@charset "UTF-8";
+
+/* =======================
+   Global Styles
+======================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    background-color: #f0f2f5 !important;
+    min-height: 100vh !important;
+}
+
+/* =======================
+   Navbar Styles
+======================= */
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.navbar {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar-brand {
+    font-size: 1.5rem !important;
+    transition: transform 0.3s ease !important;
+}
+
+.navbar-brand:hover {
+    transform: scale(1.05) !important;
+}
+
+.navbar-brand i {
+    font-size: 1.8rem !important;
+}
+
+.nav-link {
+    border-radius: 8px !important;
+    margin: 0 4px !important;
+    transition: all 0.3s ease !important;
+    color: #fff !important;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-2px) !important;
+}
+
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    font-weight: 600 !important;
+}
+
+/* Nút người dùng */
+.btn-user {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border: none !important;
+    color: #fff !important;
+    border-radius: 25px !important;
+    padding: 8px 16px !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-user:hover {
+    background-color: rgba(255, 255, 255, 0.35) !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-user i {
+    font-size: 1.5rem !important;
+}
+
+/* =======================
+   Card Styles
+======================= */
+.card {
+    border: none !important;
+    border-radius: 12px !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border: none !important;
+}
+
+/* =======================
+   Category Sidebar
+======================= */
+.category-card {
+    position: sticky !important;
+    top: 80px !important;
+}
+
+.category-list {
+    max-height: calc(100vh - 200px) !important;
+    overflow-y: auto !important;
+}
+
+/* Custom Scrollbar */
+.category-list::-webkit-scrollbar {
+    width: 6px !important;
+}
+.category-list::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+}
+.category-list::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 3px !important;
+}
+.category-list::-webkit-scrollbar-thumb:hover {
+    background: #555 !important;
+}
+
+.list-group-item {
+    border: none !important;
+    border-left: 3px solid transparent !important;
+    transition: all 0.3s ease !important;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa !important;
+    border-left-color: #667eea !important;
+    padding-left: 1.5rem !important;
+}
+
+.list-group-item.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-left-color: #764ba2 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* =======================
+   Controls Card
+======================= */
+.controls-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+}
+
+/* =======================
+   Post Card
+======================= */
+.post-card {
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    animation: fadeInUp 0.5s ease !important;
+}
+
+.post-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.post-avatar {
+    font-size: 2.5rem !important;
+    color: #667eea !important;
+}
+
+.post-title {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: #2d3748 !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.post-content {
+    color: #4a5568 !important;
+    line-height: 1.6 !important;
+    margin-bottom: 1rem !important;
+}
+
+.post-media img,
+.post-media video {
+    max-height: 400px !important;
+    object-fit: cover !important;
+    border-radius: 8px !important;
+}
+
+.rating-display i {
+    font-size: 1.1rem !important;
+}
+
+/* =======================
+   Search Card
+======================= */
+.search-card {
+    z-index: 1000 !important;
+}
+
+.search-card .input-group {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+}
+
+.search-card .form-control {
+    border: none !important;
+    padding: 12px 16px !important;
+}
+
+.search-card .form-control:focus {
+    box-shadow: none !important;
+}
+
+.search-card .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+    padding: 12px 20px !important;
+}
+
+.search-card .btn-primary:hover {
+    opacity: 0.9 !important;
+}
+
+/* =======================
+   Footer
+======================= */
+.footer {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    padding: 20px 0 !important;
+    margin-top: auto !important;
+}
+
+/* =======================
+   Modal
+======================= */
+.modal-content {
+    border-radius: 16px !important;
+    border: none !important;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1) !important;
+}
+
+#postDetailContent .divider {
+    height: 2px !important;
+    background: linear-gradient(90deg, transparent, #667eea, transparent) !important;
+    margin: 2rem 0 !important;
+}
+
+/* =======================
+   Comment
+======================= */
+.comment-card {
+    background-color: #f8f9fa !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.comment-card:hover {
+    background-color: #e9ecef !important;
+    transform: translateX(5px) !important;
+}
+
+.comment-avatar {
+    font-size: 2rem !important;
+    color: #764ba2 !important;
+}
+
+/* =======================
+   Badge
+======================= */
+.badge {
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    font-weight: 500 !important;
+}
+
+/* =======================
+   Pagination Styles
+======================= */
+.pagination {
+    margin-bottom: 0 !important;
+}
+
+.page-link {
+    color: #667eea !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 8px 16px !important;
+    margin: 0 4px !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    font-weight: 500 !important;
+}
+
+.page-link:hover {
+    background-color: #f8f9fa !important;
+    border-color: #667eea !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+.page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-color: #667eea !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+}
+
+.page-item.disabled .page-link {
+    color: #cbd5e0 !important;
+    background-color: #f8f9fa !important;
+    border-color: #e2e8f0 !important;
+    cursor: not-allowed !important;
+}
+
+.page-item:first-child .page-link {
+    border-radius: 8px !important;
+}
+
+.page-item:last-child .page-link {
+    border-radius: 8px !important;
+}
+
+/* =======================
+   Responsive
+======================= */
+@media (max-width: 991px) {
+    .category-card {
+        position: static !important;
+    }
+    .search-card {
+        position: static !important;
+    }
+}
+
+@media (max-width: 767px) {
+    .navbar-brand {
+        font-size: 1.2rem !important;
+    }
+    .post-card {
+        margin-bottom: 1rem !important;
+    }
+    .post-title {
+        font-size: 1.1rem !important;
+    }
+    .post-content {
+        font-size: 0.9rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-body {
+        padding: 1rem !important;
+    }
+    .navbar-brand i {
+        font-size: 1.5rem !important;
+    }
+    .btn-user i {
+        font-size: 1.3rem !important;
+    }
+    .post-avatar {
+        font-size: 2rem !important;
+    }
+    .modal-dialog {
+        margin: 0.5rem !important;
+    }
+}
+
+/* =======================
+   Focused Inputs
+======================= */
+.form-select:focus,
+.form-control:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+}
+
+/* =======================
+   Spinner & Empty State
+======================= */
+.spinner-border {
+    width: 3rem !important;
+    height: 3rem !important;
+}
+
+.bi-inbox {
+    opacity: 0.3 !important;
+}
+
+/* =======================
+   Dropdown
+======================= */
+.dropdown-menu {
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 12px !important;
+    margin-top: 0.5rem !important;
+    z-index: 1050 !important;
+}
+
+.dropdown-item {
+    padding: 10px 20px !important;
+    transition: all 0.3s ease !important;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa !important;
+    padding-left: 25px !important;
+}
+
+.dropdown-item i {
+    width: 20px !important;
+}
+
+/* =======================
+   Scrollbar (Global)
+======================= */
+::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+}
+::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 4px !important;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #555 !important;
+}
+
+/* AI Search Button - Đã chỉnh sửa để tách ra (không absolute nữa) */
+.btn-ai-search {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50% !important; /* Giữ hình tròn nếu muốn, hoặc thay bằng 8px để vuông */
+    width: 36px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
+    z-index: 10 !important;
+    /* Xóa position: absolute, right, top, transform để nút nằm bình thường */
+}
+
+.btn-ai-search:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5) !important;
+}
+
+.btn-ai-search i {
+    font-size: 1rem !important;
+}
+
+.search-box {
+    position: relative !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.search-box .form-control {
+    /* Xóa padding-right: 60px để input không bị đẩy chỗ */
+}
+
+.search-icon {
+    position: absolute !important;
+    left: 1rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #667eea !important;
+    font-size: 1.2rem !important;
+    pointer-events: none !important;
+}
+- script.js (Của HomePage):
+document.addEventListener('DOMContentLoaded', function() {
+	
+	// Initialize tooltips
+	var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+	var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+		return new bootstrap.Tooltip(tooltipTriggerEl);
+	});
+
+});
+
+// AI-Enhanced Search
+async function enhanceSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput.value.trim();
+    
+    if (!query) {
+        alert('Vui lòng nhập từ khóa tìm kiếm!');
+        return;
+    }
+    
+    searchInput.disabled = true;
+    const originalPlaceholder = searchInput.placeholder;
+    searchInput.placeholder = 'Đang xử lý với AI...';
+    
+    try {
+        const contextPath = window.location.pathname.split('/')[1];
+        const response = await fetch('/' + contextPath + '/AISearchController', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'query=' + encodeURIComponent(query) + '&context=binhluan'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            searchInput.value = data.enhancedQuery;
+            const form = searchInput.closest('form');
+            if (form) {
+                setTimeout(() => form.submit(), 100);
+            }
+        } else {
+            alert('Không thể xử lý với AI. Tìm kiếm thường...');
+            searchInput.closest('form').submit();
+        }
+    } catch (error) {
+        console.error('AI Search error:', error);
+        searchInput.closest('form').submit();
+    } finally {
+        searchInput.disabled = false;
+        searchInput.placeholder = originalPlaceholder;
+    }
+}
+
+// Handle sort selection
+function handleSort(value) {
+	if(!value) return;
+	
+	const urlParams = new URLSearchParams(window.location.search);
+	const contextPath = window.location.pathname.split('/')[1];
+	const theloai = urlParams.get('theloai');
+	const search = urlParams.get('search');
+	const filterTK = urlParams.get('filterTK');
+	const page = urlParams.get('page');
+	
+	let url = '/' + contextPath + '/TrangChuController?sort=' + value;
+	if(theloai) url += '&theloai=' + encodeURIComponent(theloai);
+	if(search) url += '&search=' + encodeURIComponent(search);
+	if(filterTK) url += '&filterTK=' + encodeURIComponent(filterTK);
+	if(page) url += '&page=' + encodeURIComponent(page);
+	
+	window.location.href = url;
+}
+
+// Handle filter by tai khoan
+function handleFilterTaiKhoan(value) {
+	const urlParams = new URLSearchParams(window.location.search);
+	const contextPath = window.location.pathname.split('/')[1];
+	const theloai = urlParams.get('theloai');
+	const search = urlParams.get('search');
+	const sort = urlParams.get('sort');
+	const page = urlParams.get('page');
+	
+	let url = '/' + contextPath + '/TrangChuController';
+	let params = [];
+	
+	if(theloai) params.push('theloai=' + encodeURIComponent(theloai));
+	if(search) params.push('search=' + encodeURIComponent(search));
+	if(sort) params.push('sort=' + sort);
+	if(value) params.push('filterTK=' + encodeURIComponent(value));
+	if(page) params.push('page=' + encodeURIComponent(page));
+	
+	if(params.length > 0) url += '?' + params.join('&');
+	
+	window.location.href = url;
+}
+
+// Handle real-time search
+/*
+let searchTimeout;
+function handleSearch() {
+	const searchInput = document.getElementById('searchInput');
+	const searchValue = searchInput.value.trim();
+	
+	// Clear previous timeout
+	clearTimeout(searchTimeout);
+	
+	// Set new timeout for search (debounce)
+	searchTimeout = setTimeout(() => {
+		const urlParams = new URLSearchParams(window.location.search);
+		const contextPath = window.location.pathname.split('/')[1];
+		const theloai = urlParams.get('theloai');
+		const sort = urlParams.get('sort');
+		const filterTK = urlParams.get('filterTK');
+		const page = urlParams.get('page');
+		
+		let url = '/' + contextPath + '/TrangChuController';
+		let params = [];
+		
+		if(theloai) params.push('theloai=' + encodeURIComponent(theloai));
+		if(sort) params.push('sort=' + encodeURIComponent(sort));
+		if(filterTK) params.push('filterTK=' + encodeURIComponent(filterTK));
+		if(page) params.push('page=' + encodeURIComponent(page));
+		if(searchValue) params.push('search=' + encodeURIComponent(searchValue));
+		
+		if(params.length > 0) url += '?' + params.join('&');
+		
+		window.location.href = url;
+	}, 300); // Wait 300ms after user stops typing
+}
+*/
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+	if(e.key === 'Escape') {
+		const modal = bootstrap.Modal.getInstance(document.getElementById('postDetailModal'));
+		if(modal) modal.hide();
+	}
+});
+
+----
+Yêu cầu: Khi đang chờ xử lý của hàm enhancedSearch (Tìm kiếm bằng AI) thì hiện lên giao diện loading (Đang chờ xử lý) đẹp, nên áp dụng bootstrap hoặc các thư viện có sẵn khác, hoặc không, miễn là sao cho code đơn giản và ngắn nhất có thể.
