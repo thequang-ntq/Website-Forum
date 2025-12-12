@@ -16,4 +16,8 @@ public class ApiKeyBO {
 		temp = readDB();
 		return temp.get(0).getKeyName();
 	}
+	
+	public String getOpenAIKey() throws Exception {
+		return dao.getOpenAIKey();
+	}
 }

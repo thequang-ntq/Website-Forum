@@ -22,4 +22,21 @@ public class ApiKeyDAO {
 		rs.close();
 		return ds;
 	}
+	
+	// API Key cho ChatGPT
+	public String getOpenAIKey() throws Exception {
+	    String apikey = null;
+	    String sql = "SELECT KeyName FROM ApiKey WHERE KeyName LIKE 'sk-proj%'";
+	    PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
+	    ResultSet rs = pr.executeQuery();
+	    
+	    // Lấy key đầu tiên trong ds thỏa điều kiện
+	    if (rs.next()) {
+            apikey = rs.getString("KeyName");
+        }
+	    
+	    rs.close();
+	    pr.close();
+	    return apikey;
+	}
 }

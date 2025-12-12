@@ -461,7 +461,6 @@ GO
 /* 
 IF NOT EXISTS(SELECT * FROM ApiKey)
 BEGIN
-
 END
 GO
 */

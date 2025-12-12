@@ -100,6 +100,11 @@
                             <i class="bi bi-chat-square-dots me-1"></i>Bình luận của tôi
                         </a>
                     </li>
+                    <li class="nav-item">
+					    <a class="nav-link" href="${pageContext.request.contextPath}/ChatPageController">
+					        <i class="bi bi-robot me-1"></i>Chat AI
+					    </a>
+					</li>
                 </ul>
                 <div class="dropdown">
                     <button class="btn btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
