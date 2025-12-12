@@ -99,6 +99,16 @@ BEGIN
 END
 GO
 
+IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = 'ApiKey')
+BEGIN
+	CREATE TABLE ApiKey (
+		ID INT IDENTITY(1,1),
+		KeyName NVARCHAR(255) NOT NULL,
+		CONSTRAINT pk_ApiKey PRIMARY KEY(KeyName)
+	);
+END
+GO
+
 -- Khi xóa tài khoản thì chuyển trạng thái bài viết, bình luận, tài khoản thành Deleted, xóa thẳng lượt thích, đánh giá
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_TaiKhoan_SoftDelete')
 	DROP TRIGGER trg_TaiKhoan_SoftDelete;
@@ -448,6 +458,14 @@ VALUES	(N'Công nghệ & Tin học'),
 END
 GO
 
+/* 
+IF NOT EXISTS(SELECT * FROM ApiKey)
+BEGIN
+
+END
+GO
+*/
+
 /* Kiểm tra
 SELECT * FROM BinhLuan
 SELECT * FROM BaiViet
@@ -455,6 +473,7 @@ SELECT * FROM TheLoai
 SELECT * FROM TaiKhoan
 SELECT * FROM LuotThichBinhLuan
 SELECT * FROM DanhGiaBaiViet
+SELECT * FROM ApiKey
 SELECT name FROM sys.triggers
 */
 /* Reset khi tạo / chèn sai
@@ -464,4 +483,5 @@ DROP TABLE BinhLuan
 DROP TABLE BaiViet
 DROP TABLE TheLoai
 DROP TABLE TaiKhoan
+DROP TABLE ApiKey
 */

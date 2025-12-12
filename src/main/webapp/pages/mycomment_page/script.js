@@ -5,7 +5,86 @@ document.addEventListener('DOMContentLoaded', function() {
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+	
+	// Initialize TinyMCE
+	initTinyMCE();
 });
+
+// TinyMCE Initialization
+let editorInstances = {};
+
+function initTinyMCE() {
+    tinymce.init({
+        selector: '.tinymce-editor',
+        height: 300,
+        menubar: false,
+        language: 'vi',
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter ' +
+                 'alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+        setup: function(editor) {
+            editorInstances[editor.id] = editor;
+            
+            // Remove required attribute when editor initializes
+            editor.on('init', function() {
+                var textarea = document.getElementById(editor.id);
+                if (textarea) {
+                    textarea.removeAttribute('required');
+                }
+            });
+        }
+    });
+}
+
+// AI-Enhanced Search
+async function enhanceSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput.value.trim();
+    
+    if (!query) {
+        alert('Vui lòng nhập từ khóa tìm kiếm!');
+        return;
+    }
+    
+    searchInput.disabled = true;
+    const originalPlaceholder = searchInput.placeholder;
+    searchInput.placeholder = 'Đang xử lý với AI...';
+    
+    try {
+        const contextPath = window.location.pathname.split('/')[1];
+        const response = await fetch('/' + contextPath + '/AISearchController', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'query=' + encodeURIComponent(query) + '&context=binhluan'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            searchInput.value = data.enhancedQuery;
+            const form = searchInput.closest('form');
+            if (form) {
+                setTimeout(() => form.submit(), 100);
+            }
+        } else {
+            alert('Không thể xử lý với AI. Tìm kiếm thường...');
+            searchInput.closest('form').submit();
+        }
+    } catch (error) {
+        console.error('AI Search error:', error);
+        searchInput.closest('form').submit();
+    } finally {
+        searchInput.disabled = false;
+        searchInput.placeholder = originalPlaceholder;
+    }
+}
 
 // Get context path
 const contextPath = window.location.pathname.split('/')[1];
@@ -78,24 +157,27 @@ function handleFilterBaiViet(value) {
 
 // Edit comment
 function editComment(maBinhLuan) {
-    // Find the comment card by maBinhLuan
     const commentCard = document.querySelector(`.comment-card[data-ma-binh-luan="${maBinhLuan}"]`);
     if (!commentCard) {
         alert('Không tìm thấy bình luận!');
         return;
     }
 
-    // Get data from data attributes
     const maBinhLuanValue = commentCard.getAttribute('data-ma-binh-luan');
     const noiDung = commentCard.getAttribute('data-noi-dung').replace(/&#10;/g, '\n');
     const url = commentCard.getAttribute('data-url');
 
-    // Populate the edit form
     document.getElementById('editMaBinhLuan').value = maBinhLuanValue;
     document.getElementById('editNoiDung').value = noiDung;
     document.getElementById('editUrl').value = url || '';
+    
+    // Set TinyMCE content
+    setTimeout(() => {
+        if (tinymce.get('editNoiDung')) {
+            tinymce.get('editNoiDung').setContent(noiDung);
+        }
+    }, 100);
 
-    // Show the edit modal
     const modal = new bootstrap.Modal(document.getElementById('editCommentModal'));
     modal.show();
 }
@@ -218,6 +300,50 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+});
+
+// Form submit handlers for TinyMCE
+document.addEventListener('DOMContentLoaded', function() {
+    const addForm = document.querySelector('#addCommentModal form');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
+            if (tinymce.get('addNoiDung')) {
+                var content = tinymce.get('addNoiDung').getContent();
+                document.getElementById('addNoiDung').value = content;
+                
+                if (!content || content.trim() === '') {
+                    e.preventDefault();
+                    alert('Vui lòng nhập nội dung bình luận!');
+                    return false;
+                }
+            }
+        });
+    }
+
+    const editForm = document.getElementById('editCommentForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            if (tinymce.get('editNoiDung')) {
+                var content = tinymce.get('editNoiDung').getContent();
+                document.getElementById('editNoiDung').value = content;
+                
+                if (!content || content.trim() === '') {
+                    e.preventDefault();
+                    alert('Vui lòng nhập nội dung bình luận!');
+                    return false;
+                }
+            }
+        });
+    }
+});
+
+// Reset TinyMCE when opening add modal
+document.getElementById('addCommentModal').addEventListener('show.bs.modal', function () {
+    setTimeout(() => {
+        if (tinymce.get('addNoiDung')) {
+            tinymce.get('addNoiDung').setContent('');
+        }
+    }, 100);
 });
 
 // ============================================

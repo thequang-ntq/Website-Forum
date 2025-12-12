@@ -139,65 +139,91 @@ public class BinhLuanBO {
 	
 	// Sắp xếp giảm dần, bình luận có số lượt thích cao nhất lên đầu
 	public ArrayList<BinhLuan> sortDB_soLuotThich_cao(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
-        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
-        temp.sort(Comparator.comparingInt(BinhLuan::getSoLuotThich).reversed());
-        return temp;
-    }
+	    ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+	    temp.sort(Comparator.comparingInt(BinhLuan::getSoLuotThich).reversed());
+	    return temp;
+	}
 
-    // Sắp xếp tăng dần, bình luận có số lượt thích thấp nhất lên đầu
-    public ArrayList<BinhLuan> sortDB_soLuotThich_thap(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
-        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
-        temp.sort(Comparator.comparingInt(BinhLuan::getSoLuotThich));
-        return temp;
-    }
+	// Sắp xếp tăng dần, bình luận có số lượt thích thấp nhất lên đầu
+	public ArrayList<BinhLuan> sortDB_soLuotThich_thap(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+	    ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+	    temp.sort(Comparator.comparingInt(BinhLuan::getSoLuotThich));
+	    return temp;
+	}
 
-    // Sắp xếp theo thời điểm tạo gần đây nhất (muộn nhất lên đầu)
-    public ArrayList<BinhLuan> sortDB_thoiDiemTao_ganNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
-        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
-        temp.sort(
-            Comparator.comparing(
-                BinhLuan::getThoiDiemTao,
-                Comparator.nullsLast(Timestamp::compareTo)
-            ).reversed()
-        );
-        return temp;
-    }
+	// Sắp xếp theo thời điểm tạo gần đây nhất (muộn nhất lên đầu)
+	public ArrayList<BinhLuan> sortDB_thoiDiemTao_ganNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+	    ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+	    temp.sort((bl1, bl2) -> {
+	        if (bl1.getThoiDiemTao() == null && bl2.getThoiDiemTao() == null) return 0;
+	        if (bl1.getThoiDiemTao() == null) return 1;  // null xuống cuối
+	        if (bl2.getThoiDiemTao() == null) return -1; // null xuống cuối
+	        return bl2.getThoiDiemTao().compareTo(bl1.getThoiDiemTao()); // Giảm dần
+	    });
+	    return temp;
+	}
 
-    // Sắp xếp theo thời điểm tạo xa nhất (sớm nhất lên đầu)
-    public ArrayList<BinhLuan> sortDB_thoiDiemTao_xaNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
-        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
-        temp.sort(
-            Comparator.comparing(
-                BinhLuan::getThoiDiemTao,
-                Comparator.nullsLast(Timestamp::compareTo)
-            )
-        );
-        return temp;
-    }
+	// Sắp xếp theo thời điểm tạo xa nhất (sớm nhất lên đầu)
+	public ArrayList<BinhLuan> sortDB_thoiDiemTao_xaNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+	    ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+	    temp.sort((bl1, bl2) -> {
+	        if (bl1.getThoiDiemTao() == null && bl2.getThoiDiemTao() == null) return 0;
+	        if (bl1.getThoiDiemTao() == null) return 1;  // null xuống cuối
+	        if (bl2.getThoiDiemTao() == null) return -1; // null xuống cuối
+	        return bl1.getThoiDiemTao().compareTo(bl2.getThoiDiemTao()); // Tăng dần
+	    });
+	    return temp;
+	}
 
-    // Sắp xếp theo thời điểm cập nhật gần đây nhất (muộn nhất lên đầu, null xuống cuối)
-    public ArrayList<BinhLuan> sortDB_thoiDiemCapNhat_ganNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
-        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
-        temp.sort(
-            Comparator.comparing(
-                BinhLuan::getThoiDiemCapNhat,
-                Comparator.nullsLast(Timestamp::compareTo)
-            ).reversed()
-        );
-        return temp;
-    }
+	// Sắp xếp theo thời điểm cập nhật gần đây nhất (muộn nhất lên đầu)
+	// Những bình luận có ThoiDiemCapNhat null sẽ sắp xếp theo ThoiDiemTao
+	public ArrayList<BinhLuan> sortDB_thoiDiemCapNhat_ganNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+	    ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+	    temp.sort((bl1, bl2) -> {
+	        // Nếu cả 2 đều có ThoiDiemCapNhat
+	        if (bl1.getThoiDiemCapNhat() != null && bl2.getThoiDiemCapNhat() != null) {
+	            return bl2.getThoiDiemCapNhat().compareTo(bl1.getThoiDiemCapNhat()); // Giảm dần
+	        }
+	        
+	        // Nếu cả 2 đều null ThoiDiemCapNhat -> sắp xếp theo ThoiDiemTao
+	        if (bl1.getThoiDiemCapNhat() == null && bl2.getThoiDiemCapNhat() == null) {
+	            if (bl1.getThoiDiemTao() == null && bl2.getThoiDiemTao() == null) return 0;
+	            if (bl1.getThoiDiemTao() == null) return 1;
+	            if (bl2.getThoiDiemTao() == null) return -1;
+	            return bl2.getThoiDiemTao().compareTo(bl1.getThoiDiemTao()); // Giảm dần
+	        }
+	        
+	        // Một bên có ThoiDiemCapNhat, một bên null -> ưu tiên bên có ThoiDiemCapNhat lên đầu
+	        if (bl1.getThoiDiemCapNhat() == null) return 1;  // bl1 null -> xuống sau
+	        return -1; // bl2 null -> xuống sau
+	    });
+	    return temp;
+	}
 
-    // Sắp xếp theo thời điểm cập nhật xa nhất (sớm nhất lên đầu, null xuống cuối)
-    public ArrayList<BinhLuan> sortDB_thoiDiemCapNhat_xaNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
-        ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
-        temp.sort(
-            Comparator.comparing(
-                BinhLuan::getThoiDiemCapNhat,
-                Comparator.nullsLast(Timestamp::compareTo)
-            )
-        );
-        return temp;
-    }
+	// Sắp xếp theo thời điểm cập nhật xa nhất (sớm nhất lên đầu)
+	// Những bình luận có ThoiDiemCapNhat null sẽ sắp xếp theo ThoiDiemTao
+	public ArrayList<BinhLuan> sortDB_thoiDiemCapNhat_xaNhat(ArrayList<BinhLuan> dsBinhLuan) throws Exception {
+	    ArrayList<BinhLuan> temp = new ArrayList<>(dsBinhLuan);
+	    temp.sort((bl1, bl2) -> {
+	        // Nếu cả 2 đều có ThoiDiemCapNhat
+	        if (bl1.getThoiDiemCapNhat() != null && bl2.getThoiDiemCapNhat() != null) {
+	            return bl1.getThoiDiemCapNhat().compareTo(bl2.getThoiDiemCapNhat()); // Tăng dần
+	        }
+	        
+	        // Nếu cả 2 đều null ThoiDiemCapNhat -> sắp xếp theo ThoiDiemTao
+	        if (bl1.getThoiDiemCapNhat() == null && bl2.getThoiDiemCapNhat() == null) {
+	            if (bl1.getThoiDiemTao() == null && bl2.getThoiDiemTao() == null) return 0;
+	            if (bl1.getThoiDiemTao() == null) return 1;
+	            if (bl2.getThoiDiemTao() == null) return -1;
+	            return bl1.getThoiDiemTao().compareTo(bl2.getThoiDiemTao()); // Tăng dần
+	        }
+	        
+	        // Một bên có ThoiDiemCapNhat, một bên null -> ưu tiên bên có ThoiDiemCapNhat lên đầu
+	        if (bl1.getThoiDiemCapNhat() == null) return 1;  // bl1 null -> xuống sau
+	        return -1; // bl2 null -> xuống sau
+	    });
+	    return temp;
+	}
 	
 	// Lọc danh sách bình luận theo tài khoản tạo
 	public ArrayList<BinhLuan> filterDB_taiKhoanTao(String taiKhoanTao) throws Exception {

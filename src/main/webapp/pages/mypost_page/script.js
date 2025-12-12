@@ -1,38 +1,115 @@
+// script.js (MyPostPage) - FIXED VERSION
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    
+    // Initialize TinyMCE
+    initTinyMCE();
 });
+
+// TinyMCE Initialization
+let editorInstances = {};
+
+function initTinyMCE() {
+    tinymce.init({
+        selector: '.tinymce-editor',
+        height: 300,
+        menubar: false,
+        language: 'vi',
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter ' +
+                 'alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+        setup: function(editor) {
+            editorInstances[editor.id] = editor;
+            
+            // Remove required attribute when editor initializes
+            editor.on('init', function() {
+                var textarea = document.getElementById(editor.id);
+                if (textarea) {
+                    textarea.removeAttribute('required');
+                }
+            });
+        }
+    });
+}
+
+// AI-Enhanced Search
+async function enhanceSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput.value.trim();
+    
+    if (!query) {
+        alert('Vui lòng nhập từ khóa tìm kiếm!');
+        return;
+    }
+    
+    searchInput.disabled = true;
+    const originalPlaceholder = searchInput.placeholder;
+    searchInput.placeholder = 'Đang xử lý với AI...';
+    
+    try {
+        const contextPath = window.location.pathname.split('/')[1];
+        const response = await fetch('/' + contextPath + '/AISearchController', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'query=' + encodeURIComponent(query) + '&context=baiviet'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            searchInput.value = data.enhancedQuery;
+            const form = searchInput.closest('form');
+            if (form) {
+                setTimeout(function() { form.submit(); }, 100);
+            }
+        } else {
+            alert('Không thể xử lý với AI. Tìm kiếm thường...');
+            searchInput.closest('form').submit();
+        }
+    } catch (error) {
+        console.error('AI Search error:', error);
+        searchInput.closest('form').submit();
+    } finally {
+        searchInput.disabled = false;
+        searchInput.placeholder = originalPlaceholder;
+    }
+}
 
 // Show message alert with auto dismiss
 function showMessage(message, type) {
-	const alertContainer = document.getElementById('messageAlert');
-	const messageText = document.getElementById('messageText');
-	const alert = alertContainer.querySelector('.alert');
-	const icon = alert.querySelector('i');
-	
-	// Set message text
-	messageText.textContent = message;
-	
-	// Set alert type
-	alert.className = 'alert fade show';
-	if (type === 'success') {
-		alert.classList.add('alert-success');
-		icon.className = 'bi bi-check-circle-fill me-2';
-	} else {
-		alert.classList.add('alert-danger');
-		icon.className = 'bi bi-exclamation-circle-fill me-2';
-	}
-	
-	// Show alert
-	alertContainer.style.display = 'block';
-	
-	// Auto hide after 3 seconds
-	setTimeout(() => {
-		alertContainer.style.display = 'none';
-	}, 3000);
+    const alertContainer = document.getElementById('messageAlert');
+    const messageText = document.getElementById('messageText');
+    const alert = alertContainer.querySelector('.alert');
+    const icon = alert.querySelector('i');
+    
+    messageText.textContent = message;
+    
+    alert.className = 'alert fade show';
+    if (type === 'success') {
+        alert.classList.add('alert-success');
+        icon.className = 'bi bi-check-circle-fill me-2';
+    } else {
+        alert.classList.add('alert-danger');
+        icon.className = 'bi bi-exclamation-circle-fill me-2';
+    }
+    
+    alertContainer.style.display = 'block';
+    
+    setTimeout(function() {
+        alertContainer.style.display = 'none';
+    }, 3000);
 }
 
 // Handle sort selection
@@ -76,28 +153,33 @@ function handleFilterTheLoai(value) {
 
 // Edit post
 function editPost(maBaiViet) {
-    // Find the post card by maBaiViet
-    const postCard = document.querySelector(`.post-card[data-ma-bai-viet="${maBaiViet}"]`);
+    const postCard = document.querySelector('.post-card[data-ma-bai-viet="' + maBaiViet + '"]');
     if (!postCard) {
         alert('Không tìm thấy bài viết!');
         return;
     }
 
-    // Get data from data attributes
     const maBaiVietValue = postCard.getAttribute('data-ma-bai-viet');
     const tieuDe = postCard.getAttribute('data-tieu-de');
     const noiDung = postCard.getAttribute('data-noi-dung').replace(/&#10;/g, '\n');
     const url = postCard.getAttribute('data-url');
     const maTheLoai = postCard.getAttribute('data-ma-the-loai');
 
-    // Populate the edit form
     document.getElementById('editMaBaiViet').value = maBaiVietValue;
     document.getElementById('editTieuDe').value = tieuDe;
     document.getElementById('editNoiDung').value = noiDung;
-    document.getElementById('editUrl').value = url || '';
     document.getElementById('editMaTheLoai').value = maTheLoai;
+    
+    // Set TinyMCE content
+    setTimeout(function() {
+        if (tinymce.get('editNoiDung')) {
+            tinymce.get('editNoiDung').setContent(noiDung);
+        }
+    }, 100);
+    
+    // Handle file upload state
+    handleEditFileState(url);
 
-    // Show the edit modal
     const modal = new bootstrap.Modal(document.getElementById('editPostModal'));
     modal.show();
 }
@@ -110,43 +192,52 @@ function deletePost(maBaiViet, tieuDe) {
     }
 }
 
-// Close modal on escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        const modals = ['postDetailModal', 'addPostModal', 'editPostModal'];
-        modals.forEach(modalId => {
-            const modalElement = document.getElementById(modalId);
-            if (modalElement) {
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) modal.hide();
+// Form submit handlers for TinyMCE
+document.addEventListener('DOMContentLoaded', function() {
+    const addPostForm = document.getElementById('addPostForm');
+    if (addPostForm) {
+        addPostForm.addEventListener('submit', function(e) {
+            // Get content from TinyMCE
+            if (tinymce.get('addNoiDung')) {
+                var content = tinymce.get('addNoiDung').getContent();
+                document.getElementById('addNoiDung').value = content;
+                
+                // Custom validation
+                if (!content || content.trim() === '') {
+                    e.preventDefault();
+                    alert('Vui lòng nhập nội dung bài viết!');
+                    return false;
+                }
+            }
+        });
+    }
+
+    const editPostForm = document.getElementById('editPostForm');
+    if (editPostForm) {
+        editPostForm.addEventListener('submit', function(e) {
+            // Get content from TinyMCE
+            if (tinymce.get('editNoiDung')) {
+                var content = tinymce.get('editNoiDung').getContent();
+                document.getElementById('editNoiDung').value = content;
+                
+                // Custom validation
+                if (!content || content.trim() === '') {
+                    e.preventDefault();
+                    alert('Vui lòng nhập nội dung bài viết!');
+                    return false;
+                }
             }
         });
     }
 });
 
-// Form validation
-document.addEventListener('DOMContentLoaded', function() {
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const tieuDeInput = form.querySelector('input[name="tieuDe"]');
-            const noiDungInput = form.querySelector('textarea[name="noiDung"]');
-            
-            if (tieuDeInput && tieuDeInput.value.trim().length > 255) {
-                e.preventDefault();
-                alert('Tiêu đề không được quá 255 ký tự!');
-                tieuDeInput.focus();
-                return false;
-            }
-            
-            if (noiDungInput && noiDungInput.value.trim() === '') {
-                e.preventDefault();
-                alert('Nội dung không được để trống!');
-                noiDungInput.focus();
-                return false;
-            }
-        });
-    });
+// Reset TinyMCE when opening add modal
+document.getElementById('addPostModal').addEventListener('show.bs.modal', function () {
+    setTimeout(function() {
+        if (tinymce.get('addNoiDung')) {
+            tinymce.get('addNoiDung').setContent('');
+        }
+    }, 100);
 });
 
 // ============================================
@@ -157,7 +248,6 @@ let addUploadedFileUrl = '';
 let editUploadedFileUrl = '';
 let editOriginalFileUrl = '';
 
-// Initialize upload listeners
 document.addEventListener('DOMContentLoaded', function() {
     const addFileInput = document.getElementById('addFileInput');
     if(addFileInput) {
@@ -170,19 +260,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Handle Add File Select
 function handleAddFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    console.log('Add file selected:', file.name, file.type, file.size);
-    
     const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
-    const allValidTypes = [...validImageTypes, ...validVideoTypes];
+    const allValidTypes = validImageTypes.concat(validVideoTypes);
     
-    if (!allValidTypes.includes(file.type)) {
-        alert('Định dạng file không được hỗ trợ! Vui lòng chọn file ảnh (.jpg, .png, .gif, .webp) hoặc video (.mp4, .webm, .ogg)');
+    if (allValidTypes.indexOf(file.type) === -1) {
+        alert('Định dạng file không được hỗ trợ!');
         event.target.value = '';
         return;
     }
@@ -201,15 +288,12 @@ function handleAddFileSelect(event) {
     uploadAddFile(file);
 }
 
-// Upload Add File
 function uploadAddFile(file) {
     const formData = new FormData();
     formData.append('file', file);
     
     const statusElement = document.getElementById('addFileStatus');
     statusElement.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Đang tải lên...';
-    statusElement.classList.remove('text-success', 'text-danger', 'text-muted');
-    statusElement.classList.add('text-primary');
     
     const contextPath = window.location.pathname.split('/')[1];
     
@@ -217,24 +301,21 @@ function uploadAddFile(file) {
         method: 'POST',
         body: formData
     })
-    .then(response => {
-        console.log('Upload response status:', response.status);
+    .then(function(response) {
         return response.json();
     })
-    .then(data => {
-        console.log('Upload response data:', data);
+    .then(function(data) {
         if (data.success) {
             addUploadedFileUrl = data.url;
             document.getElementById('addUrlHidden').value = data.url;
             statusElement.textContent = data.fileName;
             statusElement.classList.remove('text-primary');
             statusElement.classList.add('text-success');
-            console.log('Upload success! URL:', data.url);
         } else {
             throw new Error(data.message || 'Upload thất bại');
         }
     })
-    .catch(error => {
+    .catch(function(error) {
         console.error('Upload error:', error);
         statusElement.textContent = 'Lỗi: ' + error.message;
         statusElement.classList.remove('text-primary');
@@ -245,7 +326,6 @@ function uploadAddFile(file) {
     });
 }
 
-// Show Add File Preview
 function showAddFilePreview(file) {
     const preview = document.getElementById('addFilePreview');
     preview.innerHTML = '';
@@ -278,33 +358,27 @@ function showAddFilePreview(file) {
     }
 }
 
-// Handle Edit File Select
 function handleEditFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    console.log('Edit file selected:', file.name, file.type, file.size);
-    
     const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
-    const allValidTypes = [...validImageTypes, ...validVideoTypes];
+    const allValidTypes = validImageTypes.concat(validVideoTypes);
     
-    if (!allValidTypes.includes(file.type)) {
-        alert('Định dạng file không được hỗ trợ! Vui lòng chọn file ảnh (.jpg, .png, .gif, .webp) hoặc video (.mp4, .webm, .ogg)');
+    if (allValidTypes.indexOf(file.type) === -1) {
+        alert('Định dạng file không được hỗ trợ!');
         event.target.value = '';
         return;
     }
     
     if (file.size > 50 * 1024 * 1024) {
-        alert('Kích thước file quá lớn! Vui lòng chọn file nhỏ hơn 50MB');
+        alert('Kích thước file quá lớn!');
         event.target.value = '';
         return;
     }
     
     document.getElementById('editFileStatus').textContent = 'Đang chuẩn bị tải lên...';
-    document.getElementById('editFileStatus').classList.remove('text-muted');
-    document.getElementById('editFileStatus').classList.add('text-primary');
-    
     showEditFilePreview(file);
     document.getElementById('editRemoveFileBtn').style.display = 'inline-block';
     document.getElementById('editKeepOldFile').value = 'false';
@@ -312,15 +386,12 @@ function handleEditFileSelect(event) {
     uploadEditFile(file);
 }
 
-// Upload Edit File
 function uploadEditFile(file) {
     const formData = new FormData();
     formData.append('file', file);
     
     const statusElement = document.getElementById('editFileStatus');
     statusElement.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Đang tải lên...';
-    statusElement.classList.remove('text-success', 'text-danger', 'text-muted');
-    statusElement.classList.add('text-primary');
     
     const contextPath = window.location.pathname.split('/')[1];
     
@@ -328,35 +399,29 @@ function uploadEditFile(file) {
         method: 'POST',
         body: formData
     })
-    .then(response => {
-        console.log('Edit upload response status:', response.status);
+    .then(function(response) {
         return response.json();
     })
-    .then(data => {
-        console.log('Edit upload response data:', data);
+    .then(function(data) {
         if (data.success) {
             editUploadedFileUrl = data.url;
             document.getElementById('editUrlHidden').value = data.url;
             statusElement.textContent = data.fileName;
             statusElement.classList.remove('text-primary');
             statusElement.classList.add('text-success');
-            console.log('Edit upload success! URL:', data.url);
         } else {
             throw new Error(data.message || 'Upload thất bại');
         }
     })
-    .catch(error => {
+    .catch(function(error) {
         console.error('Edit upload error:', error);
         statusElement.textContent = 'Lỗi: ' + error.message;
-        statusElement.classList.remove('text-primary');
-        statusElement.classList.add('text-danger');
         document.getElementById('editFileInput').value = '';
         document.getElementById('editFilePreview').style.display = 'none';
         editUploadedFileUrl = '';
     });
 }
 
-// Show Edit File Preview
 function showEditFilePreview(file) {
     const preview = document.getElementById('editFilePreview');
     preview.innerHTML = '';
@@ -389,7 +454,6 @@ function showEditFilePreview(file) {
     }
 }
 
-// Remove Edit File
 function removeEditFile() {
     document.getElementById('editFileInput').value = '';
     document.getElementById('editFileStatus').textContent = 'Chưa có ảnh/video';
@@ -402,27 +466,7 @@ function removeEditFile() {
     editUploadedFileUrl = '';
 }
 
-// Update editPost function
-const originalEditPost = editPost;
-editPost = function(maBaiViet) {
-    const postCard = document.querySelector(`.post-card[data-ma-bai-viet="${maBaiViet}"]`);
-    if (!postCard) {
-        alert('Không tìm thấy bài viết!');
-        return;
-    }
-
-    const maBaiVietValue = postCard.getAttribute('data-ma-bai-viet');
-    const tieuDe = postCard.getAttribute('data-tieu-de');
-    const noiDung = postCard.getAttribute('data-noi-dung').replace(/&#10;/g, '\n');
-    const url = postCard.getAttribute('data-url');
-    const maTheLoai = postCard.getAttribute('data-ma-the-loai');
-
-    document.getElementById('editMaBaiViet').value = maBaiVietValue;
-    document.getElementById('editTieuDe').value = tieuDe;
-    document.getElementById('editNoiDung').value = noiDung;
-    document.getElementById('editMaTheLoai').value = maTheLoai;
-
-    // Handle file
+function handleEditFileState(url) {
     editOriginalFileUrl = url || '';
     editUploadedFileUrl = '';
     document.getElementById('editFileInput').value = '';
@@ -469,12 +513,8 @@ editPost = function(maBaiViet) {
         document.getElementById('editFilePreview').style.display = 'none';
         document.getElementById('editRemoveFileBtn').style.display = 'none';
     }
+}
 
-    const modal = new bootstrap.Modal(document.getElementById('editPostModal'));
-    modal.show();
-};
-
-// Reset upload state when opening add modal
 document.getElementById('addPostModal').addEventListener('show.bs.modal', function () {
     addUploadedFileUrl = '';
     document.getElementById('addFileInput').value = '';

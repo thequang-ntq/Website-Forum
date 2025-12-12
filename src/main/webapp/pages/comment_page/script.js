@@ -5,7 +5,82 @@ document.addEventListener('DOMContentLoaded', function() {
 	var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
 		return new bootstrap.Tooltip(tooltipTriggerEl);
 	});
+	
+	initTinyMCE();
 });
+
+// TinyMCE Initialization
+let editorInstances = {};
+
+function initTinyMCE() {
+    tinymce.init({
+        selector: '.tinymce-editor',
+        height: 300,
+        menubar: false,
+        language: 'vi',
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter ' +
+                 'alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+        setup: function(editor) {
+            editorInstances[editor.id] = editor;
+            
+            // Remove required attribute when editor initializes
+            editor.on('init', function() {
+                var textarea = document.getElementById(editor.id);
+                if (textarea) {
+                    textarea.removeAttribute('required');
+                }
+            });
+        }
+    });
+}
+
+// AI-Enhanced Search
+async function enhanceSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput.value.trim();
+    
+    if (!query) {
+        alert('Vui lòng nhập từ khóa tìm kiếm!');
+        return;
+    }
+    
+    searchInput.disabled = true;
+    const originalPlaceholder = searchInput.placeholder;
+    searchInput.placeholder = 'Đang xử lý với AI...';
+    
+    try {
+        const contextPath = window.location.pathname.split('/')[1];
+        const response = await fetch('/' + contextPath + '/AISearchController', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'query=' + encodeURIComponent(query) + '&context=binhluan'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            searchInput.value = data.enhancedQuery;
+            setTimeout(() => handleSearch(), 100);
+        } else {
+            alert('Không thể xử lý với AI. Tìm kiếm thường...');
+            handleSearch();
+        }
+    } catch (error) {
+        console.error('AI Search error:', error);
+        handleSearch();
+    } finally {
+        searchInput.disabled = false;
+        searchInput.placeholder = originalPlaceholder;
+    }
+}
 
 // Handle real-time search
 let searchTimeout;
@@ -191,10 +266,15 @@ function showAddModal() {
 	const errorDiv = document.getElementById('addError');
 	const submitBtn = document.getElementById('addSubmitBtn');
 	
-	// Reset form
 	form.reset();
 	
-	// Reset validation
+	// Reinitialize TinyMCE for add modal
+	setTimeout(() => {
+	    if (tinymce.get('addNoiDung')) {
+	        tinymce.get('addNoiDung').setContent('');
+	    }
+	}, 100);
+	
 	document.querySelectorAll('#addForm .form-control, #addForm .form-select').forEach(el => {
 		el.classList.remove('is-invalid');
 	});
@@ -215,7 +295,6 @@ function showEditModal(maBinhLuan) {
 	const errorDiv = document.getElementById('editError');
 	const submitBtn = document.getElementById('editSubmitBtn');
 	
-	// Get comment data
 	const comment = getCommentData(maBinhLuan);
 	
 	if(!comment) {
@@ -223,14 +302,19 @@ function showEditModal(maBinhLuan) {
 		return;
 	}
 	
-	// Set values
 	document.getElementById('editMaBinhLuan').value = comment.maBinhLuan;
 	document.getElementById('editNoiDung').value = comment.noiDung;
 	document.getElementById('editUrl').value = comment.url || '';
 	document.getElementById('editSoLuotThich').value = comment.soLuotThich || '';
 	document.getElementById('editTrangThai').value = comment.trangThai;
 	
-	// Reset validation
+	// Set TinyMCE content for edit modal
+	setTimeout(() => {
+	    if (tinymce.get('editNoiDung')) {
+	        tinymce.get('editNoiDung').setContent(comment.noiDung);
+	    }
+	}, 100);
+	
 	document.querySelectorAll('#editForm .form-control, #editForm .form-select').forEach(el => {
 		el.classList.remove('is-invalid');
 	});
@@ -381,6 +465,50 @@ document.addEventListener('DOMContentLoaded', function() {
 			}, 3000);
 		});
 	});
+});
+
+// Form submit handlers for TinyMCE
+document.addEventListener('DOMContentLoaded', function() {
+    const addForm = document.getElementById('addForm');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
+            if (tinymce.get('addNoiDung')) {
+                var content = tinymce.get('addNoiDung').getContent();
+                document.getElementById('addNoiDung').value = content;
+                
+                if (!content || content.trim() === '') {
+                    e.preventDefault();
+                    alert('Vui lòng nhập nội dung bình luận!');
+                    return false;
+                }
+            }
+        });
+    }
+
+    const editForm = document.getElementById('editForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            if (tinymce.get('editNoiDung')) {
+                var content = tinymce.get('editNoiDung').getContent();
+                document.getElementById('editNoiDung').value = content;
+                
+                if (!content || content.trim() === '') {
+                    e.preventDefault();
+                    alert('Vui lòng nhập nội dung bình luận!');
+                    return false;
+                }
+            }
+        });
+    }
+});
+
+// Reset TinyMCE when opening add modal
+document.getElementById('addModal').addEventListener('show.bs.modal', function () {
+    setTimeout(() => {
+        if (tinymce.get('addNoiDung')) {
+            tinymce.get('addNoiDung').setContent('');
+        }
+    }, 100);
 });
 
 // ============================================

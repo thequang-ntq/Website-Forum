@@ -15,6 +15,8 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 	<link rel="stylesheet" href="${pageContext.request.contextPath}/pages/post_page/style.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<!-- TinyMCE Editor -->
+	<script src="https://cdn.tiny.cloud/1/8iyu7buuyf605fysc52n8rno4r010c26uqkrglbphgmds6pz/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
 	<%
@@ -138,15 +140,18 @@
 
 		<!-- Search Bar -->
 		<div class="row mb-4">
-			<div class="col-lg-4 col-md-6 ms-auto">
-				<div class="search-box">
-					<input type="text" class="form-control" id="searchInput" 
-						   placeholder="Tìm kiếm bài viết..." 
-						   value="<%= searchKey != null ? searchKey : "" %>"
-						   onkeyup="handleSearch()">
-					<i class="bi bi-search search-icon"></i>
-				</div>
-			</div>
+		    <div class="col-lg-4 col-md-6 ms-auto">
+		        <div class="search-box">
+		            <input type="text" class="form-control" id="searchInput" 
+		                   placeholder="Tìm kiếm bài viết..." 
+		                   value="<%= searchKey != null ? searchKey : "" %>"
+		                   onkeyup="handleSearch()">
+		            <i class="bi bi-search search-icon"></i>
+		            <button class="btn btn-ai-search" onclick="enhanceSearch()" title="Tìm kiếm thông minh với AI">
+		                <i class="bi bi-stars"></i>
+		            </button>
+		        </div>
+		    </div>
 		</div>
 
 		<!-- Post Table or Empty State -->
@@ -371,12 +376,12 @@
 						</div>
 	
 						<div class="mb-3">
-							<label for="addNoiDung" class="form-label fw-bold">
-								Nội dung <span class="text-danger">*</span>
-							</label>
-							<textarea class="form-control" id="addNoiDung" name="noiDung" 
-									  rows="6" onkeyup="validateAddForm()" required></textarea>
-							<div class="invalid-feedback" id="addNoiDungError"></div>
+						    <label for="addNoiDung" class="form-label fw-bold">
+						        Nội dung <span class="text-danger">*</span>
+						    </label>
+						    <textarea class="form-control tinymce-editor" id="addNoiDung" name="noiDung" 
+						              rows="6"></textarea>
+						    <div class="invalid-feedback" id="addNoiDungError"></div>
 						</div>
 	
 						<!-- Upload File Section -->
@@ -460,12 +465,12 @@
 						</div>
 	
 						<div class="mb-3">
-							<label for="editNoiDung" class="form-label fw-bold">
-								Nội dung <span class="text-danger">*</span>
-							</label>
-							<textarea class="form-control" id="editNoiDung" name="noiDung" 
-									  rows="6" onkeyup="validateEditForm()" required></textarea>
-							<div class="invalid-feedback" id="editNoiDungError"></div>
+						    <label for="editNoiDung" class="form-label fw-bold">
+						        Nội dung <span class="text-danger">*</span>
+						    </label>
+						    <textarea class="form-control tinymce-editor" id="editNoiDung" name="noiDung" 
+						              rows="6"></textarea>
+						    <div class="invalid-feedback" id="editNoiDungError"></div>
 						</div>
 	
 						<!-- Upload File Section -->

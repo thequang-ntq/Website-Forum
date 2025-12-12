@@ -73,13 +73,13 @@ public class TrangChuController extends HttpServlet {
 
             // Lọc theo thể loại (nếu có)
             if (theLoaiParam != null && !theLoaiParam.trim().isEmpty()) {
-                dsBaiViet = bvbo.filterDB_maTheLoai(Integer.parseInt(theLoaiParam));
+            	dsBaiViet = bvbo.filterDB_maTheLoai_2(dsBaiViet, Integer.parseInt(theLoaiParam));
                 request.setAttribute("selectedTheLoai", Integer.parseInt(theLoaiParam));
             }
 
             // Lọc theo tài khoản tạo (nếu có)
             if (filterTKParam != null && !filterTKParam.trim().isEmpty()) {
-                dsBaiViet = bvbo.filterDB_taiKhoanTao(filterTKParam);
+                dsBaiViet = bvbo.filterDB_taiKhoanTao_2(dsBaiViet, filterTKParam);
                 request.setAttribute("filterTaiKhoan", filterTKParam);
             }
 

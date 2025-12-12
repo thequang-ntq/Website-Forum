@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/pages/mycomment_page/style.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- TinyMCE Editor -->
+	<script src="https://cdn.tiny.cloud/1/8iyu7buuyf605fysc52n8rno4r010c26uqkrglbphgmds6pz/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
     <%
@@ -388,17 +390,18 @@
                         <h5 class="mb-0"><i class="bi bi-search me-2"></i>Tìm kiếm</h5>
                     </div>
                     <div class="card-body">
-                        <form action="${pageContext.request.contextPath}/BinhLuanCuaToiController" method="get">
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="search" 
-                                       placeholder="Tìm kiếm bình luận..." 
-                                       value="<%= searchKey != null ? searchKey : "" %>">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="bi bi-search"></i>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+					    <form action="${pageContext.request.contextPath}/BinhLuanCuaToiController" method="get">
+					        <div class="search-box">
+					            <input type="text" class="form-control" name="search" id="searchInput"
+					                   placeholder="Tìm kiếm bình luận..." 
+					                   value="<%= searchKey != null ? searchKey : "" %>">
+					            <i class="bi bi-search search-icon"></i>
+					            <button type="button" class="btn btn-ai-search" onclick="enhanceSearch()" title="Tìm kiếm thông minh với AI">
+					                <i class="bi bi-stars"></i>
+					            </button>
+					        </div>
+					    </form>
+					</div>
                 </div>
             </div>
         </div>
@@ -435,9 +438,10 @@
 	                        </select>
 	                    </div>
 	                    <div class="mb-3">
-	                        <label class="form-label fw-bold">Nội dung <span class="text-danger">*</span></label>
-	                        <textarea class="form-control" name="noiDung" rows="6" required></textarea>
-	                    </div>
+						    <label class="form-label fw-bold">Nội dung <span class="text-danger">*</span></label>
+						    <textarea class="form-control tinymce-editor" name="noiDung" id="addNoiDung" 
+						              rows="6"></textarea>
+						</div>
 	                    
 	                    <!-- Upload File Section -->
 	                    <div class="mb-3">
@@ -486,9 +490,10 @@
 	                <input type="hidden" id="editKeepOldFile" name="keepOldFile" value="false">
 	                <div class="modal-body">
 	                    <div class="mb-3">
-	                        <label class="form-label fw-bold">Nội dung <span class="text-danger">*</span></label>
-	                        <textarea class="form-control" name="noiDung" id="editNoiDung" rows="6" required></textarea>
-	                    </div>
+						    <label class="form-label fw-bold">Nội dung <span class="text-danger">*</span></label>
+						    <textarea class="form-control tinymce-editor" name="noiDung" id="editNoiDung" 
+						              rows="6"></textarea>
+						</div>
 	                    
 	                    <!-- Upload File Section -->
 	                    <div class="mb-3">

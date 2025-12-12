@@ -8,6 +8,51 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
+// AI-Enhanced Search
+async function enhanceSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput.value.trim();
+    
+    if (!query) {
+        alert('Vui lòng nhập từ khóa tìm kiếm!');
+        return;
+    }
+    
+    searchInput.disabled = true;
+    const originalPlaceholder = searchInput.placeholder;
+    searchInput.placeholder = 'Đang xử lý với AI...';
+    
+    try {
+        const contextPath = window.location.pathname.split('/')[1];
+        const response = await fetch('/' + contextPath + '/AISearchController', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'query=' + encodeURIComponent(query) + '&context=binhluan'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            searchInput.value = data.enhancedQuery;
+            const form = searchInput.closest('form');
+            if (form) {
+                setTimeout(() => form.submit(), 100);
+            }
+        } else {
+            alert('Không thể xử lý với AI. Tìm kiếm thường...');
+            searchInput.closest('form').submit();
+        }
+    } catch (error) {
+        console.error('AI Search error:', error);
+        searchInput.closest('form').submit();
+    } finally {
+        searchInput.disabled = false;
+        searchInput.placeholder = originalPlaceholder;
+    }
+}
+
 // Handle sort selection
 function handleSort(value) {
 	if(!value) return;

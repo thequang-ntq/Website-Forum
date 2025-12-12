@@ -89,7 +89,7 @@ public class BaiVietBO {
                     break;
                 }
             }
-
+//            if(!bv.getTrangThai().equals("Active")) continue;
             if ((bv.getTieuDe() != null && bv.getTieuDe().trim().toLowerCase().contains(key.trim().toLowerCase()))
                     || (bv.getNoiDung() != null && bv.getNoiDung().trim().toLowerCase().contains(key.trim().toLowerCase()))
                     || (bv.getTaiKhoanTao() != null && bv.getTaiKhoanTao().trim().toLowerCase().contains(key.trim().toLowerCase()))
@@ -139,77 +139,103 @@ public class BaiVietBO {
         return temp;
     }
 
-    // Sắp xếp giảm dần, bài viết đánh giá cao nhất lên đầu
+    // Sắp xếp giảm dần, bài viết đánh giá cao nhất lên đầu (5 sao -> 1 sao -> null)
     public ArrayList<BaiViet> sortDB_danhGia_cao(ArrayList<BaiViet> dsBaiViet) throws Exception {
         ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
-        temp.sort(
-            Comparator.comparing(
-                BaiViet::getDanhGia,
-                Comparator.nullsLast(BigDecimal::compareTo)
-            ).reversed()
-        );
+        temp.sort((bv1, bv2) -> {
+            if (bv1.getDanhGia() == null && bv2.getDanhGia() == null) return 0;
+            if (bv1.getDanhGia() == null) return 1;  // null xuống cuối
+            if (bv2.getDanhGia() == null) return -1; // null xuống cuối
+            return bv2.getDanhGia().compareTo(bv1.getDanhGia()); // Giảm dần
+        });
         return temp;
     }
 
-    // Sắp xếp tăng dần, bài viết đánh giá thấp nhất lên đầu
+    // Sắp xếp tăng dần, bài viết đánh giá thấp nhất lên đầu (null -> 1 sao -> 5 sao)
     public ArrayList<BaiViet> sortDB_danhGia_thap(ArrayList<BaiViet> dsBaiViet) throws Exception {
         ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
-        temp.sort(
-            Comparator.comparing(
-                BaiViet::getDanhGia,
-                Comparator.nullsLast(BigDecimal::compareTo)
-            )
-        );
+        temp.sort((bv1, bv2) -> {
+            if (bv1.getDanhGia() == null && bv2.getDanhGia() == null) return 0;
+            if (bv1.getDanhGia() == null) return -1;  // null lên đầu
+            if (bv2.getDanhGia() == null) return 1;   // null lên đầu
+            return bv1.getDanhGia().compareTo(bv2.getDanhGia()); // Tăng dần
+        });
         return temp;
     }
 
-    // Sắp xếp theo thời điểm tạo gần đây nhất (muộn nhất lên đầu)
-    public ArrayList<BaiViet> sortDB_thoiDiemTao_ganNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
-        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
-        temp.sort(
-            Comparator.comparing(
-                BaiViet::getThoiDiemTao,
-                Comparator.nullsLast(Timestamp::compareTo)
-            ).reversed()
-        );
-        return temp;
-    }
-
-    // Sắp xếp theo thời điểm tạo xa nhất (sớm nhất lên đầu)
-    public ArrayList<BaiViet> sortDB_thoiDiemTao_xaNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
-        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
-        temp.sort(
-            Comparator.comparing(
-                BaiViet::getThoiDiemTao,
-                Comparator.nullsLast(Timestamp::compareTo)
-            )
-        );
-        return temp;
-    }
-
-    // Sắp xếp theo thời điểm cập nhật gần đây nhất (muộn nhất lên đầu, null xuống cuối)
-    public ArrayList<BaiViet> sortDB_thoiDiemCapNhat_ganNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
-        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
-        temp.sort(
-            Comparator.comparing(
-                BaiViet::getThoiDiemCapNhat,
-                Comparator.nullsLast(Timestamp::compareTo)
-            ).reversed()
-        );
-        return temp;
-    }
-
-    // Sắp xếp theo thời điểm cập nhật xa nhất (sớm nhất lên đầu, null xuống cuối)
-    public ArrayList<BaiViet> sortDB_thoiDiemCapNhat_xaNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
-        ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
-        temp.sort(
-            Comparator.comparing(
-                BaiViet::getThoiDiemCapNhat,
-                Comparator.nullsLast(Timestamp::compareTo)
-            )
-        );
-        return temp;
-    }
+	 // Sắp xếp theo thời điểm cập nhật gần đây nhất (muộn nhất lên đầu)
+	 // Những bài có ThoiDiemCapNhat null sẽ sắp xếp theo ThoiDiemTao
+	 public ArrayList<BaiViet> sortDB_thoiDiemCapNhat_ganNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
+	     ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+	     temp.sort((bv1, bv2) -> {
+	         // Nếu cả 2 đều có ThoiDiemCapNhat
+	         if (bv1.getThoiDiemCapNhat() != null && bv2.getThoiDiemCapNhat() != null) {
+	             return bv2.getThoiDiemCapNhat().compareTo(bv1.getThoiDiemCapNhat()); // Giảm dần
+	         }
+	         
+	         // Nếu cả 2 đều null ThoiDiemCapNhat -> sắp xếp theo ThoiDiemTao
+	         if (bv1.getThoiDiemCapNhat() == null && bv2.getThoiDiemCapNhat() == null) {
+	             if (bv1.getThoiDiemTao() == null && bv2.getThoiDiemTao() == null) return 0;
+	             if (bv1.getThoiDiemTao() == null) return 1;
+	             if (bv2.getThoiDiemTao() == null) return -1;
+	             return bv2.getThoiDiemTao().compareTo(bv1.getThoiDiemTao()); // Giảm dần
+	         }
+	         
+	         // Một bên có ThoiDiemCapNhat, một bên null -> ưu tiên bên có ThoiDiemCapNhat lên đầu
+	         if (bv1.getThoiDiemCapNhat() == null) return 1;  // bv1 null -> xuống sau
+	         return -1; // bv2 null -> xuống sau
+	     });
+	     return temp;
+	 }
+	
+	 // Sắp xếp theo thời điểm cập nhật xa nhất (sớm nhất lên đầu)
+	 // Những bài có ThoiDiemCapNhat null sẽ sắp xếp theo ThoiDiemTao
+	 public ArrayList<BaiViet> sortDB_thoiDiemCapNhat_xaNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
+	     ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+	     temp.sort((bv1, bv2) -> {
+	         // Nếu cả 2 đều có ThoiDiemCapNhat
+	         if (bv1.getThoiDiemCapNhat() != null && bv2.getThoiDiemCapNhat() != null) {
+	             return bv1.getThoiDiemCapNhat().compareTo(bv2.getThoiDiemCapNhat()); // Tăng dần
+	         }
+	         
+	         // Nếu cả 2 đều null ThoiDiemCapNhat -> sắp xếp theo ThoiDiemTao
+	         if (bv1.getThoiDiemCapNhat() == null && bv2.getThoiDiemCapNhat() == null) {
+	             if (bv1.getThoiDiemTao() == null && bv2.getThoiDiemTao() == null) return 0;
+	             if (bv1.getThoiDiemTao() == null) return 1;
+	             if (bv2.getThoiDiemTao() == null) return -1;
+	             return bv1.getThoiDiemTao().compareTo(bv2.getThoiDiemTao()); // Tăng dần
+	         }
+	         
+	         // Một bên có ThoiDiemCapNhat, một bên null -> ưu tiên bên có ThoiDiemCapNhat lên đầu
+	         if (bv1.getThoiDiemCapNhat() == null) return 1;  // bv1 null -> xuống sau
+	         return -1; // bv2 null -> xuống sau
+	     });
+	     return temp;
+	 }
+	
+	 // Sắp xếp theo thời điểm tạo gần đây nhất (muộn nhất lên đầu)
+	 public ArrayList<BaiViet> sortDB_thoiDiemTao_ganNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
+	     ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+	     temp.sort((bv1, bv2) -> {
+	         if (bv1.getThoiDiemTao() == null && bv2.getThoiDiemTao() == null) return 0;
+	         if (bv1.getThoiDiemTao() == null) return 1;  // null xuống cuối
+	         if (bv2.getThoiDiemTao() == null) return -1; // null xuống cuối
+	         return bv2.getThoiDiemTao().compareTo(bv1.getThoiDiemTao()); // Giảm dần
+	     });
+	     return temp;
+	 }
+	
+	 // Sắp xếp theo thời điểm tạo xa nhất (sớm nhất lên đầu)
+	 public ArrayList<BaiViet> sortDB_thoiDiemTao_xaNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
+	     ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
+	     temp.sort((bv1, bv2) -> {
+	         if (bv1.getThoiDiemTao() == null && bv2.getThoiDiemTao() == null) return 0;
+	         if (bv1.getThoiDiemTao() == null) return 1;  // null xuống cuối
+	         if (bv2.getThoiDiemTao() == null) return -1; // null xuống cuối
+	         return bv1.getThoiDiemTao().compareTo(bv2.getThoiDiemTao()); // Tăng dần
+	     });
+	     return temp;
+	 }
 
     // Lọc danh sách bài viết theo tài khoản tạo
     public ArrayList<BaiViet> filterDB_taiKhoanTao(String taiKhoanTao) throws Exception {
@@ -225,6 +251,21 @@ public class BaiVietBO {
         }
         return temp;
     }
+    
+ // Lọc danh sách bài viết theo tài khoản tạo ở trang chủ (Tiếp nối cái trước đó)
+    public ArrayList<BaiViet> filterDB_taiKhoanTao_2(ArrayList<BaiViet> dsBaiViet, String taiKhoanTao) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>();
+        if (taiKhoanTao == null || taiKhoanTao.trim().isEmpty()) {
+            return temp;
+        }
+
+        for (BaiViet bv : dsBaiViet) {
+            if (bv.getTaiKhoanTao().equals(taiKhoanTao) && bv.getTrangThai().equals("Active")) {
+                temp.add(bv);
+            }
+        }
+        return temp;
+    }
 
     // Lọc danh sách bài viết theo mã thể loại
     public ArrayList<BaiViet> filterDB_maTheLoai(int maTheLoai) throws Exception {
@@ -235,6 +276,21 @@ public class BaiVietBO {
 
         for (BaiViet bv : readDB()) {
             if (bv.getMaTheLoai() == maTheLoai) {
+                temp.add(bv);
+            }
+        }
+        return temp;
+    }
+    
+ // Lọc danh sách bài viết theo mã thể loại ở trang chủ (Tiếp nối cái trước đó)
+    public ArrayList<BaiViet> filterDB_maTheLoai_2(ArrayList<BaiViet> dsBaiViet, int maTheLoai) throws Exception {
+        ArrayList<BaiViet> temp = new ArrayList<>();
+        if (maTheLoai < 1) {
+            return temp;
+        }
+
+        for (BaiViet bv : dsBaiViet) {
+            if (bv.getMaTheLoai() == maTheLoai && bv.getTrangThai().equals("Active")) {
                 temp.add(bv);
             }
         }
