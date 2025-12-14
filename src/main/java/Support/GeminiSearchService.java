@@ -60,20 +60,12 @@ public class GeminiSearchService {
     
     private String buildPrompt(String query, String context) {
         return String.format(
-            "Bạn là công cụ tìm kiếm thông minh cho diễn đàn bài viết.\n" +
-            "Ngữ cảnh tìm kiếm: %s (chủ yếu tìm trong tiêu đề, nội dung bài viết và bình luận).\n" +
-            "Truy vấn người dùng: '%s'\n" +
-            "Nhiệm vụ: Mở rộng và trích xuất từ khóa tối ưu để tìm bài viết liên quan nhất.\n" +
-            "- Hiểu ý định người dùng (ví dụ: 'video' có thể nghĩa là bài có video, bài nói về video, hoặc chứa từ video).\n" +
-            "- Thêm từ khóa đồng nghĩa, liên quan bằng tiếng Việt nếu cần (ví dụ: video → video phim clip mp4).\n" +
-            "- Loại bỏ từ dừng không cần thiết.\n" +
-            "- Ưu tiên từ khóa cụ thể để kết quả chính xác, tránh quá rộng.\n" +
-            "Chỉ trả về danh sách từ khóa cách nhau bởi khoảng trắng, KHÔNG thêm giải thích, dấu câu hay số.\n" +
-            "Ví dụ:\n" +
-            "- Query: 'công nghệ AI' → công nghệ AI trí tuệ nhân tạo\n" +
-            "- Query: 'video' → video phim clip mp4\n" +
-            "- Query: 'haha' → haha vui nhộn hài hước",
-            context, query
+            "Bạn là trợ lý tìm kiếm thông minh. Phân tích câu truy vấn '%s' trong ngữ cảnh %s. " +
+	        "Trích xuất CHỈ các từ khóa quan trọng để tìm kiếm, loại bỏ từ dừng, giữ nguyên tiếng Việt có dấu. " +
+	        "Chỉ trả về các từ khóa cách nhau bởi khoảng trắng, KHÔNG giải thích gì thêm. " +
+	        "Ví dụ: 'tìm bài viết về công nghệ AI' -> 'công nghệ AI'" +
+	        "Ví dụ: 'bài viết video mp4' -> 'video'",
+	        query, context
         );
     }
     

@@ -2,13 +2,8 @@
 
 # website-forum
 
-- Nhóm sinh viên thực hiện:
-1. 22T1020340 - Võ Minh Quân
-2. 22T1020362 - Nguyễn Thế Quang
-3. 22T1020606 - Lê Phước Thiên
-4. 22T1020749 - Hoàng Trọng Hiếu
-- Lớp: Phần mềm mã nguồn mở - Nhóm 4 
-- Giảng viên hướng dẫn: TS. Hồ Quốc Dũng 
+- Người thực hiện:
+Nguyễn Thế Quang (Mã sinh viên: 22T1020362, ĐHKH Huế)
 
 # Mục lục
 
