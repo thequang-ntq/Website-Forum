@@ -11,6 +11,7 @@ import javax.servlet.http.HttpSession;
 
 import Modal.TaiKhoan.TaiKhoan;
 import Modal.TaiKhoan.TaiKhoanBO;
+import Support.EmailService;
 import Support.md5;
 import nl.captcha.Captcha;
 
@@ -45,6 +46,7 @@ public class XuLyDangKyController extends HttpServlet {
 		String matKhau = (String) request.getAttribute("matKhau");
 		String nhapLaiMatKhau = (String) request.getAttribute("nhapLaiMatKhau");
 		String captchaAnswer = request.getParameter("captchaDangKy");
+		String email = (String) request.getAttribute("email");
 		
 		// Lấy số lần đăng ký sai
 	    Integer registerAttempts = (Integer) session.getAttribute("registerAttempts");
@@ -92,12 +94,21 @@ public class XuLyDangKyController extends HttpServlet {
 		String errorNhapLaiMatKhau = null;
 		String errorDangKy = null;
 		boolean hasError = false;
+		String errorEmail = null;
 		
 		// Validate dữ liệu đầu vào
 		// Kiểm tra tên đăng nhập
 		if(tenDangNhap == null || tenDangNhap.trim().isEmpty()) {
 			errorTenDangNhap = "Tên đăng nhập không được để trống!";
 			hasError = true;
+		}
+		
+		// Kiểm tra email (nếu có nhập)
+		if(email != null && !email.trim().isEmpty()) {
+		    if(!EmailService.isValidEmail(email.trim())) {
+		        errorEmail = "Email không hợp lệ!";
+		        hasError = true;
+		    }
 		}
 		
 		// Kiểm tra mật khẩu
@@ -123,6 +134,7 @@ public class XuLyDangKyController extends HttpServlet {
 			session.setAttribute("errorMatKhau", errorMatKhau);
 			session.setAttribute("errorNhapLaiMatKhau", errorNhapLaiMatKhau);
 			session.setAttribute("tenDangNhapReg", tenDangNhap);
+			session.setAttribute("errorEmail", errorEmail);
 			
 			response.sendRedirect(request.getContextPath() + "/DangKyController");
 			return;
@@ -149,7 +161,7 @@ public class XuLyDangKyController extends HttpServlet {
 				response.sendRedirect(request.getContextPath() + "/DangKyController");
 			} else {
 				// Đăng ký thành công - thêm tài khoản vào database
-				tkbo.createDB(tenDangNhap.trim(), encryptedPass, "User");
+				tkbo.createDB(tenDangNhap.trim(), encryptedPass, "User", email != null ? email.trim() : null);
 				
 				// Reset số lần đăng ký sai khi đăng nhập thành công
 	            session.removeAttribute("registerAttempts");

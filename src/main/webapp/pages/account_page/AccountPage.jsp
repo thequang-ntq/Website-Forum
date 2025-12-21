@@ -389,6 +389,17 @@
 								<option value="Admin">Admin</option>
 							</select>
 						</div>
+						<div class="mb-3">
+						    <label for="addEmail" class="form-label fw-bold">
+						        Email (Không bắt buộc)
+						    </label>
+						    <input type="email" class="form-control" id="addEmail" 
+						           name="email" maxlength="255" 
+						           placeholder="example@gmail.com"
+						           onkeyup="validateAddForm()">
+						    <small class="text-muted">Email dùng để khôi phục mật khẩu</small>
+						    <div id="addEmailError" class="invalid-feedback"></div>
+						</div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -464,6 +475,17 @@
 								<option value="Deleted">Đã xóa</option>
 							</select>
 						</div>
+						<div class="mb-3">
+						    <label for="editEmail" class="form-label fw-bold">
+						        Email (Không bắt buộc)
+						    </label>
+						    <input type="email" class="form-control" id="editEmail" 
+						           name="email" maxlength="255" 
+						           placeholder="example@gmail.com"
+						           onkeyup="validateEditForm()">
+						    <small class="text-muted">Email dùng để khôi phục mật khẩu</small>
+						    <div id="editEmailError" class="invalid-feedback"></div>
+						</div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -524,13 +546,14 @@
 					else if("Hidden".equals(tk.getTrangThai())) trangThaiVN = "Ẩn";
 		%>
 			<div class="account-data-item" 
-				 data-tendangnhap="<%= tk.getTenDangNhap() %>"
-				 data-matkhau="<%= tk.getMatKhau() %>"
-				 data-quyen="<%= tk.getQuyen() %>"
-				 data-trangthai="<%= tk.getTrangThai() %>"
-				 data-trangthaiVN="<%= trangThaiVN %>"
-				 data-thoidiemtao="<%= tk.getThoiDiemTao() != null ? sdf.format(tk.getThoiDiemTao()) : "" %>"
-				 data-thoidiemcapnhat="<%= tk.getThoiDiemCapNhat() != null ? sdf.format(tk.getThoiDiemCapNhat()) : "" %>">
+			     data-tendangnhap="<%= tk.getTenDangNhap() %>"
+			     data-matkhau="<%= tk.getMatKhau() %>"
+			     data-quyen="<%= tk.getQuyen() %>"
+			     data-email="<%= tk.getEmail() != null ? tk.getEmail() : "" %>"
+			     data-trangthai="<%= tk.getTrangThai() %>"
+			     data-trangthaiVN="<%= trangThaiVN %>"
+			     data-thoidiemtao="<%= tk.getThoiDiemTao() != null ? sdf.format(tk.getThoiDiemTao()) : "" %>"
+			     data-thoidiemcapnhat="<%= tk.getThoiDiemCapNhat() != null ? sdf.format(tk.getThoiDiemCapNhat()) : "" %>">
 			</div>
 		<%
 				}

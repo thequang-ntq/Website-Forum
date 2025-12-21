@@ -173,6 +173,34 @@
 					%>
 				</div>
 				
+				<!-- Email Field (Optional) -->
+				<div class="mb-3">
+				    <label for="email" class="form-label">
+				        <i class="bi bi-envelope-fill me-1"></i>Email (Không bắt buộc)
+				    </label>
+				    <div class="input-group">
+				        <span class="input-group-text">
+				            <i class="bi bi-envelope"></i>
+				        </span>
+				        <input type="email" 
+				               class="form-control" 
+				               id="email" 
+				               name="email" 
+				               placeholder="Nhập email"
+				               value="<%= session.getAttribute("email") != null ? session.getAttribute("email") : "" %>">
+				    </div>
+				    <small class="text-muted">Email dùng để khôi phục mật khẩu</small>
+				    <% String errorEmail = (String) session.getAttribute("errorEmail"); %>
+				    <% if(errorEmail != null && !errorEmail.trim().isEmpty()) { %>
+				        <div class="error-message">
+				            <i class="bi bi-exclamation-circle me-1"></i><%= errorEmail %>
+				        </div>
+				    <% 
+				            session.removeAttribute("errorEmail");
+				        } 
+				    %>
+				</div>
+				
 				<!-- Hiển thị Captcha khi đăng ký sai >= 3 lần -->
 	            <% if(showCaptcha) { %>
 		            <div class="captcha-container">

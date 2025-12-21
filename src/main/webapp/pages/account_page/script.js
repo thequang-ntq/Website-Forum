@@ -105,6 +105,7 @@ function getAccountData(tenDangNhap) {
 				tenDangNhap: item.getAttribute('data-tendangnhap'),
 				matKhau: item.getAttribute('data-matkhau'),
 				quyen: item.getAttribute('data-quyen'),
+				email: item.getAttribute('data-email'),
 				trangThai: item.getAttribute('data-trangthai'),
 				trangThaiVN: item.getAttribute('data-trangthaiVN'),
 				thoiDiemTao: item.getAttribute('data-thoidiemtao'),
@@ -151,6 +152,12 @@ function showDetailModal(tenDangNhap) {
 	let badgeClass = account.quyen === 'Admin' ? 'bg-danger' : 'bg-success';
 	html += '<span class="badge ' + badgeClass + '">' + account.quyen + '</span>';
 	html += '</div>';
+	html += '</div>';
+	
+	// Tìm vị trí hiển thị Quyền trong detail modal, thêm sau đó:
+	html += '<div class="detail-item">';
+	html += '<div class="detail-label"><i class="bi bi-envelope-fill"></i>Email</div>';
+	html += '<div class="detail-value">' + (data.email || '<span class="text-muted">Chưa liên kết</span>') + '</div>';
 	html += '</div>';
 	
 	// Trạng thái
@@ -234,6 +241,7 @@ function showEditModal(tenDangNhap) {
 	document.getElementById('editMatKhau').value = account.matKhau;
 	document.getElementById('editQuyen').value = account.quyen;
 	document.getElementById('editTrangThai').value = account.trangThai;
+	document.getElementById('editEmail').value = account.email || '';
 	
 	// Reset validation
 	document.querySelectorAll('#editForm .form-control, #editForm .form-select').forEach(el => {
@@ -307,6 +315,28 @@ function validateAddForm() {
 		matKhauError.textContent = '';
 	}
 	
+	// Validate Email (nếu có nhập)
+	const email = document.getElementById('addEmail');
+	const emailError = document.getElementById('addEmailError');
+
+	if(email.value.trim() !== '') {
+	    if(email.value.length > 255) {
+	        email.classList.add('is-invalid');
+	        emailError.textContent = 'Email không được quá 255 ký tự';
+	        isValid = false;
+	    } else if(!isValidEmail(email.value)) {
+	        email.classList.add('is-invalid');
+	        emailError.textContent = 'Email không hợp lệ';
+	        isValid = false;
+	    } else {
+	        email.classList.remove('is-invalid');
+	        emailError.textContent = '';
+	    }
+	} else {
+	    email.classList.remove('is-invalid');
+	    emailError.textContent = '';
+	}
+	
 	submitBtn.disabled = !isValid;
 	return isValid;
 }
@@ -332,6 +362,28 @@ function validateEditForm() {
 	} else {
 		matKhauInput.classList.remove('is-invalid');
 		matKhauError.textContent = '';
+	}
+	
+	// Validate Email (nếu có nhập)
+	const email = document.getElementById('editEmail');
+	const emailError = document.getElementById('editEmailError');
+
+	if(email.value.trim() !== '') {
+	    if(email.value.length > 255) {
+	        email.classList.add('is-invalid');
+	        emailError.textContent = 'Email không được quá 255 ký tự';
+	        isValid = false;
+	    } else if(!isValidEmail(email.value)) {
+	        email.classList.add('is-invalid');
+	        emailError.textContent = 'Email không hợp lệ';
+	        isValid = false;
+	    } else {
+	        email.classList.remove('is-invalid');
+	        emailError.textContent = '';
+	    }
+	} else {
+	    email.classList.remove('is-invalid');
+	    emailError.textContent = '';
 	}
 	
 	submitBtn.disabled = !isValid;
@@ -407,3 +459,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 });
+
+// Thêm vào cuối file script.js
+function isValidEmail(email) {
+    const regex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    return regex.test(email);
+}

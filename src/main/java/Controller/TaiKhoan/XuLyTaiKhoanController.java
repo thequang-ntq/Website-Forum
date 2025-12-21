@@ -9,8 +9,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import Modal.TaiKhoan.TaiKhoan;
 import Modal.TaiKhoan.TaiKhoanBO;
 import Modal.TaiKhoan.TaiKhoanDAO;
+import Support.md5;
 
 /**
  * Servlet implementation class XuLyTaiKhoanController
@@ -58,63 +60,82 @@ public class XuLyTaiKhoanController extends HttpServlet {
 		
 		try {
 			if("create".equals(action)) {
-				// Thêm tài khoản
-				String tenDangNhap = request.getParameter("tenDangNhap");
-				String matKhau = request.getParameter("matKhau");
-				String quyenTK = request.getParameter("quyen");
-				
-				if(tenDangNhap == null || tenDangNhap.trim().isEmpty()) {
-					session.setAttribute("message", "Tên đăng nhập không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else if(tenDangNhap.trim().length() > 150) {
-					session.setAttribute("message", "Tên đăng nhập không được quá 150 ký tự!");
-					session.setAttribute("messageType", "error");
-				} else if(matKhau == null || matKhau.trim().isEmpty()) {
-					session.setAttribute("message", "Mật khẩu không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else if(matKhau.trim().length() > 255) {
-					session.setAttribute("message", "Mật khẩu không được quá 255 ký tự!");
-					session.setAttribute("messageType", "error");
-				} else if(quyenTK == null || quyenTK.trim().isEmpty()) {
-					session.setAttribute("message", "Quyền không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else if(tkdao.findByTenDangNhap(tenDangNhap) != null) {
-					session.setAttribute("message", "Tên đăng nhập đã tồn tại!");
-					session.setAttribute("messageType", "error");  
-				} else {
-					tkbo.createDB(tenDangNhap.trim(), matKhau.trim(), quyenTK.trim());
-					session.setAttribute("message", "Thêm tài khoản thành công!");
-					session.setAttribute("messageType", "success");
-				}
-				
+			    // Thêm tài khoản
+			    String tenDangNhap = request.getParameter("tenDangNhap");
+			    String matKhau = request.getParameter("matKhau");
+			    String quyenTK = request.getParameter("quyen");
+			    String email = request.getParameter("email"); // Lấy thêm email
+			    
+			    if(tenDangNhap == null || tenDangNhap.trim().isEmpty()) {
+			        session.setAttribute("message", "Tên đăng nhập không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else if(tenDangNhap.trim().length() > 150) {
+			        session.setAttribute("message", "Tên đăng nhập không được quá 150 ký tự!");
+			        session.setAttribute("messageType", "error");
+			    } else if(matKhau == null || matKhau.trim().isEmpty()) {
+			        session.setAttribute("message", "Mật khẩu không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else if(matKhau.trim().length() > 255) {
+			        session.setAttribute("message", "Mật khẩu không được quá 255 ký tự!");
+			        session.setAttribute("messageType", "error");
+			    } else if(quyenTK == null || quyenTK.trim().isEmpty()) {
+			        session.setAttribute("message", "Quyền không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else if(tkdao.findByTenDangNhap(tenDangNhap) != null) {
+			        session.setAttribute("message", "Tên đăng nhập đã tồn tại!");
+			        session.setAttribute("messageType", "error");  
+			    } else {
+			        // Truyền 4 tham số: TenDangNhap, MatKhau, Quyen, Email
+			    	String encryptedPass = md5.ecrypt(matKhau.trim());
+			        tkbo.createDB(tenDangNhap.trim(), encryptedPass, quyenTK.trim(), 
+			                      email != null && !email.trim().isEmpty() ? email.trim() : null);
+			        session.setAttribute("message", "Thêm tài khoản thành công!");
+			        session.setAttribute("messageType", "success");
+			    }
 			} else if("update".equals(action)) {
-				// Sửa tài khoản
-				String tenDangNhap = request.getParameter("tenDangNhap");
-				String matKhau = request.getParameter("matKhau");
-				String quyenTK = request.getParameter("quyen");
-				String trangThai = request.getParameter("trangThai");
-				
-				if(tenDangNhap == null || tenDangNhap.trim().isEmpty()) {
-					session.setAttribute("message", "Tên đăng nhập không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else if(matKhau == null || matKhau.trim().isEmpty()) {
-					session.setAttribute("message", "Mật khẩu không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else if(matKhau.trim().length() > 255) {
-					session.setAttribute("message", "Mật khẩu không được quá 255 ký tự!");
-					session.setAttribute("messageType", "error");
-				} else if(quyenTK == null || quyenTK.trim().isEmpty()) {
-					session.setAttribute("message", "Quyền không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else if(trangThai == null || trangThai.trim().isEmpty()) {
-					session.setAttribute("message", "Trạng thái không được để trống!");
-					session.setAttribute("messageType", "error");
-				} else {
-					tkbo.updateDB(tenDangNhap.trim(), matKhau.trim(), quyenTK.trim(), trangThai);
-					session.setAttribute("message", "Cập nhật tài khoản thành công!");
-					session.setAttribute("messageType", "success");
-				}
-				
+			    // Sửa tài khoản
+			    String tenDangNhap = request.getParameter("tenDangNhap");
+			    String matKhau = request.getParameter("matKhau");
+			    String quyenTK = request.getParameter("quyen");
+			    String trangThai = request.getParameter("trangThai");
+			    String email = request.getParameter("email");  // THÊM DÒNG NÀY
+			    
+			    if(tenDangNhap == null || tenDangNhap.trim().isEmpty()) {
+			        session.setAttribute("message", "Tên đăng nhập không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else if(matKhau == null || matKhau.trim().isEmpty()) {
+			        session.setAttribute("message", "Mật khẩu không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else if(matKhau.trim().length() > 255) {
+			        session.setAttribute("message", "Mật khẩu không được quá 255 ký tự!");
+			        session.setAttribute("messageType", "error");
+			    } else if(quyenTK == null || quyenTK.trim().isEmpty()) {
+			        session.setAttribute("message", "Quyền không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else if(trangThai == null || trangThai.trim().isEmpty()) {
+			        session.setAttribute("message", "Trạng thái không được để trống!");
+			        session.setAttribute("messageType", "error");
+			    } else {
+			    	// Lấy thông tin tài khoản hiện tại từ DB
+			        TaiKhoan tkHienTai = tkdao.findByTenDangNhap(tenDangNhap);
+			        
+			        String matKhauCanLuu;
+			        // Kiểm tra: nếu mật khẩu nhập vào trùng với mật khẩu đã mã hóa trong DB
+			        // thì giữ nguyên, còn không thì mã hóa mật khẩu mới
+			        if(tkHienTai != null && matKhau.trim().equals(tkHienTai.getMatKhau())) {
+			            // Mật khẩu không thay đổi, giữ nguyên
+			            matKhauCanLuu = matKhau.trim();
+			        } else {
+			            // Mật khẩu mới, cần mã hóa
+			            matKhauCanLuu = md5.ecrypt(matKhau.trim());
+			        }
+			        
+			        // Cập nhật với mật khẩu đã xử lý
+			        tkbo.updateDB(tenDangNhap.trim(), matKhauCanLuu, quyenTK.trim(), trangThai, 
+			                      email != null && !email.trim().isEmpty() ? email.trim() : null);
+			        session.setAttribute("message", "Cập nhật tài khoản thành công!");
+			        session.setAttribute("messageType", "success");
+			    }
 			} else if("delete".equals(action)) {
 				// Xóa tài khoản
 				String tenDangNhap = request.getParameter("tenDangNhap");

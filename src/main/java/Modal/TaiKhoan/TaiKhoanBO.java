@@ -2,6 +2,8 @@ package Modal.TaiKhoan;
 
 import java.util.ArrayList;
 
+import Support.EmailService;
+
 public class TaiKhoanBO {
 	private TaiKhoanDAO dao = new TaiKhoanDAO();
 	ArrayList<TaiKhoan> ds;
@@ -11,37 +13,70 @@ public class TaiKhoanBO {
 		return ds;
 	}
 	
-	public void createDB(String TenDangNhap, String MatKhau, String Quyen) throws Exception {
-		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
-			throw new Exception("Tên đăng nhập không được để trống!");
-		}
-		if(MatKhau == null || MatKhau.trim().isEmpty()) {
-			throw new Exception("Mật khẩu không được để trống!");
-		}
-		if(dao.findByTenDangNhap(TenDangNhap) != null) {
-			throw new Exception("Tên đăng nhập đã tồn tại!");
-		}
-		
-		TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, null, null, null);
-		dao.createDB(tk);
+	public void createDB(String TenDangNhap, String MatKhau, String Quyen, String Email) throws Exception {
+	    if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+	        throw new Exception("Tên đăng nhập không được để trống!");
+	    }
+	    if(MatKhau == null || MatKhau.trim().isEmpty()) {
+	        throw new Exception("Mật khẩu không được để trống!");
+	    }
+	    if(dao.findByTenDangNhap(TenDangNhap) != null) {
+	        throw new Exception("Tên đăng nhập đã tồn tại!");
+	    }
+	    
+	    // Validate email nếu có
+	    if(Email != null && !Email.trim().isEmpty()) {
+	        if(!EmailService.isValidEmail(Email.trim())) {
+	            throw new Exception("Email không hợp lệ!");
+	        }
+	    }
+	    
+	    TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, null, Email, null, null);
+	    dao.createDB(tk);
 	}
 	
-	public void updateDB(String TenDangNhap, String MatKhau, String Quyen, String TrangThai) throws Exception {
-		if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
-			throw new Exception("Tên đăng nhập không được để trống!");
-		}
-		if(MatKhau == null || MatKhau.trim().isEmpty()) {
-			throw new Exception("Mật khẩu không được để trống!");
-		}
-		if(TrangThai == null || TrangThai.trim().isEmpty()) {
-			throw new Exception("Trạng thái không được để trống!");
-		}
-		if(dao.findByTenDangNhap(TenDangNhap) == null) {
-			throw new Exception("Tài khoản không tồn tại!");
-		}
-		
-		TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, TrangThai, null, null);
-		dao.updateDB(tk);
+	// Thêm method updateEmail
+	public void updateEmail(String TenDangNhap, String Email) throws Exception {
+	    TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
+	    if(tk == null || "Deleted".equals(tk.getTrangThai())) {
+	        throw new Exception("Tài khoản không tồn tại!");
+	    }
+	    
+	    if(Email == null || Email.trim().isEmpty()) {
+	        throw new Exception("Email không được để trống!");
+	    }
+	    
+	    if(!EmailService.isValidEmail(Email.trim())) {
+	        throw new Exception("Email không hợp lệ!");
+	    }
+	    
+	    tk.setEmail(Email.trim());
+	    dao.updateDB(tk);
+	}
+	
+	public void updateDB(String TenDangNhap, String MatKhau, String Quyen, String TrangThai, String Email) throws Exception {
+	    if(TenDangNhap == null || TenDangNhap.trim().isEmpty()) {
+	        throw new Exception("Tên đăng nhập không được để trống!");
+	    }
+	    if(MatKhau == null || MatKhau.trim().isEmpty()) {
+	        throw new Exception("Mật khẩu không được để trống!");
+	    }
+	    if(TrangThai == null || TrangThai.trim().isEmpty()) {
+	        throw new Exception("Trạng thái không được để trống!");
+	    }
+	    if(dao.findByTenDangNhap(TenDangNhap) == null) {
+	        throw new Exception("Tài khoản không tồn tại!");
+	    }
+	    
+	    // Validate email nếu có
+	    if(Email != null && !Email.trim().isEmpty()) {
+	        if(!EmailService.isValidEmail(Email.trim())) {
+	            throw new Exception("Email không hợp lệ!");
+	        }
+	    }
+	    
+	    TaiKhoan tk = new TaiKhoan(TenDangNhap, MatKhau, Quyen, TrangThai, Email, null, null);
+	    dao.updateDB(tk);
 	}
 	
 	public void deleteDB(String TenDangNhap) throws Exception {

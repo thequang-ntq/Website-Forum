@@ -328,3 +328,85 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 });
+
+// Show Add Email Modal
+function showAddEmailModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addEmailModal'));
+    const form = document.getElementById('addEmailForm');
+    const addEmailError = document.getElementById('addEmailError');
+    
+    // Reset form
+    form.reset();
+    
+    // Clear errors
+    clearAddEmailErrors();
+    
+    // Hide modal error
+    addEmailError.style.display = 'none';
+    
+    modal.show();
+}
+
+// Clear Add Email Errors
+function clearAddEmailErrors() {
+    const email = document.getElementById('email');
+    const emailError = document.getElementById('emailError');
+    
+    if(email) email.classList.remove('is-invalid');
+    if(emailError) emailError.textContent = '';
+    
+    const submitBtn = document.getElementById('addEmailSubmitBtn');
+    if(submitBtn) submitBtn.disabled = true;
+}
+
+// Validate Add Email Form
+function validateAddEmailForm() {
+    const email = document.getElementById('email');
+    const emailError = document.getElementById('emailError');
+    const submitBtn = document.getElementById('addEmailSubmitBtn');
+    const addEmailError = document.getElementById('addEmailError');
+    
+    let isValid = true;
+    
+    // Hide modal error
+    addEmailError.style.display = 'none';
+    
+    // Validate Email
+    if(email.value.trim() === '') {
+        email.classList.add('is-invalid');
+        emailError.textContent = 'Email không được để trống';
+        isValid = false;
+    } else if(email.value.length > 255) {
+        email.classList.add('is-invalid');
+        emailError.textContent = 'Email không được quá 255 ký tự';
+        isValid = false;
+    } else if(!isValidEmail(email.value)) {
+        email.classList.add('is-invalid');
+        emailError.textContent = 'Email không hợp lệ';
+        isValid = false;
+    } else {
+        email.classList.remove('is-invalid');
+        emailError.textContent = '';
+    }
+    
+    submitBtn.disabled = !isValid;
+    return isValid;
+}
+
+// Email validation function
+function isValidEmail(email) {
+    const regex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    return regex.test(email);
+}
+
+// Handle Add Email Form Submit
+document.addEventListener('DOMContentLoaded', function() {
+    const addEmailForm = document.getElementById('addEmailForm');
+    if(addEmailForm) {
+        addEmailForm.addEventListener('submit', function(e) {
+            if(!validateAddEmailForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+});

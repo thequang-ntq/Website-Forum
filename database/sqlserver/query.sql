@@ -458,6 +458,17 @@ VALUES	(N'Công nghệ & Tin học'),
 END
 GO
 
+-- Thêm cột Email vào bảng TaiKhoan
+ALTER TABLE [dbo].[TaiKhoan] 
+ADD [Email] [nvarchar](255) NULL;
+GO
+
+-- Thêm constraint kiểm tra Email hợp lệ (optional)
+ALTER TABLE [dbo].[TaiKhoan]
+ADD CONSTRAINT CHK_Email_Format 
+CHECK (Email IS NULL OR Email LIKE '%_@__%.__%');
+GO
+
 /* 
 IF NOT EXISTS(SELECT * FROM ApiKey)
 BEGIN

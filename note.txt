@@ -1,2 +1,0 @@
-1) Thêm module edit bài viết (edit textbox) giống bên trong word ở phần quản lý bài viết, quản lý bài viết của tôi.
-2) Thêm chức năng tìm kiếm bài viết AI.

@@ -115,6 +115,29 @@ public class ThongTinCaNhanController extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/DangNhapController?deleteSuccess=true");
                     return;
                 }
+                
+                // Thêm Email
+                else if ("addEmail".equals(action)) {
+                    String email = request.getParameter("email");
+                    
+                    // Validate
+                    if (email == null || email.trim().isEmpty()) {
+                        throw new Exception("Email không được để trống!");
+                    }
+                    if (email.length() > 255) {
+                        throw new Exception("Email không được quá 255 ký tự!");
+                    }
+                    if (!Support.EmailService.isValidEmail(email.trim())) {
+                        throw new Exception("Email không hợp lệ!");
+                    }
+                    
+                    // Cập nhật email
+                    tkbo.updateEmail(account, email.trim());
+                    
+                    // Thông báo thành công
+                    request.setAttribute("message", "Thêm email thành công!");
+                    request.setAttribute("messageType", "success");
+                }
             }
 
             // Lấy thông tin tài khoản

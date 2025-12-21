@@ -73,3 +73,8 @@ out/
 
 # Allow library jars in WEB-INF/lib
 !src/main/webapp/WEB-INF/lib/*.jar
+
+# Sensitive configuration files
+src/main/java/email.properties
+src/main/java/database.properties
+src/main/java/config.properties
