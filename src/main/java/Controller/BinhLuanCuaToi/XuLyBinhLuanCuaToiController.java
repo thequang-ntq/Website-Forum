@@ -26,6 +26,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TimeZone;
+import Modal.BinhLuanEmbedding.BinhLuanEmbedding;
+import Modal.BinhLuanEmbedding.BinhLuanEmbeddingBO;
+import Support.GeminiEmbeddingService;
 
 @WebServlet("/XuLyBinhLuanCuaToiController")
 @MultipartConfig
@@ -34,6 +37,8 @@ public class XuLyBinhLuanCuaToiController extends HttpServlet {
 	private BinhLuanBO blbo = new BinhLuanBO();
 	private BinhLuanDAO bldao = new BinhLuanDAO();
 	private LuotThichBinhLuanBO ltbo = new LuotThichBinhLuanBO();
+	private BinhLuanEmbeddingBO bleBO = new BinhLuanEmbeddingBO();
+	private GeminiEmbeddingService embeddingService = new GeminiEmbeddingService();
        
 	public XuLyBinhLuanCuaToiController() {
 		super();
@@ -72,6 +77,24 @@ public class XuLyBinhLuanCuaToiController extends HttpServlet {
 			        String finalUrl = (url != null && !url.trim().isEmpty()) ? url.trim() : null;
 			        
 			        blbo.createDB(noiDung.trim(), finalUrl, taiKhoanTao, maBaiViet);
+			        // Tạo embedding cho bình luận
+			        try {
+			            ArrayList<BinhLuan> allComments = blbo.filterDB_taiKhoanTao(taiKhoanTao);
+			            if (!allComments.isEmpty()) {
+			                BinhLuan newComment = allComments.get(allComments.size() - 1);
+			                
+			                ArrayList<Double> embedding = embeddingService.createEmbedding(noiDung.trim());
+			                String embeddingJson = embeddingService.embeddingToJson(embedding);
+			                
+			                BinhLuanEmbedding ble = new BinhLuanEmbedding();
+			                ble.setMaBinhLuan(newComment.getMaBinhLuan());
+			                ble.setEmbedding(embeddingJson);
+			                bleBO.createDB(ble);
+			            }
+			        } 
+			        catch (Exception embEx) {
+			            System.err.println("Lỗi tạo embedding: " + embEx.getMessage());
+			        }
 			        session.setAttribute("message", "Thêm bình luận thành công!");
 			        session.setAttribute("messageType", "success");
 			        // Dọn dẹp file orphan sau khi thêm
@@ -112,6 +135,20 @@ public class XuLyBinhLuanCuaToiController extends HttpServlet {
 			        }
 			        
 			        blbo.updateDB(maBinhLuan, noiDung.trim(), finalUrl, soLuotThich, trangThai);
+			        // Cập nhật embedding
+			        try {
+			            bleBO.deleteByMaBinhLuan(maBinhLuan);
+			            
+			            ArrayList<Double> embedding = embeddingService.createEmbedding(noiDung.trim());
+			            String embeddingJson = embeddingService.embeddingToJson(embedding);
+			            
+			            BinhLuanEmbedding ble = new BinhLuanEmbedding();
+			            ble.setMaBinhLuan(maBinhLuan);
+			            ble.setEmbedding(embeddingJson);
+			            bleBO.createDB(ble);
+			        } catch (Exception embEx) {
+			            System.err.println("Lỗi cập nhật embedding: " + embEx.getMessage());
+			        }
 			        session.setAttribute("message", "Cập nhật bình luận thành công!");
 			        session.setAttribute("messageType", "success");
 			        // Dọn dẹp file orphan sau khi thêm

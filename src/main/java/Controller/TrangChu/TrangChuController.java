@@ -64,6 +64,28 @@ public class TrangChuController extends HttpServlet {
                 }
             }
             dsBaiViet = dsBaiVietActive;
+            
+            // Xử lý embedding search
+			String embeddingSearch = request.getParameter("embeddingSearch");
+			if (embeddingSearch != null && !embeddingSearch.trim().isEmpty()) {
+			    String[] ids = embeddingSearch.split(",");
+			    ArrayList<BaiViet> filteredList = new ArrayList<>();
+			    for (String idStr : ids) {
+			        try {
+			            long maBaiViet = Long.parseLong(idStr.trim());
+			            for (BaiViet bv : dsBaiViet) {
+			                if (bv.getMaBaiViet() == maBaiViet) {
+			                    filteredList.add(bv);
+			                    break;
+			                }
+			            }
+			        } catch (NumberFormatException e) {
+			            // Ignore invalid IDs
+			        }
+			    }
+			    dsBaiViet = filteredList;
+			    request.setAttribute("embeddingSearch", "true");
+			}
 
             // Lấy tham số từ URL
             String theLoaiParam = request.getParameter("theloai");

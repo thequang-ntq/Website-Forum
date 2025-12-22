@@ -105,6 +105,15 @@ public class UploadFileController extends HttpServlet {
             
             response.getWriter().write("{\"success\": true, \"url\": \"" + relativeUrl + "\", \"fileName\": \"" + fileName + "\"}");
             
+            // Cleanup temporary files
+            try {
+                if (filePart != null) {
+                    filePart.delete();
+                }
+            } catch (Exception e) {
+                // Ignore cleanup errors
+            }
+            
         } catch (Exception e) {
             e.printStackTrace();
             response.getWriter().write("{\"success\": false, \"message\": \"Lỗi khi tải file: " + e.getMessage() + "\"}");

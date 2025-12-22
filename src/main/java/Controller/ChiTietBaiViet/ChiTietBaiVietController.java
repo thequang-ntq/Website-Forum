@@ -21,12 +21,18 @@ import Modal.BaiViet.BaiViet;
 import Modal.BaiViet.BaiVietDAO;
 import Modal.BinhLuan.BinhLuan;
 import Modal.BinhLuan.BinhLuanBO;
+import Modal.BinhLuanEmbedding.BinhLuanEmbedding;
+import Modal.BinhLuanEmbedding.BinhLuanEmbeddingBO;
 import Modal.TheLoai.TheLoai;
 import Modal.TheLoai.TheLoaiDAO;
+import Support.GeminiEmbeddingService;
 import Modal.LuotThichBinhLuan.LuotThichBinhLuan;
 import Modal.LuotThichBinhLuan.LuotThichBinhLuanBO;
 import Modal.DanhGiaBaiViet.DanhGiaBaiViet;
 import Modal.DanhGiaBaiViet.DanhGiaBaiVietBO;
+import Modal.BinhLuanEmbedding.BinhLuanEmbedding;
+import Modal.BinhLuanEmbedding.BinhLuanEmbeddingBO;
+import Support.GeminiEmbeddingService;
 
 @WebServlet("/ChiTietBaiVietController")
 public class ChiTietBaiVietController extends HttpServlet {
@@ -36,6 +42,8 @@ public class ChiTietBaiVietController extends HttpServlet {
 	private TheLoaiDAO tldao = new TheLoaiDAO();
 	private LuotThichBinhLuanBO ltbo = new LuotThichBinhLuanBO();
 	private DanhGiaBaiVietBO dgbo = new DanhGiaBaiVietBO();
+	private BinhLuanEmbeddingBO bleBO = new BinhLuanEmbeddingBO();
+	private GeminiEmbeddingService embeddingService = new GeminiEmbeddingService();
        
 	public ChiTietBaiVietController() {
 		super();
@@ -168,6 +176,25 @@ public class ChiTietBaiVietController extends HttpServlet {
 	            json.put("message", "Nội dung không được để trống!");
 	        } else {
 	            blbo.createDB(noiDung.trim(), url, account, maBaiViet);
+	            // Tạo embedding cho bình luận
+		        try {
+		        	String taiKhoanTao = account;
+		            ArrayList<BinhLuan> allComments = blbo.filterDB_taiKhoanTao(taiKhoanTao);
+		            if (!allComments.isEmpty()) {
+		                BinhLuan newComment = allComments.get(allComments.size() - 1);
+		                
+		                ArrayList<Double> embedding = embeddingService.createEmbedding(noiDung.trim());
+		                String embeddingJson = embeddingService.embeddingToJson(embedding);
+		                
+		                BinhLuanEmbedding ble = new BinhLuanEmbedding();
+		                ble.setMaBinhLuan(newComment.getMaBinhLuan());
+		                ble.setEmbedding(embeddingJson);
+		                bleBO.createDB(ble);
+		            }
+		        } 
+		        catch (Exception embEx) {
+		            System.err.println("Lỗi tạo embedding: " + embEx.getMessage());
+		        }
 	            json.put("success", true);
 	            json.put("message", "Thêm bình luận thành công!");
 	        }

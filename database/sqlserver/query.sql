@@ -109,7 +109,7 @@ BEGIN
 END
 GO
 
--- Khi xóa tài khoản thì chuyển trạng thái bài viết, bình luận, tài khoản thành Deleted, xóa thẳng lượt thích, đánh giá
+-- Khi xóa tài khoản thì chuyển trạng thái bài viết, bình luận, tài khoản thành Deleted, xóa thẳng lượt thích, đánh giá, embedding bài viết, bình luận
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_TaiKhoan_SoftDelete')
 	DROP TRIGGER trg_TaiKhoan_SoftDelete;
 GO
@@ -119,6 +119,21 @@ INSTEAD OF DELETE
 AS
 BEGIN
 	SET NOCOUNT ON;
+
+	-- Xóa embedding bài viết
+	DELETE bve
+	FROM BaiVietEmbedding bve
+	INNER JOIN BaiViet bv ON bve.MaBaiViet = bv.MaBaiViet
+	INNER JOIN DELETED d ON bv.TaiKhoanTao = d.TenDangNhap;
+
+
+	-- Xóa embedding bình luận
+	DELETE ble
+	FROM BinhLuanEmbedding ble
+	INNER JOIN BinhLuan bl ON ble.MaBinhLuan = bl.MaBinhLuan
+	INNER JOIN DELETED d ON bl.TaiKhoanTao = d.TenDangNhap;
+
+
 	-- Bài viết
 	UPDATE bv
 	SET bv.TrangThai = N'Deleted',
@@ -152,7 +167,7 @@ BEGIN
 END
 GO
 
--- Khi xóa thể loại thì chuyển trạng thái bài viết, bình luận, thể loại thành Deleted, xóa thẳng lượt thích, đánh giá
+-- Khi xóa thể loại thì chuyển trạng thái bài viết, bình luận, thể loại thành Deleted, xóa thẳng lượt thích, đánh giá, xóa embedding bài viết, bình luận
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_TheLoai_SoftDelete')
 	DROP TRIGGER trg_TheLoai_SoftDelete;
 GO
@@ -162,6 +177,21 @@ INSTEAD OF DELETE
 AS
 BEGIN
 	SET NOCOUNT ON;
+
+	-- Xóa embedding bài viết
+	DELETE bve
+	FROM BaiVietEmbedding bve
+	INNER JOIN BaiViet bv ON bve.MaBaiViet = bv.MaBaiViet
+	INNER JOIN DELETED d ON bv.MaTheLoai = d.MaTheLoai;
+
+
+	-- Xóa embedding bình luận
+	DELETE ble
+	FROM BinhLuanEmbedding ble
+	INNER JOIN BinhLuan bl ON ble.MaBinhLuan = bl.MaBinhLuan
+	INNER JOIN BaiViet bv ON bl.MaBaiViet = bv.MaBaiViet
+	INNER JOIN DELETED d ON bv.MaTheLoai = d.MaTheLoai;
+
 	-- Bài viết
 	UPDATE bv
 	SET bv.TrangThai = N'Deleted',
@@ -199,7 +229,7 @@ BEGIN
 END
 GO
 
--- Khi xóa mềm bài viết thì chuyển trạng thái bình luận thành Deleted, xóa thẳng lượt thích, đánh giá
+-- Khi xóa mềm bài viết thì chuyển trạng thái bình luận thành Deleted, xóa thẳng lượt thích, đánh giá, embedding bài viết, bình luận
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_BaiViet_SoftDelete')
 	DROP TRIGGER trg_BaiViet_SoftDelete;
 GO
@@ -209,6 +239,18 @@ INSTEAD OF DELETE
 AS
 BEGIN
 	SET NOCOUNT ON;
+
+	-- Xóa embedding bài viết
+	DELETE bve
+	FROM BaiVietEmbedding bve
+	INNER JOIN DELETED d ON bve.MaBaiViet = d.MaBaiViet
+
+	-- Xóa embedding bình luận
+	DELETE ble
+	FROM BinhLuanEmbedding ble
+	INNER JOIN BinhLuan bl ON ble.MaBinhLuan = bl.MaBinhLuan
+	INNER JOIN DELETED d ON bl.MaBaiViet = d.MaBaiViet
+
 	-- Bình luận
 	UPDATE bl
 	SET bl.TrangThai = N'Deleted',
@@ -236,7 +278,7 @@ BEGIN
 END
 GO
 
--- Khi xóa mềm bình luận thì xóa thẳng lượt thích
+-- Khi xóa mềm bình luận thì xóa thẳng lượt thích, embedding bình luận
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_BinhLuan_SoftDelete')
 	DROP TRIGGER trg_BinhLuan_SoftDelete;
 GO
@@ -246,6 +288,12 @@ INSTEAD OF DELETE
 AS
 BEGIN
 	SET NOCOUNT ON;
+
+	-- Xóa embedding bình luận
+	DELETE ble
+	FROM BinhLuanEmbedding ble
+	INNER JOIN DELETED d ON ble.MaBinhLuan = d.MaBinhLuan
+
 	-- Lượt thích
 	DELETE ltbl
 	FROM LuotThichBinhLuan ltbl
@@ -469,6 +517,37 @@ ADD CONSTRAINT CHK_Email_Format
 CHECK (Email IS NULL OR Email LIKE '%_@__%.__%');
 GO
 
+-- Tìm kiếm nội dung Embedding
+-- Thêm bảng lưu embeddings cho bài viết, ID là khóa chính, dữ liệu được sắp xếp theo cột ID tăng dần.
+IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = 'BaiVietEmbedding')
+BEGIN
+	CREATE TABLE [dbo].[BaiVietEmbedding](
+		[ID] [bigint] IDENTITY(1,1) NOT NULL,
+		[MaBaiViet] [bigint] NOT NULL,
+		[Embedding] [nvarchar](max) NOT NULL,
+		[ThoiDiemTao] [datetime] NULL DEFAULT (getdate()),
+	 CONSTRAINT [pk_baivietembedding] PRIMARY KEY CLUSTERED ([ID] ASC),
+	 CONSTRAINT [fk_baivietembedding_baiviet] FOREIGN KEY([MaBaiViet])
+		REFERENCES [dbo].[BaiViet] ([MaBaiViet])
+	);
+END
+GO
+
+IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = 'BinhLuanEmbedding')
+BEGIN
+	-- Thêm bảng lưu embeddings cho bình luận
+	CREATE TABLE [dbo].[BinhLuanEmbedding](
+		[ID] [bigint] IDENTITY(1,1) NOT NULL,
+		[MaBinhLuan] [bigint] NOT NULL,
+		[Embedding] [nvarchar](max) NOT NULL,
+		[ThoiDiemTao] [datetime] NULL DEFAULT (getdate()),
+	 CONSTRAINT [pk_binhluanembedding] PRIMARY KEY CLUSTERED ([ID] ASC),
+	 CONSTRAINT [fk_binhluanembedding_binhluan] FOREIGN KEY([MaBinhLuan])
+		REFERENCES [dbo].[BinhLuan] ([MaBinhLuan])
+	);
+END
+GO
+
 /* 
 IF NOT EXISTS(SELECT * FROM ApiKey)
 BEGIN
@@ -484,14 +563,28 @@ SELECT * FROM TaiKhoan
 SELECT * FROM LuotThichBinhLuan
 SELECT * FROM DanhGiaBaiViet
 SELECT * FROM ApiKey
+SELECT * FROM BaiVietEmbedding
+SELECT * FROM BinhLuanEmbedding
 SELECT name FROM sys.triggers
 */
 /* Reset khi tạo / chèn sai
 DROP TABLE LuotThichBinhLuan
 DROP TABLE DanhGiaBaiViet
+DROP TABLE BinhLuanEmbedding
+DROP TABLE BaiVietEmbedding
 DROP TABLE BinhLuan
 DROP TABLE BaiViet
 DROP TABLE TheLoai
 DROP TABLE TaiKhoan
 DROP TABLE ApiKey
 */
+
+/* Xóa dữ liệu
+DELETE FROM LuotThichBinhLuan
+DELETE FROM DanhGiaBaiViet
+DELETE FROM BinhLuanEmbedding
+DELETE FROM BaiVietEmbedding
+DELETE FROM BinhLuan
+DELETE FROM BaiViet
+*/
+

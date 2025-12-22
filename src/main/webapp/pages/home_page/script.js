@@ -8,53 +8,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
-// AI-Enhanced Search
+// AI-Enhanced Embedding Search
 async function enhanceSearch() {
     const searchInput = document.getElementById('searchInput');
-	const loadingOverlay = document.getElementById('fullPageLoading');
+    const loadingOverlay = document.getElementById('fullPageLoading');
     const query = searchInput.value.trim();
     
     if (!query) {
         alert('Vui lòng nhập từ khóa tìm kiếm!');
         return;
     }
-	
-	// Bật loading toàn màn hình
+    
     loadingOverlay.classList.remove('d-none');
     searchInput.disabled = true;
-	
-    const originalPlaceholder = searchInput.placeholder;
-    searchInput.placeholder = 'Đang xử lý với AI...';
     
     try {
         const contextPath = window.location.pathname.split('/')[1];
-        const response = await fetch('/' + contextPath + '/AISearchController', {
+        const response = await fetch('/' + contextPath + '/EmbeddingSearchController', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'query=' + encodeURIComponent(query) + '&context=forum'
+            body: 'query=' + encodeURIComponent(query) + '&type=baiviet'
         });
         
         const data = await response.json();
         
-        if (data.success) {
-            searchInput.value = data.enhancedQuery;
-            const form = searchInput.closest('form');
-            if (form) {
-                setTimeout(() => form.submit(), 100);
-            }
+        if (data.success && data.matches && data.matches.length > 0) {
+            // Lấy danh sách maBaiViet từ kết quả
+            const maBaiVietList = data.matches.map(m => m.maBaiViet).join(',');
+            // Redirect với danh sách ID
+            window.location.href = '/' + contextPath + '/TrangChuController?embeddingSearch=' + encodeURIComponent(maBaiVietList);
         } else {
-            alert('Không thể xử lý với AI. Tìm kiếm thường...');
+            alert('Không tìm thấy kết quả phù hợp');
             searchInput.closest('form').submit();
         }
     } catch (error) {
-        console.error('AI Search error:', error);
+        console.error('Embedding Search error:', error);
         searchInput.closest('form').submit();
     } finally {
-		loadingOverlay.classList.add('d-none');
+        loadingOverlay.classList.add('d-none');
         searchInput.disabled = false;
-        searchInput.placeholder = originalPlaceholder;
     }
 }
 

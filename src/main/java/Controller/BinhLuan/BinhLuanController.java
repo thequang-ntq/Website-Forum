@@ -75,6 +75,28 @@ public class BinhLuanController extends HttpServlet {
 				dsBinhLuan = blbo.readDB();
 			}
 			
+			// Xử lý embedding search
+			String embeddingSearch = request.getParameter("embeddingSearch");
+			if (embeddingSearch != null && !embeddingSearch.trim().isEmpty()) {
+			    String[] ids = embeddingSearch.split(",");
+			    ArrayList<BinhLuan> filteredList = new ArrayList<>();
+			    for (String idStr : ids) {
+			        try {
+			            long maBinhLuan = Long.parseLong(idStr.trim());
+			            for (BinhLuan bl : dsBinhLuan) {
+			                if (bl.getMaBinhLuan() == maBinhLuan) {
+			                    filteredList.add(bl);
+			                    break;
+			                }
+			            }
+			        } catch (NumberFormatException e) {
+			            // Ignore invalid IDs
+			        }
+			    }
+			    dsBinhLuan = filteredList;
+			    request.setAttribute("embeddingSearch", "true");
+			}
+			
 			//Sắp xếp theo mã bình luận tăng dần
 			dsBinhLuan.sort((a, b) -> Long.compare(a.getMaBinhLuan(), b.getMaBinhLuan()));
 			

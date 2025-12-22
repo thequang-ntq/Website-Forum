@@ -3,6 +3,7 @@ package Controller.BaiViet;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,12 +17,17 @@ import javax.servlet.http.HttpSession;
 
 import Modal.BaiViet.BaiViet;
 import Modal.BaiViet.BaiVietBO;
+import Modal.BaiVietEmbedding.BaiVietEmbedding;
+import Modal.BaiVietEmbedding.BaiVietEmbeddingBO;
+import Support.GeminiEmbeddingService;
 
 @WebServlet("/XuLyBaiVietController")
 @MultipartConfig
 public class XuLyBaiVietController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private BaiVietBO bvbo = new BaiVietBO();
+	private BaiVietEmbeddingBO bveBO = new BaiVietEmbeddingBO();
+	private GeminiEmbeddingService embeddingService = new GeminiEmbeddingService();
        
 	public XuLyBaiVietController() {
 		super();
@@ -79,6 +85,22 @@ public class XuLyBaiVietController extends HttpServlet {
 					String finalUrl = (url != null && !url.trim().isEmpty()) ? url.trim() : null;
 					
 					bvbo.createDB(tieuDe.trim(), noiDung.trim(), finalUrl, taiKhoanTao, maTheLoai);
+					//Embedding
+					try {
+					    ArrayList<BaiViet> allPosts = bvbo.readDB();
+					    if (!allPosts.isEmpty()) {
+					        BaiViet newPost = allPosts.get(allPosts.size() - 1);
+					        String contentForEmbedding = tieuDe.trim() + " " + noiDung.trim();
+					        ArrayList<Double> embedding = embeddingService.createEmbedding(contentForEmbedding);
+					        String embeddingJson = embeddingService.embeddingToJson(embedding);
+					        BaiVietEmbedding bve = new BaiVietEmbedding();
+					        bve.setMaBaiViet(newPost.getMaBaiViet());
+					        bve.setEmbedding(embeddingJson);
+					        bveBO.createDB(bve);
+					    }
+					} catch (Exception embEx) {
+					    System.err.println("Lỗi tạo embedding: " + embEx.getMessage());
+					}
 					session.setAttribute("message", "Thêm bài viết thành công!");
 					session.setAttribute("messageType", "success");
 					// Dọn dẹp file dư thừa không có trong csdl sau khi thêm
@@ -147,6 +169,19 @@ public class XuLyBaiVietController extends HttpServlet {
 					}
 					
 					bvbo.updateDB(maBaiViet, tieuDe.trim(), noiDung.trim(), finalUrl, maTheLoai, danhGia, trangThai);
+					//Embedding
+					try {
+					    bveBO.deleteByMaBaiViet(maBaiViet);
+					    String contentForEmbedding = tieuDe.trim() + " " + noiDung.trim();
+					    ArrayList<Double> embedding = embeddingService.createEmbedding(contentForEmbedding);
+					    String embeddingJson = embeddingService.embeddingToJson(embedding);
+					    BaiVietEmbedding bve = new BaiVietEmbedding();
+					    bve.setMaBaiViet(maBaiViet);
+					    bve.setEmbedding(embeddingJson);
+					    bveBO.createDB(bve);
+					} catch (Exception embEx) {
+					    System.err.println("Lỗi cập nhật embedding: " + embEx.getMessage());
+					}
 					session.setAttribute("message", "Cập nhật bài viết thành công!");
 					session.setAttribute("messageType", "success");
 					

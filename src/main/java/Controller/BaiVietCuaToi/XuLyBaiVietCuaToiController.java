@@ -3,6 +3,7 @@ package Controller.BaiVietCuaToi;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,6 +19,9 @@ import Modal.BaiViet.BaiViet;
 import Modal.BaiViet.BaiVietBO;
 import Modal.BaiViet.BaiVietDAO;
 import Modal.BinhLuan.BinhLuanBO;
+import Modal.BaiVietEmbedding.BaiVietEmbedding;
+import Modal.BaiVietEmbedding.BaiVietEmbeddingBO;
+import Support.GeminiEmbeddingService;
 
 @WebServlet("/XuLyBaiVietCuaToiController")
 @MultipartConfig
@@ -25,6 +29,8 @@ public class XuLyBaiVietCuaToiController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private BaiVietBO bvbo = new BaiVietBO();
 	private BaiVietDAO bvdao = new BaiVietDAO();
+	private BaiVietEmbeddingBO bveBO = new BaiVietEmbeddingBO();
+	private GeminiEmbeddingService embeddingService = new GeminiEmbeddingService();
        
 	public XuLyBaiVietCuaToiController() {
 		super();
@@ -69,6 +75,28 @@ public class XuLyBaiVietCuaToiController extends HttpServlet {
 					int maTheLoai = Integer.parseInt(maTheLoaiStr);
 					String finalUrl = (url != null && !url.trim().isEmpty()) ? url.trim() : null;
 					bvbo.createDB(tieuDe.trim(), noiDung.trim(), finalUrl, taiKhoanTao, maTheLoai);
+					//Tạo Embedding
+					try {
+					    // Lấy bài viết vừa tạo để có MaBaiViet
+					    ArrayList<BaiViet> allPosts = bvbo.filterDB_taiKhoanTao(taiKhoanTao);
+					    if (!allPosts.isEmpty()) {
+					        BaiViet newPost = allPosts.get(allPosts.size() - 1);
+					        
+					        // Tạo embedding
+					        String contentForEmbedding = tieuDe + " " + noiDung;
+					        ArrayList<Double> embedding = embeddingService.createEmbedding(contentForEmbedding);
+					        String embeddingJson = embeddingService.embeddingToJson(embedding);
+					        
+					        // Lưu vào DB
+					        BaiVietEmbedding bve = new BaiVietEmbedding();
+					        bve.setMaBaiViet(newPost.getMaBaiViet());
+					        bve.setEmbedding(embeddingJson);
+					        bveBO.createDB(bve);
+					    }
+					} 
+					catch (Exception embEx) {
+					    System.err.println("Lỗi tạo embedding: " + embEx.getMessage());
+					}
 					session.setAttribute("message", "Thêm bài viết thành công!");
 					session.setAttribute("messageType", "success");
 					// Dọn dẹp file orphan sau khi thêm
@@ -128,6 +156,24 @@ public class XuLyBaiVietCuaToiController extends HttpServlet {
 					}
 					
 					bvbo.updateDB(maBaiViet, tieuDe.trim(), noiDung.trim(), finalUrl, maTheLoai, danhGia, trangThai);
+					//Embedding
+					try {
+					    // Xóa embedding cũ
+					    bveBO.deleteByMaBaiViet(maBaiViet);
+					    
+					    // Tạo embedding mới
+					    String contentForEmbedding = tieuDe + " " + noiDung;
+					    ArrayList<Double> embedding = embeddingService.createEmbedding(contentForEmbedding);
+					    String embeddingJson = embeddingService.embeddingToJson(embedding);
+					    
+					    BaiVietEmbedding bve = new BaiVietEmbedding();
+					    bve.setMaBaiViet(maBaiViet);
+					    bve.setEmbedding(embeddingJson);
+					    bveBO.createDB(bve);
+					} 
+					catch (Exception embEx) {
+					    System.err.println("Lỗi cập nhật embedding: " + embEx.getMessage());
+					}
 					session.setAttribute("message", "Cập nhật bài viết thành công!");
 					session.setAttribute("messageType", "success");
 					// Dọn dẹp file orphan sau khi thêm

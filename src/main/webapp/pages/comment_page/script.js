@@ -40,50 +40,47 @@ function initTinyMCE() {
     });
 }
 
-// AI-Enhanced Search
+// AI-Enhanced Embedding Search
 async function enhanceSearch() {
     const searchInput = document.getElementById('searchInput');
-	const loadingOverlay = document.getElementById('fullPageLoading');
+    const loadingOverlay = document.getElementById('fullPageLoading');
     const query = searchInput.value.trim();
     
     if (!query) {
         alert('Vui lòng nhập từ khóa tìm kiếm!');
         return;
     }
-	
-	// Bật loading toàn màn hình
-    loadingOverlay.classList.remove('d-none');
     
+    loadingOverlay.classList.remove('d-none');
     searchInput.disabled = true;
-    const originalPlaceholder = searchInput.placeholder;
-    searchInput.placeholder = 'Đang xử lý với AI...';
     
     try {
         const contextPath = window.location.pathname.split('/')[1];
-        const response = await fetch('/' + contextPath + '/AISearchController', {
+        const response = await fetch('/' + contextPath + '/EmbeddingSearchController', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'query=' + encodeURIComponent(query) + '&context=binhluan'
+            body: 'query=' + encodeURIComponent(query) + '&type=binhluan'
         });
         
         const data = await response.json();
         
-        if (data.success) {
-            searchInput.value = data.enhancedQuery;
-            setTimeout(() => handleSearch(), 100);
+        if (data.success && data.matches && data.matches.length > 0) {
+            // Lấy danh sách maBinhLuan từ kết quả
+            const maBinhLuanList = data.matches.map(m => m.maBinhLuan).join(',');
+            // Redirect với danh sách ID
+            window.location.href = '/' + contextPath + '/BinhLuanController?embeddingSearch=' + encodeURIComponent(maBinhLuanList);
         } else {
-            alert('Không thể xử lý với AI. Tìm kiếm thường...');
-            handleSearch();
+            alert('Không tìm thấy kết quả phù hợp');
+            searchInput.closest('form').submit();
         }
     } catch (error) {
-        console.error('AI Search error:', error);
-        handleSearch();
+        console.error('Embedding Search error:', error);
+        searchInput.closest('form').submit();
     } finally {
-		loadingOverlay.classList.add('d-none');
+        loadingOverlay.classList.add('d-none');
         searchInput.disabled = false;
-        searchInput.placeholder = originalPlaceholder;
     }
 }
 
