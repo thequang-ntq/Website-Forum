@@ -372,20 +372,28 @@ GO
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_BinhLuan_Update')
     DROP TRIGGER trg_BinhLuan_Update;
 GO
+
 CREATE TRIGGER trg_BinhLuan_Update
 ON BinhLuan
 AFTER INSERT, UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
-	IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    
+    -- Cập nhật TieuDe cho cả INSERT và UPDATE
     UPDATE bl
     SET TieuDe = 
         CASE 
             WHEN LEN(i.NoiDung) <= 50 THEN i.NoiDung
             ELSE LEFT(i.NoiDung, 50) + N'...'
         END,
-		ThoiDiemCapNhat = GETDATE()
+        -- Chỉ cập nhật ThoiDiemCapNhat khi UPDATE (EXISTS DELETED)
+        ThoiDiemCapNhat = CASE 
+            WHEN EXISTS (SELECT 1 FROM DELETED d WHERE d.MaBinhLuan = i.MaBinhLuan)
+            THEN GETDATE()
+            ELSE bl.ThoiDiemCapNhat  -- Giữ nguyên giá trị cũ khi INSERT
+        END
     FROM BinhLuan bl
     INNER JOIN INSERTED i ON bl.MaBinhLuan = i.MaBinhLuan
     LEFT JOIN DELETED d ON bl.MaBinhLuan = d.MaBinhLuan

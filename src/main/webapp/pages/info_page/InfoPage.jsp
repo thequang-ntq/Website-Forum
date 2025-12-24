@@ -218,6 +218,13 @@
 		</div>
 	</div>
 
+	<!-- Contact Button -->
+	<a href="${pageContext.request.contextPath}/LienHeController" 
+	   class="btn-contact-float" 
+	   title="Liên hệ">
+	    <i class="bi bi-person-lines-fill"></i>
+	</a>
+
 	<!-- Footer -->
 	<footer class="footer mt-5">
 		<div class="container text-center">

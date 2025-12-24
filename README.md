@@ -27,10 +27,11 @@ Nguyễn Thế Quang (Mã sinh viên: 22T1020362, ĐHKH Huế)
 + Hiển thị thông tin về bài viết, bình luận theo 2 hướng: Hướng 1 là cho Admin để quản lý bài viết và bình luận; Hướng 2 là cho cả Admin và User là quản lý bài viết và bình luận của riêng tài khoản.
 + Thêm, sửa, xóa, xem, tìm kiếm bài viết và bình luận của tất cả tài khoản (Đối với Admin).
 + Thêm, sửa, xóa, xem, tìm kiếm bài viết và bình luận của riêng tài khoản đăng nhập (Đối với Admin và User).
-+ Tìm kiếm AI bằng Gemini cho bài viết, bình luận (Đối với Admin) và cho bài viết và bình luận của riêng tài khoản đăng nhập (Đối với Admin và User).
++ Tìm kiếm AI sử dụng Embedding cho nội dung, tìm kiếm bằng cosine-similarity bằng Gemini cho bài viết, bình luận (Đối với Admin) và cho bài viết và bình luận của riêng tài khoản đăng nhập (Đối với Admin và User).
 + Trình soạn thảo đối với nội dung trong tạo mới, sửa bài viết, bình luận (Đối với Admin) và bài viết và bình luận của riêng tài khoản đăng nhập (Đối với Admin và User).
 + Nhắn tin Chatbot AI (Đối với Admin và User).
 + Lấy lại mật khẩu qua xác thực Email.
++ Thông tin liên hệ người tạo.
 
 # Ảnh chụp giao diện người dùng
 ## Trên Desktop
@@ -70,6 +71,10 @@ Nguyễn Thế Quang (Mã sinh viên: 22T1020362, ĐHKH Huế)
 | Đổi mật khẩu                               || Chatbot                          |
 | -------------------------------------------|-|---------------------------------|
 | ![ChangePass](./images/UI/changepass.png)  || ![Chatbot](./images/UI/chat.png) |
+
+| Liên hệ                           	      |
+| --------------------------------------------|
+| ![Contact](./images/UI/contact.png) 	      |
 
 # Cách cài đặt (Windows 11)
 

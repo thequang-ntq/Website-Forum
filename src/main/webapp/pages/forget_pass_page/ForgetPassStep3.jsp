@@ -78,6 +78,13 @@
         </div>
     </div>
 
+   	<!-- Contact Button -->
+	<a href="${pageContext.request.contextPath}/LienHeController" 
+	   class="btn-contact-float" 
+	   title="Liên hệ">
+	    <i class="bi bi-person-lines-fill"></i>
+	</a>
+
     <script>
         // Toggle password visibility
         document.getElementById('togglePassword').addEventListener('click', function() {

@@ -258,6 +258,14 @@
 			<p class="mb-0">&copy; 2025 Website Forum. All rights reserved.</p>
 		</div>
 	</div>
+	
+	<!-- Contact Button -->
+	<a href="${pageContext.request.contextPath}/LienHeController" 
+	   class="btn-contact-float" 
+	   title="Liên hệ">
+	    <i class="bi bi-person-lines-fill"></i>
+	</a>
+	
 	<script>
 		function refreshCaptcha() {
 			// Thêm timestamp để tránh cache
