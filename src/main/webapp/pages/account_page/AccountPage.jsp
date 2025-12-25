@@ -137,6 +137,7 @@
 		</div>
 
 		<!-- Search Bar -->
+		<!-- onkeyup là gõ xong nhả phím gõ ra, không gõ nữa thì thực hiện -->
 		<div class="row mb-4">
 			<div class="col-lg-4 col-md-6 ms-auto">
 				<div class="search-box">
@@ -213,6 +214,7 @@
 					<% if(totalPages > 1) { %>
 						<nav aria-label="Page navigation" class="mt-4">
 							<ul class="pagination justify-content-center">
+								<!-- Disabled nếu ở trang 1, link đến trang trước nếu currentPage > 1, &laquo là kí tự: << -->
 								<li class="page-item <%= currentPage == 1 ? "disabled" : "" %>">
 									<a class="page-link" href="<%= currentPage > 1 ? buildPaginationUrl(request, currentPage - 1) : "#" %>" aria-label="Previous">
 										<span aria-hidden="true">&laquo;</span>
@@ -220,22 +222,31 @@
 								</li>
 								
 								<%
+									// Cách nhau: 2 trang trước và sau đối với currentPage, sau đó là dấu ... cho đến khi số trang đầu và số trang cuối
+									// VD1: 1 [2] 3 4 5 ... 20
+									// VD2: 1 ... 8 9 [10] 11 12 ... 20
+									// VD3: 1 ... 16 17 18 [19] 20
 									int startPage = Math.max(1, currentPage - 2);
 									int endPage = Math.min(totalPages, currentPage + 2);
 									
+									// Điều chỉnh khi ở đầu (VD1)
 									if(currentPage <= 3) {
 										endPage = Math.min(5, totalPages);
 									}
 									
+									// Điều chỉnh khi ở cuối (VD3)
 									if(currentPage >= totalPages - 2) {
 										startPage = Math.max(1, totalPages - 4);
 									}
 									
 									if(startPage > 1) {
 								%>
+										<!-- Luôn hiện trang 1 -->
 										<li class="page-item">
 											<a class="page-link" href="<%= buildPaginationUrl(request, 1) %>">1</a>
 										</li>
+										
+										<!-- Hiện ... nếu startPage cách trang 1 > 1 -->
 										<% if(startPage > 2) { %>
 											<li class="page-item disabled">
 												<span class="page-link">...</span>
@@ -244,6 +255,7 @@
 								<%
 									}
 									
+									// Hiển thị các trang chính
 									for(int i = startPage; i <= endPage; i++) {
 								%>
 										<li class="page-item <%= i == currentPage ? "active" : "" %>">
@@ -253,6 +265,7 @@
 									}
 									
 									if(endPage < totalPages) {
+										// Hiện "..." nếu endPage cách totalPages > 1
 										if(endPage < totalPages - 1) {
 								%>
 											<li class="page-item disabled">
@@ -261,6 +274,7 @@
 								<%
 										}
 								%>
+										<!-- Luôn hiện trang cuối -->
 										<li class="page-item">
 											<a class="page-link" href="<%= buildPaginationUrl(request, totalPages) %>"><%= totalPages %></a>
 										</li>
@@ -268,6 +282,7 @@
 									}
 								%>
 								
+								<!-- Nút Next, disabled nếu ở trang cuối, link đến trang sau nếu currentPage < totalPages, &raquo là ký tự: >> -->
 								<li class="page-item <%= currentPage == totalPages ? "disabled" : "" %>">
 									<a class="page-link" href="<%= currentPage < totalPages ? buildPaginationUrl(request, currentPage + 1) : "#" %>" aria-label="Next">
 										<span aria-hidden="true">&raquo;</span>
@@ -276,6 +291,7 @@
 							</ul>
 						</nav>
 						
+						<!-- Thông tin tổng quan, ví dụ: trang 5 / 20 (Tổng 195 tài khoản) -->
 						<div class="text-center text-muted mt-2">
 							<small>
 								Trang <%= currentPage %> / <%= totalPages %> 
@@ -518,7 +534,7 @@
 						<p class="text-danger mb-0">
 							<small>
 								<i class="bi bi-exclamation-triangle-fill me-1"></i>
-								<strong>Cảnh báo:</strong> Nếu xóa thì mọi dữ liệu về bài viết, bình luận, lượt thích và lượt đánh giá của tài khoản <strong id="deleteTenDangNhapText2"></strong> cũng sẽ bị xóa theo.
+								<strong>Cảnh báo:</strong> Nếu xóa thì mọi dữ liệu về bài viết, bình luận, lượt thích, lượt đánh giá, đoạn chat của tài khoản <strong id="deleteTenDangNhapText2"></strong> cũng sẽ bị xóa theo.
 							</small>
 						</p>
 					</div>

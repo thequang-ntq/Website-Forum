@@ -27,7 +27,7 @@ public class EmailService {
             if (input == null) {
                 // Nếu không tìm thấy, thử đường dẫn tương đối từ project root
                 String projectPath = System.getProperty("user.dir");
-                String filePath = projectPath + "/src/email.properties";
+                String filePath = projectPath + "/src/main/java/email.properties";
                 input = new FileInputStream(filePath);
             }
             
@@ -78,10 +78,12 @@ public class EmailService {
         
         try {
             Message message = new MimeMessage(session);
+            // Cấu hình để dùng Email mình gửi đến mail họ
             message.setFrom(new InternetAddress(SENDER_EMAIL));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail));
+            // Tiêu đề Email
             message.setSubject("Mã PIN xác thực - Website Forum");
-            
+            // Nội dung Email
             String htmlContent = 
                 "<!DOCTYPE html>" +
                 "<html>" +
@@ -116,6 +118,11 @@ public class EmailService {
     
     public static boolean isValidEmail(String email) {
         if (email == null || email.trim().isEmpty()) return false;
+        //Phần trước @ (username) cho phép chữ, số, ký tự đặc biệt + _ . - và ít nhất 1 ký tự. VD: levana
+        //Phần ký tự @ bắt buộc có
+        //Phần ngay sau @ là tên miền cho phép chữ, số, dấu . và dấu - . VD: gmail
+        //Phần tiếp là dấu chấm trước phần mở rộng.
+        //Phần mở rộng tên miền sau dấu chấm, chỉ chữ, ít nhất 2 ký tự. VD: com, edu, vn
         String regex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
         return email.matches(regex);
     }

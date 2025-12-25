@@ -34,6 +34,7 @@ async function enhanceSearch() {
         
         const data = await response.json();
         
+		// matches chính là danh sách top 20 bài viết tương đồng
         if (data.success && data.matches && data.matches.length > 0) {
             // Lấy danh sách maBaiViet từ kết quả
             const maBaiVietList = data.matches.map(m => m.maBaiViet).join(',');
@@ -95,6 +96,7 @@ function handleFilterTaiKhoan(value) {
 	window.location.href = url;
 }
 
+// Chuyển qua xử lý trong TrangChuController
 // Handle real-time search
 /*
 let searchTimeout;

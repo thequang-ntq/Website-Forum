@@ -34,6 +34,7 @@ public class BaiVietDAO {
 		return ds;
 	}
 	
+	// Tạo bài viết của Admin giống của User (BaiVietCuaToi), lúc tạo thì đánh giá NULL (0 sao) và Trạng thái Active.
 	public void createDB(BaiViet bv) throws Exception {
 		String sql = "INSERT INTO BaiViet (TieuDe, NoiDung, Url, TaiKhoanTao, MaTheLoai) VALUES (?, ?, ?, ?, ?);";
 		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);

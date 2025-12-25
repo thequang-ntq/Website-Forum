@@ -66,8 +66,10 @@ public class TrangChuController extends HttpServlet {
             dsBaiViet = dsBaiVietActive;
             
             // Xử lý embedding search
+            // ?embeddingSearch=20011,20005,20008 : Độ tương đồng giảm dần của mã các bài viết qua EmbeddingSearchController
 			String embeddingSearch = request.getParameter("embeddingSearch");
 			if (embeddingSearch != null && !embeddingSearch.trim().isEmpty()) {
+				//Tách chuỗi "20011,20005,20008" thành mảng ["20011", "20005", "20008"]
 			    String[] ids = embeddingSearch.split(",");
 			    ArrayList<BaiViet> filteredList = new ArrayList<>();
 			    for (String idStr : ids) {

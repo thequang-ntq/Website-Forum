@@ -90,13 +90,14 @@ public class TaiKhoanBO {
 		dao.deleteDB(TenDangNhap);
 	}
 	
-	// Tìm theo tên tài khoản / quyền / trạng thái / thời điểm tạo / thời điểm cập nhật
+	// Tìm theo tên tài khoản / quyền / trạng thái / Email / thời điểm tạo / thời điểm cập nhật
 	public ArrayList<TaiKhoan> findDB(String key) throws Exception {
 		ArrayList<TaiKhoan> temp = new ArrayList<TaiKhoan>();
 		for(TaiKhoan tk: readDB()) {
 			if(tk.getTenDangNhap().trim().toLowerCase().contains(key.trim().toLowerCase())
 			|| tk.getQuyen().trim().toLowerCase().contains(key.trim().toLowerCase())
 			|| tk.getTrangThai().trim().toLowerCase().contains(key.trim().toLowerCase())
+			|| (tk.getEmail() != null && tk.getEmail().trim().toLowerCase().contains(key.trim().toLowerCase()))
 			|| tk.getThoiDiemTao().toString().trim().toLowerCase().contains(key.trim().toLowerCase())
 			|| (tk.getThoiDiemCapNhat() != null && tk.getThoiDiemCapNhat().toString().trim().toLowerCase().contains(key.trim().toLowerCase()))
 			) {
@@ -107,13 +108,13 @@ public class TaiKhoanBO {
 		return temp;
 	}
 	
-	// Nếu tài khoản chưa tồn tại thì đăng ký thành công 
+	// Nếu tài khoản chưa tồn tại == null: thì đăng ký thành công 
 	public TaiKhoan checkRegisterDB(String TenDangNhap) throws Exception {
 		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
 		return tk;
 	}
 	
-	// Nếu tài khoản tồn tại và đang hoạt động thì trả về tk và đăng nhập thành công
+	// Nếu tài khoản tồn tại != null và đang hoạt động: thì trả về tk và đăng nhập thành công
 	public TaiKhoan checkLoginDB(String TenDangNhap, String MatKhau) throws Exception {
 		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
 		if(tk != null && tk.getMatKhau().equals(MatKhau) && tk.getTrangThai().equals("Active")) {
@@ -123,6 +124,7 @@ public class TaiKhoanBO {
 		return null;
 	}
 	
+	//Tài khoản tồn tại, trạng thái không phải Deleted, có thể Active hoặc Hidden
 	public void forgetPassDB(String TenDangNhap, String MatKhauMoi, String NhapLaiMatKhauMoi) throws Exception {
 		TaiKhoan tk = dao.findByTenDangNhap(TenDangNhap);
 		if(tk == null || tk.getTrangThai().equals("Deleted")) {

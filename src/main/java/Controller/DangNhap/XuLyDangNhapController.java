@@ -119,8 +119,6 @@ public class XuLyDangNhapController extends HttpServlet {
 		    return;
 		}
 		
-
-		
 		// Xử lý đăng nhập
 		try {
 			

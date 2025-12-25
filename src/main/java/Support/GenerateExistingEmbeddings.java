@@ -44,10 +44,7 @@ public class GenerateExistingEmbeddings {
                     ArrayList<Double> embedding = embeddingService.createEmbedding(content);
                     String embeddingJson = embeddingService.embeddingToJson(embedding);
                     
-                    BaiVietEmbedding bve = new BaiVietEmbedding();
-                    bve.setMaBaiViet(bv.getMaBaiViet());
-                    bve.setEmbedding(embeddingJson);
-                    bveBO.createDB(bve);
+                    bveBO.createDB(bv.getMaBaiViet(), embeddingJson);
                     
                     successCount++;
                     System.out.println("✓ Đã tạo embedding cho bài viết " + (i+1) + "/" + dsBaiViet.size() + " (ID: " + bv.getMaBaiViet() + ")");
@@ -87,10 +84,7 @@ public class GenerateExistingEmbeddings {
                     ArrayList<Double> embedding = embeddingService.createEmbedding(bl.getNoiDung());
                     String embeddingJson = embeddingService.embeddingToJson(embedding);
                     
-                    BinhLuanEmbedding ble = new BinhLuanEmbedding();
-                    ble.setMaBinhLuan(bl.getMaBinhLuan());
-                    ble.setEmbedding(embeddingJson);
-                    bleBO.createDB(ble);
+                    bleBO.createDB(bl.getMaBinhLuan(), embeddingJson);
                     
                     successCount++;
                     System.out.println("✓ Đã tạo embedding cho bình luận " + (i+1) + "/" + dsBinhLuan.size() + " (ID: " + bl.getMaBinhLuan() + ")");

@@ -407,7 +407,7 @@
         </div>
     </footer>
 
-    <!-- Add Post Modal - UPDATED -->
+    <!-- Add Post Modal -->
 	<div class="modal fade" id="addPostModal" tabindex="-1">
 	    <div class="modal-dialog modal-lg modal-dialog-scrollable">
 	        <div class="modal-content">
@@ -468,7 +468,7 @@
 	    </div>
 	</div>
 	
-	<!-- Edit Post Modal - UPDATED -->
+	<!-- Edit Post Modal -->
 	<div class="modal fade" id="editPostModal" tabindex="-1">
 	    <div class="modal-dialog modal-lg modal-dialog-scrollable">
 	        <div class="modal-content">

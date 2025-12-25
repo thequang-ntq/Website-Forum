@@ -109,7 +109,96 @@ BEGIN
 END
 GO
 
--- Khi xóa tài khoản thì chuyển trạng thái bài viết, bình luận, tài khoản thành Deleted, xóa thẳng lượt thích, đánh giá, embedding bài viết, bình luận
+-- Thêm cột Email vào bảng TaiKhoan
+ALTER TABLE [dbo].[TaiKhoan] 
+ADD [Email] [nvarchar](255) NULL;
+GO
+
+-- Thêm constraint kiểm tra Email hợp lệ (optional)
+ALTER TABLE [dbo].[TaiKhoan]
+ADD CONSTRAINT CHK_Email_Format 
+CHECK (Email IS NULL OR Email LIKE '%_@__%.__%');
+GO
+
+-- Tìm kiếm nội dung Embedding
+-- Thêm bảng lưu embeddings cho bài viết, ID là khóa chính, dữ liệu được sắp xếp theo cột ID tăng dần.
+-- Mặc định khóa ngoại NO ACTION cho cả DELETE và UPDATE.
+IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = 'BaiVietEmbedding')
+BEGIN
+	CREATE TABLE [dbo].[BaiVietEmbedding](
+		[ID] [bigint] IDENTITY(1,1) NOT NULL,
+		[MaBaiViet] [bigint] NOT NULL,
+		[Embedding] [nvarchar](max) NOT NULL,
+		[ThoiDiemTao] [datetime] NULL DEFAULT (getdate()),
+	 CONSTRAINT [pk_baivietembedding] PRIMARY KEY CLUSTERED ([ID] ASC),
+	 CONSTRAINT [fk_baivietembedding_baiviet] FOREIGN KEY([MaBaiViet])
+		REFERENCES [dbo].[BaiViet] ([MaBaiViet])
+	);
+END
+GO
+
+IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = 'BinhLuanEmbedding')
+BEGIN
+	-- Thêm bảng lưu embeddings cho bình luận
+	CREATE TABLE [dbo].[BinhLuanEmbedding](
+		[ID] [bigint] IDENTITY(1,1) NOT NULL,
+		[MaBinhLuan] [bigint] NOT NULL,
+		[Embedding] [nvarchar](max) NOT NULL,
+		[ThoiDiemTao] [datetime] NULL DEFAULT (getdate()),
+	 CONSTRAINT [pk_binhluanembedding] PRIMARY KEY CLUSTERED ([ID] ASC),
+	 CONSTRAINT [fk_binhluanembedding_binhluan] FOREIGN KEY([MaBinhLuan])
+		REFERENCES [dbo].[BinhLuan] ([MaBinhLuan])
+	);
+END
+GO
+
+-- Lưu lịch sử trò chuyện với Chatbot
+-- Đoạn chat
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DoanChat')
+BEGIN
+	CREATE TABLE [dbo].[DoanChat](
+		[MaDoanChat] [bigint] IDENTITY(1,1) NOT NULL,
+		[TenDangNhap] [nvarchar](150) NOT NULL,
+		[TieuDe] [nvarchar](255) NOT NULL,
+		[ThoiDiemTao] [datetime] NULL DEFAULT (getdate()),
+		[ThoiDiemCapNhat] [datetime] NULL,
+	 CONSTRAINT [pk_doanchat] PRIMARY KEY CLUSTERED ([MaDoanChat] ASC)
+	) ON [PRIMARY]
+END
+GO
+
+-- Tin nhắn trong đoạn chat
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'TinNhanChat')
+BEGIN
+	CREATE TABLE [dbo].[TinNhanChat](
+		[MaTinNhan] [bigint] IDENTITY(1,1) NOT NULL,
+		[MaDoanChat] [bigint] NOT NULL,
+		[Role] [nvarchar](50) NOT NULL,
+		[NoiDung] [nvarchar](max) NOT NULL,
+		[Url] [nvarchar](255) NULL,
+		[ThoiDiemTao] [datetime] NULL DEFAULT (getdate()),
+	 CONSTRAINT [pk_tinnhanchat] PRIMARY KEY CLUSTERED ([MaTinNhan] ASC)
+	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+END
+GO
+
+-- Khóa ngoài: Mỗi đoạn chat được tạo bởi 1 tài khoản
+ALTER TABLE [dbo].[DoanChat] WITH CHECK ADD CONSTRAINT [fk_doanchat_taikhoan] 
+FOREIGN KEY([TenDangNhap]) REFERENCES [dbo].[TaiKhoan] ([TenDangNhap])
+GO
+
+-- Khóa ngoài: Mỗi tin nhắn chat chỉ nằm trong 1 đoạn chat, xóa đoạn chat thì tin nhắn chat mất.
+ALTER TABLE [dbo].[TinNhanChat] WITH CHECK ADD CONSTRAINT [fk_tinnhanchat_doanchat] 
+FOREIGN KEY([MaDoanChat]) REFERENCES [dbo].[DoanChat] ([MaDoanChat]) ON DELETE CASCADE
+GO
+
+-- Role sẽ là user (người dùng web) hoặc assistant (Chatbot)
+ALTER TABLE [dbo].[TinNhanChat] 
+ADD CONSTRAINT ck_tinnhanchat_role
+CHECK ([Role]=N'user' OR [Role]=N'assistant')
+GO
+
+-- Khi xóa tài khoản thì chuyển trạng thái bài viết, bình luận, tài khoản thành Deleted, xóa thẳng lượt thích, đánh giá, đoạn chat
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_TaiKhoan_SoftDelete')
 	DROP TRIGGER trg_TaiKhoan_SoftDelete;
 GO
@@ -120,19 +209,10 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
-	-- Xóa embedding bài viết
-	DELETE bve
-	FROM BaiVietEmbedding bve
-	INNER JOIN BaiViet bv ON bve.MaBaiViet = bv.MaBaiViet
-	INNER JOIN DELETED d ON bv.TaiKhoanTao = d.TenDangNhap;
-
-
-	-- Xóa embedding bình luận
-	DELETE ble
-	FROM BinhLuanEmbedding ble
-	INNER JOIN BinhLuan bl ON ble.MaBinhLuan = bl.MaBinhLuan
-	INNER JOIN DELETED d ON bl.TaiKhoanTao = d.TenDangNhap;
-
+	-- Xóa đoạn chat
+	DELETE dc
+	FROM DoanChat dc
+	INNER JOIN DELETED d ON dc.TenDangNhap = d.TenDangNhap
 
 	-- Bài viết
 	UPDATE bv
@@ -167,7 +247,7 @@ BEGIN
 END
 GO
 
--- Khi xóa thể loại thì chuyển trạng thái bài viết, bình luận, thể loại thành Deleted, xóa thẳng lượt thích, đánh giá, xóa embedding bài viết, bình luận
+-- Khi xóa thể loại thì chuyển trạng thái bài viết, bình luận, thể loại thành Deleted, xóa thẳng lượt thích, đánh giá
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_TheLoai_SoftDelete')
 	DROP TRIGGER trg_TheLoai_SoftDelete;
 GO
@@ -229,7 +309,7 @@ BEGIN
 END
 GO
 
--- Khi xóa mềm bài viết thì chuyển trạng thái bình luận thành Deleted, xóa thẳng lượt thích, đánh giá, embedding bài viết, bình luận
+-- Khi xóa mềm bài viết thì chuyển trạng thái bình luận thành Deleted, xóa thẳng lượt thích, đánh giá
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_BaiViet_SoftDelete')
 	DROP TRIGGER trg_BaiViet_SoftDelete;
 GO
@@ -239,17 +319,6 @@ INSTEAD OF DELETE
 AS
 BEGIN
 	SET NOCOUNT ON;
-
-	-- Xóa embedding bài viết
-	DELETE bve
-	FROM BaiVietEmbedding bve
-	INNER JOIN DELETED d ON bve.MaBaiViet = d.MaBaiViet
-
-	-- Xóa embedding bình luận
-	DELETE ble
-	FROM BinhLuanEmbedding ble
-	INNER JOIN BinhLuan bl ON ble.MaBinhLuan = bl.MaBinhLuan
-	INNER JOIN DELETED d ON bl.MaBaiViet = d.MaBaiViet
 
 	-- Bình luận
 	UPDATE bl
@@ -278,7 +347,7 @@ BEGIN
 END
 GO
 
--- Khi xóa mềm bình luận thì xóa thẳng lượt thích, embedding bình luận
+-- Khi xóa mềm bình luận thì xóa thẳng lượt thích
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_BinhLuan_SoftDelete')
 	DROP TRIGGER trg_BinhLuan_SoftDelete;
 GO
@@ -288,11 +357,6 @@ INSTEAD OF DELETE
 AS
 BEGIN
 	SET NOCOUNT ON;
-
-	-- Xóa embedding bình luận
-	DELETE ble
-	FROM BinhLuanEmbedding ble
-	INNER JOIN DELETED d ON ble.MaBinhLuan = d.MaBinhLuan
 
 	-- Lượt thích
 	DELETE ltbl
@@ -479,6 +543,24 @@ BEGIN
 END;
 GO
 
+-- Khi Update Đoạn chat thì tự động cập nhật ThoiDiemCapNhat
+IF  EXISTS(SELECT * FROM sys.triggers WHERE name = 'trg_DoanChat_Update')
+	DROP TRIGGER trg_DoanChat_Update;
+GO
+CREATE TRIGGER trg_DoanChat_Update
+ON DoanChat
+AFTER UPDATE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	-- Ngăn không cho trigger kích hoạt đệ quy
+    IF TRIGGER_NESTLEVEL() > 1 RETURN;
+    UPDATE dc
+    SET ThoiDiemCapNhat = GETDATE()
+    FROM DoanChat dc
+    INNER JOIN INSERTED i ON dc.MaDoanChat = i.MaDoanChat;
+END
+GO
 
 -- Chèn dữ liệu
 IF NOT EXISTS (SELECT * FROM TaiKhoan)
@@ -514,48 +596,6 @@ VALUES	(N'Công nghệ & Tin học'),
 END
 GO
 
--- Thêm cột Email vào bảng TaiKhoan
-ALTER TABLE [dbo].[TaiKhoan] 
-ADD [Email] [nvarchar](255) NULL;
-GO
-
--- Thêm constraint kiểm tra Email hợp lệ (optional)
-ALTER TABLE [dbo].[TaiKhoan]
-ADD CONSTRAINT CHK_Email_Format 
-CHECK (Email IS NULL OR Email LIKE '%_@__%.__%');
-GO
-
--- Tìm kiếm nội dung Embedding
--- Thêm bảng lưu embeddings cho bài viết, ID là khóa chính, dữ liệu được sắp xếp theo cột ID tăng dần.
-IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = 'BaiVietEmbedding')
-BEGIN
-	CREATE TABLE [dbo].[BaiVietEmbedding](
-		[ID] [bigint] IDENTITY(1,1) NOT NULL,
-		[MaBaiViet] [bigint] NOT NULL,
-		[Embedding] [nvarchar](max) NOT NULL,
-		[ThoiDiemTao] [datetime] NULL DEFAULT (getdate()),
-	 CONSTRAINT [pk_baivietembedding] PRIMARY KEY CLUSTERED ([ID] ASC),
-	 CONSTRAINT [fk_baivietembedding_baiviet] FOREIGN KEY([MaBaiViet])
-		REFERENCES [dbo].[BaiViet] ([MaBaiViet])
-	);
-END
-GO
-
-IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = 'BinhLuanEmbedding')
-BEGIN
-	-- Thêm bảng lưu embeddings cho bình luận
-	CREATE TABLE [dbo].[BinhLuanEmbedding](
-		[ID] [bigint] IDENTITY(1,1) NOT NULL,
-		[MaBinhLuan] [bigint] NOT NULL,
-		[Embedding] [nvarchar](max) NOT NULL,
-		[ThoiDiemTao] [datetime] NULL DEFAULT (getdate()),
-	 CONSTRAINT [pk_binhluanembedding] PRIMARY KEY CLUSTERED ([ID] ASC),
-	 CONSTRAINT [fk_binhluanembedding_binhluan] FOREIGN KEY([MaBinhLuan])
-		REFERENCES [dbo].[BinhLuan] ([MaBinhLuan])
-	);
-END
-GO
-
 /* 
 IF NOT EXISTS(SELECT * FROM ApiKey)
 BEGIN
@@ -573,9 +613,13 @@ SELECT * FROM DanhGiaBaiViet
 SELECT * FROM ApiKey
 SELECT * FROM BaiVietEmbedding
 SELECT * FROM BinhLuanEmbedding
+SELECT * FROM DoanChat
+SELECT * FROM TinNhanChat
 SELECT name FROM sys.triggers
 */
 /* Reset khi tạo / chèn sai
+DROP TABLE TinNhanChat
+DROP TABLE DoanChat
 DROP TABLE LuotThichBinhLuan
 DROP TABLE DanhGiaBaiViet
 DROP TABLE BinhLuanEmbedding
@@ -594,5 +638,7 @@ DELETE FROM BinhLuanEmbedding
 DELETE FROM BaiVietEmbedding
 DELETE FROM BinhLuan
 DELETE FROM BaiViet
+DELETE FROM TinNhanChat
+DELETE FROM DoanChat
 */
 

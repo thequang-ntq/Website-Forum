@@ -56,7 +56,8 @@
                 <button type="submit" class="btn btn-primary w-100 btn-reset">
                     <i class="bi bi-check-circle me-2"></i>Xác thực
                 </button>
-
+				
+				<!-- Quay lại bước 1 -->
                 <div class="text-center mt-3">
                     <a href="${pageContext.request.contextPath}/QuenMatKhauController" 
                        class="text-decoration-none">

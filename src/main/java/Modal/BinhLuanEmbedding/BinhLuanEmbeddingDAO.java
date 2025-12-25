@@ -24,16 +24,16 @@ public class BinhLuanEmbeddingDAO {
         return ds;
     }
     
-    public void createDB(BinhLuanEmbedding bve) throws Exception {
+    public void createDB(BinhLuanEmbedding ble) throws Exception {
         String sql = "INSERT INTO BinhLuanEmbedding (MaBinhLuan, Embedding) VALUES (?, ?);";
         PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
-        pr.setLong(1, bve.getMaBinhLuan());
-        pr.setNString(2, bve.getEmbedding());
+        pr.setLong(1, ble.getMaBinhLuan());
+        pr.setNString(2, ble.getEmbedding());
         pr.executeUpdate();
         pr.close();
     }
     
-    public void deleteByMaBinhLuan(long maBinhLuan) throws Exception {
+    public void deleteDB(long maBinhLuan) throws Exception {
         String sql = "DELETE FROM BinhLuanEmbedding WHERE MaBinhLuan = ?;";
         PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
         pr.setLong(1, maBinhLuan);
@@ -46,16 +46,16 @@ public class BinhLuanEmbeddingDAO {
         PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
         pr.setLong(1, maBinhLuan);
         ResultSet rs = pr.executeQuery();
-        BinhLuanEmbedding bve = null;
+        BinhLuanEmbedding ble = null;
         if (rs.next()) {
             long ID = rs.getLong("ID");
             long MaBinhLuan = rs.getLong("MaBinhLuan");
             String Embedding = rs.getNString("Embedding");
             Timestamp ThoiDiemTao = rs.getTimestamp("ThoiDiemTao");
-            bve = new BinhLuanEmbedding(ID, MaBinhLuan, Embedding, ThoiDiemTao);
+            ble = new BinhLuanEmbedding(ID, MaBinhLuan, Embedding, ThoiDiemTao);
         }
         pr.close();
         rs.close();
-        return bve;
+        return ble;
     }
 }

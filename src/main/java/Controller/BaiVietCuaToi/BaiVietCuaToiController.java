@@ -48,8 +48,14 @@ public class BaiVietCuaToiController extends HttpServlet {
 			ArrayList<TheLoai> dsTheLoai = tlbo.readDB2();
 			request.setAttribute("dsTheLoai", dsTheLoai);
 			
-			// Lấy danh sách bài viết của tài khoản hiện tại
-			ArrayList<BaiViet> dsBaiViet = bvbo.filterDB_taiKhoanTao(account);
+			// Lấy danh sách bài viết của tài khoản hiện tại, chỉ lấy các bài đang Active
+			ArrayList<BaiViet> dsTong = bvbo.filterDB_taiKhoanTao(account);
+			ArrayList<BaiViet> dsBaiViet = new ArrayList<BaiViet>();
+			for(BaiViet bv: dsTong) {
+				if("Active".equals(bv.getTrangThai())) {
+					dsBaiViet.add(bv);
+				}
+			}
 			
 			// Xử lý embedding search
 			String embeddingSearch = request.getParameter("embeddingSearch");

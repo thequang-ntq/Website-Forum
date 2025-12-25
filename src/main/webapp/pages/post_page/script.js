@@ -65,11 +65,11 @@ async function enhanceSearch() {
         });
         
         const data = await response.json();
-        
+        // matches là danh sách kết quả bài viết
         if (data.success && data.matches && data.matches.length > 0) {
             // Lấy danh sách maBaiViet từ kết quả
             const maBaiVietList = data.matches.map(m => m.maBaiViet).join(',');
-            // Redirect với danh sách ID
+            // Redirect với danh sách ID bài viết
             window.location.href = '/' + contextPath + '/BaiVietController?embeddingSearch=' + encodeURIComponent(maBaiVietList);
         } else {
             alert('Không tìm thấy kết quả phù hợp');
@@ -84,7 +84,7 @@ async function enhanceSearch() {
     }
 }
 
-// Handle real-time search
+// Handle real-time search. Nhả sau khi dừng gõ thì bắt đầu tìm
 let searchTimeout;
 function handleSearch() {
 	const searchInput = document.getElementById('searchInput');
@@ -223,7 +223,7 @@ function showDetailModal(maBaiViet) {
 	html += '<div class="detail-value">' + post.tenTheLoai + '</div>';
 	html += '</div>';
 	
-	// Đánh giá
+	// Đánh giá, không có nửa sao
 	html += '<div class="detail-item">';
 	html += '<div class="detail-label"><i class="bi bi-star-fill"></i>Đánh giá</div>';
 	html += '<div class="detail-value">';
@@ -278,7 +278,7 @@ function showDetailModal(maBaiViet) {
 	modal.show();
 }
 
-// Show Add Modal
+// Show Add Modal, tăng UX client
 function showAddModal() {
 	const modal = new bootstrap.Modal(document.getElementById('addModal'));
 	const form = document.getElementById('addForm');
@@ -367,9 +367,14 @@ function showDeleteModal(maBaiViet, tieuDe) {
 // Validate Add Form
 function validateAddForm() {
 	const tieuDe = document.getElementById('addTieuDe').value.trim();
-	const noiDung = document.getElementById('addNoiDung').value.trim();
 	const maTheLoai = document.getElementById('addMaTheLoai').value;
 	const submitBtn = document.getElementById('addSubmitBtn');
+	
+	// Get content from TinyMCE
+	let noiDung = '';
+	if (tinymce.get('addNoiDung')) {
+		noiDung = tinymce.get('addNoiDung').getContent();
+	}
 	
 	let isValid = true;
 	
@@ -389,10 +394,10 @@ function validateAddForm() {
 		tieuDeError.textContent = '';
 	}
 	
-	// Validate nội dung
+	// Validate nội dung từ TinyMCE
 	const noiDungInput = document.getElementById('addNoiDung');
 	const noiDungError = document.getElementById('addNoiDungError');
-	if(noiDung === '') {
+	if(!noiDung || noiDung.trim() === '') {
 		noiDungInput.classList.add('is-invalid');
 		noiDungError.textContent = 'Nội dung không được để trống';
 		isValid = false;
@@ -420,9 +425,14 @@ function validateAddForm() {
 // Validate Edit Form
 function validateEditForm() {
 	const tieuDe = document.getElementById('editTieuDe').value.trim();
-	const noiDung = document.getElementById('editNoiDung').value.trim();
 	const maTheLoai = document.getElementById('editMaTheLoai').value;
 	const submitBtn = document.getElementById('editSubmitBtn');
+	
+	// Get content from TinyMCE
+	let noiDung = '';
+	if (tinymce.get('editNoiDung')) {
+		noiDung = tinymce.get('editNoiDung').getContent();
+	}
 	
 	let isValid = true;
 	
@@ -442,10 +452,10 @@ function validateEditForm() {
 		tieuDeError.textContent = '';
 	}
 	
-	// Validate nội dung
+	// Validate nội dung từ TinyMCE
 	const noiDungInput = document.getElementById('editNoiDung');
 	const noiDungError = document.getElementById('editNoiDungError');
-	if(noiDung === '') {
+	if(!noiDung || noiDung.trim() === '') {
 		noiDungInput.classList.add('is-invalid');
 		noiDungError.textContent = 'Nội dung không được để trống';
 		isValid = false;
@@ -470,11 +480,17 @@ function validateEditForm() {
 	return isValid;
 }
 
-// Handle Add Form Submit
+// Handle Add Form, Edit Form Submit
 document.addEventListener('DOMContentLoaded', function() {
 	const addForm = document.getElementById('addForm');
 	if(addForm) {
 		addForm.addEventListener('submit', function(e) {
+			// Get content from TinyMCE before validation
+			if (tinymce.get('addNoiDung')) {
+				var content = tinymce.get('addNoiDung').getContent();
+				document.getElementById('addNoiDung').value = content;
+			}
+			
 			if(!validateAddForm()) {
 				e.preventDefault();
 				const errorDiv = document.getElementById('addError');
@@ -492,6 +508,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	const editForm = document.getElementById('editForm');
 	if(editForm) {
 		editForm.addEventListener('submit', function(e) {
+			// Get content from TinyMCE before validation
+			if (tinymce.get('editNoiDung')) {
+				var content = tinymce.get('editNoiDung').getContent();
+				document.getElementById('editNoiDung').value = content;
+			}
+			
 			if(!validateEditForm()) {
 				e.preventDefault();
 				const errorDiv = document.getElementById('editError');
@@ -540,52 +562,22 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 });
 
-// Form submit handlers for TinyMCE
-document.addEventListener('DOMContentLoaded', function() {
-    const addForm = document.getElementById('addForm');
-    if (addForm) {
-        addForm.addEventListener('submit', function(e) {
-            if (tinymce.get('addNoiDung')) {
-                var content = tinymce.get('addNoiDung').getContent();
-                document.getElementById('addNoiDung').value = content;
-                
-                if (!content || content.trim() === '') {
-                    e.preventDefault();
-                    alert('Vui lòng nhập nội dung bài viết!');
-                    return false;
-                }
-            }
-        });
-    }
-
-    const editForm = document.getElementById('editForm');
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            if (tinymce.get('editNoiDung')) {
-                var content = tinymce.get('editNoiDung').getContent();
-                document.getElementById('editNoiDung').value = content;
-                
-                if (!content || content.trim() === '') {
-                    e.preventDefault();
-                    alert('Vui lòng nhập nội dung bài viết!');
-                    return false;
-                }
-            }
-        });
-    }
-});
-
 // Reset TinyMCE when opening add modal
-document.getElementById('addModal').addEventListener('show.bs.modal', function () {
-    setTimeout(function() {
-        if (tinymce.get('addNoiDung')) {
-            tinymce.get('addNoiDung').setContent('');
-        }
-    }, 100);
+document.addEventListener('DOMContentLoaded', function() {
+	const addModal = document.getElementById('addModal');
+	if (addModal) {
+		addModal.addEventListener('show.bs.modal', function () {
+			setTimeout(function() {
+				if (tinymce.get('addNoiDung')) {
+					tinymce.get('addNoiDung').setContent('');
+				}
+			}, 100);
+		});
+	}
 });
 
 // ============================================
-// THÊM VÀO CUỐI FILE script.js
+// Luồng xử lý thêm sửa file, tách biệt riêng với thêm sửa dữ liệu chữ các trường khác.
 // ============================================
 
 // Global variables
@@ -645,7 +637,7 @@ function handleAddFileSelect(event) {
 	uploadAddFile(file);
 }
 
-// Upload Add File
+// Upload Add File, gọi đến Controller để thêm file vào server.
 function uploadAddFile(file) {
 	const formData = new FormData();
 	formData.append('file', file);
@@ -767,7 +759,7 @@ function handleEditFileSelect(event) {
 	uploadEditFile(file);
 }
 
-// Upload Edit File
+// Upload Edit File, cứ đổi 1 ảnh là thêm ảnh đó vào server. Các ảnh thừa trong quá trình này sẽ được xóa sau khi submit thành công.
 function uploadEditFile(file) {
 	const formData = new FormData();
 	formData.append('file', file);
@@ -916,6 +908,13 @@ showEditModal = function(maBaiViet) {
 	document.getElementById('editDanhGia').value = post.danhGia || '';
 	document.getElementById('editTrangThai').value = post.trangThai;
 	
+	// Set TinyMCE content for edit modal
+	setTimeout(function() {
+		if (tinymce.get('editNoiDung')) {
+			tinymce.get('editNoiDung').setContent(post.noiDung);
+		}
+	}, 100);
+	
 	// Handle file
 	editOriginalFileUrl = post.url || '';
 	editUploadedFileUrl = '';
@@ -967,10 +966,10 @@ showEditModal = function(maBaiViet) {
 	}
 	
 	// Reset validation
-	document.querySelectorAll('#editForm .form-control, #editForm .form-select').forEach(el => {
+	document.querySelectorAll('#editForm .form-control, #editForm .form-select').forEach(function(el) {
 		el.classList.remove('is-invalid');
 	});
-	document.querySelectorAll('#editForm .invalid-feedback').forEach(el => {
+	document.querySelectorAll('#editForm .invalid-feedback').forEach(function(el) {
 		el.textContent = '';
 	});
 	

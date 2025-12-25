@@ -33,7 +33,7 @@ public class BaiVietEmbeddingDAO {
         pr.close();
     }
     
-    public void deleteByMaBaiViet(long maBaiViet) throws Exception {
+    public void deleteDB(long maBaiViet) throws Exception {
         String sql = "DELETE FROM BaiVietEmbedding WHERE MaBaiViet = ?;";
         PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);
         pr.setLong(1, maBaiViet);

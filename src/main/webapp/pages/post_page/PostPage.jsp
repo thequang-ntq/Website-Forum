@@ -351,7 +351,8 @@
 		</div>
 	</div>
 
-	<!-- THAY THẾ TOÀN BỘ Add Modal -->
+	<!-- Upload File độc lập qua JavaScript, file được upload ngay lập tức khi user chọn file, không phải khi submit form -->
+	<!-- Add Modal -->
 	<div class="modal fade" id="addModal" tabindex="-1">
 		<div class="modal-dialog modal-lg modal-dialog-scrollable">
 			<div class="modal-content">
@@ -438,7 +439,7 @@
 		</div>
 	</div>
 	
-	<!-- THAY THẾ TOÀN BỘ Edit Modal -->
+	<!-- Edit Modal -->
 	<div class="modal fade" id="editModal" tabindex="-1">
 		<div class="modal-dialog modal-lg modal-dialog-scrollable">
 			<div class="modal-content">
@@ -522,8 +523,8 @@
 							<label for="editDanhGia" class="form-label fw-bold">Đánh giá</label>
 							<input type="number" class="form-control" id="editDanhGia" 
 								   name="danhGia" min="0" max="5" step="0.1" 
-								   placeholder="0.0 - 5.0">
-							<small class="text-muted">Để trống nếu chưa đánh giá (từ 0.0 đến 5.0)</small>
+								   placeholder="0.0 - 5.0"
+								   readonly>
 						</div>
 	
 						<div class="mb-3">

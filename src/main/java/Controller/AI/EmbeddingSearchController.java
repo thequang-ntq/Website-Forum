@@ -64,9 +64,10 @@ public class EmbeddingSearchController extends HttpServlet {
                 return;
             }
             
-            // Tạo embedding cho query
+            // Tạo embedding cho query, vector của query là key được nhập vào trong search box
             ArrayList<Double> queryEmbedding = embeddingService.createEmbedding(query);
             
+            // Theo bài viết hoặc bình luận, success là trạng thái thành công, matches là kết quả tìm kiếm
             if ("baiviet".equals(type)) {
                 JsonArray matches = searchBaiViet(queryEmbedding);
                 result.addProperty("success", true);
@@ -90,6 +91,7 @@ public class EmbeddingSearchController extends HttpServlet {
         out.flush();
     }
     
+    // Tìm kiếm top 20 bài viết liên quan theo cosine similarity
     private JsonArray searchBaiViet(ArrayList<Double> queryEmbedding) throws Exception {
         ArrayList<BaiViet> dsBaiViet = bvbo.filterDB_trangThai("Active");
         ArrayList<BaiVietEmbedding> dsEmbeddings = bveBO.readDB();
@@ -98,8 +100,11 @@ public class EmbeddingSearchController extends HttpServlet {
         Map<Long, Double> similarityMap = new HashMap<>();
         
         for (BaiVietEmbedding bve : dsEmbeddings) {
+        	// Lấy ra embedding của bài viết
             ArrayList<Double> embedding = embeddingService.jsonToEmbedding(bve.getEmbedding());
+            // So sánh với vector cần tìm kiếm
             double similarity = embeddingService.cosineSimilarity(queryEmbedding, embedding);
+            // cho vào hashmap để so sánh sau
             similarityMap.put(bve.getMaBaiViet(), similarity);
         }
         
@@ -110,7 +115,7 @@ public class EmbeddingSearchController extends HttpServlet {
             return simB.compareTo(simA);
         });
         
-        // Trả về top 20 kết quả với similarity > 0.5
+        // Trả về top 20 kết quả với similarity > 0.5. Lưu mã bài viết và độ tương đồng.
         JsonArray matches = new JsonArray();
         int count = 0;
         for (BaiViet bv : dsBaiViet) {
@@ -124,9 +129,11 @@ public class EmbeddingSearchController extends HttpServlet {
             }
         }
         
+        // Trả về kết quả 20 bài viết giảm dần.
         return matches;
     }
     
+    // Tương tự bài viết
     private JsonArray searchBinhLuan(ArrayList<Double> queryEmbedding) throws Exception {
         ArrayList<BinhLuan> dsBinhLuan = blbo.filterDB_trangThai("Active");
         ArrayList<BinhLuanEmbedding> dsEmbeddings = bleBO.readDB();

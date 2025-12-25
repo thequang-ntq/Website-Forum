@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 
-	// Form validation on submit
+	// Form validation on submit, thừa, đã validate trong XuLyDangNhapController
 	const loginForm = document.getElementById('loginForm');
 	if(loginForm) {
 		loginForm.addEventListener('submit', function(e) {
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 
-	// Auto dismiss alerts after 3 seconds
+	// Auto dismiss alerts after 3 seconds - tự tắt thông báo sau 3 giây
 	setTimeout(function() {
 		const alerts = document.querySelectorAll('.alert');
 		alerts.forEach(function(alert) {

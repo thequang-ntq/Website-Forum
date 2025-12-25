@@ -48,8 +48,14 @@ public class BinhLuanCuaToiController extends HttpServlet {
 			ArrayList<BaiViet> dsBaiVietAll = bvbo.readDB();
 			request.setAttribute("dsBaiViet", dsBaiVietAll);
 			
-			// Lấy danh sách bình luận của tài khoản hiện tại
-			ArrayList<BinhLuan> dsBinhLuan = blbo.filterDB_taiKhoanTao(account);
+			// Lấy danh sách bình luận của tài khoản hiện tại, chỉ lấy các bình luận đang active
+			ArrayList<BinhLuan> dsTong = blbo.filterDB_taiKhoanTao(account);
+			ArrayList<BinhLuan> dsBinhLuan = new ArrayList<BinhLuan>();
+			for(BinhLuan bl: dsTong) {
+				if("Active".equals(bl.getTrangThai())) {
+					dsBinhLuan.add(bl);
+				}
+			}
 			
 			// Xử lý embedding search
 			String embeddingSearch = request.getParameter("embeddingSearch");

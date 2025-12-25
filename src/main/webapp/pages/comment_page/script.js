@@ -342,16 +342,21 @@ function showDeleteModal(maBinhLuan, noiDung) {
 
 // Validate Add Form
 function validateAddForm() {
-	const noiDung = document.getElementById('addNoiDung').value.trim();
 	const maBaiViet = document.getElementById('addMaBaiViet').value;
 	const submitBtn = document.getElementById('addSubmitBtn');
 	
+	// Get content from TinyMCE
+	let noiDung = '';
+	if (tinymce.get('addNoiDung')) {
+		noiDung = tinymce.get('addNoiDung').getContent();
+	}
+	
 	let isValid = true;
 	
-	// Validate nội dung
+	// Validate nội dung từ TinyMCE
 	const noiDungInput = document.getElementById('addNoiDung');
 	const noiDungError = document.getElementById('addNoiDungError');
-	if(noiDung === '') {
+	if(!noiDung || noiDung.trim() === '') {
 		noiDungInput.classList.add('is-invalid');
 		noiDungError.textContent = 'Nội dung không được để trống';
 		isValid = false;
@@ -378,15 +383,20 @@ function validateAddForm() {
 
 // Validate Edit Form
 function validateEditForm() {
-	const noiDung = document.getElementById('editNoiDung').value.trim();
 	const submitBtn = document.getElementById('editSubmitBtn');
+	
+	// Get content from TinyMCE
+	let noiDung = '';
+	if (tinymce.get('editNoiDung')) {
+		noiDung = tinymce.get('editNoiDung').getContent();
+	}
 	
 	let isValid = true;
 	
-	// Validate nội dung
+	// Validate nội dung từ TinyMCE
 	const noiDungInput = document.getElementById('editNoiDung');
 	const noiDungError = document.getElementById('editNoiDungError');
-	if(noiDung === '') {
+	if(!noiDung || noiDung.trim() === '') {
 		noiDungInput.classList.add('is-invalid');
 		noiDungError.textContent = 'Nội dung không được để trống';
 		isValid = false;
@@ -399,11 +409,17 @@ function validateEditForm() {
 	return isValid;
 }
 
-// Handle Add Form Submit
+// Handle Add Form, Edit Form Submit
 document.addEventListener('DOMContentLoaded', function() {
 	const addForm = document.getElementById('addForm');
 	if(addForm) {
 		addForm.addEventListener('submit', function(e) {
+			// Get content from TinyMCE before validation
+			if (tinymce.get('addNoiDung')) {
+				var content = tinymce.get('addNoiDung').getContent();
+				document.getElementById('addNoiDung').value = content;
+			}
+			
 			if(!validateAddForm()) {
 				e.preventDefault();
 				const errorDiv = document.getElementById('addError');
@@ -421,6 +437,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	const editForm = document.getElementById('editForm');
 	if(editForm) {
 		editForm.addEventListener('submit', function(e) {
+			// Get content from TinyMCE before validation
+			if (tinymce.get('editNoiDung')) {
+				var content = tinymce.get('editNoiDung').getContent();
+				document.getElementById('editNoiDung').value = content;
+			}
+			
 			if(!validateEditForm()) {
 				e.preventDefault();
 				const errorDiv = document.getElementById('editError');
@@ -469,48 +491,18 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 });
 
-// Form submit handlers for TinyMCE
-document.addEventListener('DOMContentLoaded', function() {
-    const addForm = document.getElementById('addForm');
-    if (addForm) {
-        addForm.addEventListener('submit', function(e) {
-            if (tinymce.get('addNoiDung')) {
-                var content = tinymce.get('addNoiDung').getContent();
-                document.getElementById('addNoiDung').value = content;
-                
-                if (!content || content.trim() === '') {
-                    e.preventDefault();
-                    alert('Vui lòng nhập nội dung bình luận!');
-                    return false;
-                }
-            }
-        });
-    }
-
-    const editForm = document.getElementById('editForm');
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            if (tinymce.get('editNoiDung')) {
-                var content = tinymce.get('editNoiDung').getContent();
-                document.getElementById('editNoiDung').value = content;
-                
-                if (!content || content.trim() === '') {
-                    e.preventDefault();
-                    alert('Vui lòng nhập nội dung bình luận!');
-                    return false;
-                }
-            }
-        });
-    }
-});
-
 // Reset TinyMCE when opening add modal
-document.getElementById('addModal').addEventListener('show.bs.modal', function () {
-    setTimeout(() => {
-        if (tinymce.get('addNoiDung')) {
-            tinymce.get('addNoiDung').setContent('');
-        }
-    }, 100);
+document.addEventListener('DOMContentLoaded', function() {
+	const addModal = document.getElementById('addModal');
+	if (addModal) {
+		addModal.addEventListener('show.bs.modal', function () {
+			setTimeout(function() {
+				if (tinymce.get('addNoiDung')) {
+					tinymce.get('addNoiDung').setContent('');
+				}
+			}, 100);
+		});
+	}
 });
 
 // ============================================
@@ -828,6 +820,13 @@ window.showEditModal = function(maBinhLuan) {
 	document.getElementById('editSoLuotThich').value = comment.soLuotThich || '';
 	document.getElementById('editTrangThai').value = comment.trangThai;
 	
+	// Set TinyMCE content for edit modal
+	setTimeout(function() {
+		if (tinymce.get('editNoiDung')) {
+			tinymce.get('editNoiDung').setContent(comment.noiDung);
+		}
+	}, 100);
+	
 	// Handle file
 	editOriginalFileUrl = comment.url || '';
 	editUploadedFileUrl = '';
@@ -879,10 +878,10 @@ window.showEditModal = function(maBinhLuan) {
 	}
 	
 	// Reset validation
-	document.querySelectorAll('#editForm .form-control, #editForm .form-select').forEach(el => {
+	document.querySelectorAll('#editForm .form-control, #editForm .form-select').forEach(function(el) {
 		el.classList.remove('is-invalid');
 	});
-	document.querySelectorAll('#editForm .invalid-feedback').forEach(el => {
+	document.querySelectorAll('#editForm .invalid-feedback').forEach(function(el) {
 		el.textContent = '';
 	});
 	

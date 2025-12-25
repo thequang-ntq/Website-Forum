@@ -501,8 +501,7 @@
 						<div class="mb-3">
 							<label for="editSoLuotThich" class="form-label fw-bold">Số lượt thích</label>
 							<input type="number" class="form-control" id="editSoLuotThich" 
-								   name="soLuotThich" min="0" placeholder="0">
-							<small class="text-muted">Để trống nếu không thay đổi</small>
+								   name="soLuotThich" min="0" placeholder="0" readonly>
 						</div>
 	
 						<div class="mb-3">

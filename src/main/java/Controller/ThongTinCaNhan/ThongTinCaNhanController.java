@@ -1,5 +1,10 @@
 package Controller.ThongTinCaNhan;
-
+// Bên Server
+// Validate lần cuối trước khi cập nhật CSDL
+// Kiểm tra logic nghiệp vụ chính
+// Mã hóa dữ liệu, ghi vào CSDL
+// Mục đích là xử lý
+// Khi bấm Submit mới bắt đầu xử lý
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -41,8 +46,8 @@ public class ThongTinCaNhanController extends HttpServlet {
             if ("POST".equalsIgnoreCase(request.getMethod())) {
                 String action = request.getParameter("action");
                 
-                // Đổi mật khẩu
-                if (action == null || "changePassword".equals(action)) {
+                // Đổi mật khẩu, mặc định action null là đổi mật khẩu
+                if ("changePassword".equals(action)) {
                     // Lấy dữ liệu từ form
                     String matKhauCu = request.getParameter("matKhauCu");
                     String matKhauMoi = request.getParameter("matKhauMoi");
@@ -101,8 +106,11 @@ public class ThongTinCaNhanController extends HttpServlet {
                         throw new Exception("Vui lòng nhập đúng cụm từ xác nhận: XOA TAI KHOAN");
                     }
                     
+                    // Mã hóa
+                    String encryptedPass1 = md5.ecrypt(matKhauXacNhan.trim());
+                    
                     // Kiểm tra mật khẩu
-                    TaiKhoan tkCheck = tkbo.checkLoginDB(account, matKhauXacNhan);
+                    TaiKhoan tkCheck = tkbo.checkLoginDB(account, encryptedPass1);
                     if (tkCheck == null) {
                         throw new Exception("Mật khẩu không chính xác!");
                     }
@@ -137,6 +145,55 @@ public class ThongTinCaNhanController extends HttpServlet {
                     // Thông báo thành công
                     request.setAttribute("message", "Thêm email thành công!");
                     request.setAttribute("messageType", "success");
+                }
+                
+                // Đổi Email
+                else if ("changeEmail".equals(action)) {
+                    String emailMoi = request.getParameter("emailMoi");
+                    String matKhauXacNhan = request.getParameter("matKhauXacNhan");
+                    
+                    // Validate
+                    if (emailMoi == null || emailMoi.trim().isEmpty()) {
+                        throw new Exception("Email mới không được để trống!");
+                    }
+                    if (emailMoi.length() > 255) {
+                        throw new Exception("Email mới không được quá 255 ký tự!");
+                    }
+                    if (!Support.EmailService.isValidEmail(emailMoi.trim())) {
+                        throw new Exception("Email mới không hợp lệ!");
+                    }
+                    if (matKhauXacNhan == null || matKhauXacNhan.trim().isEmpty()) {
+                        throw new Exception("Mật khẩu xác nhận không được để trống!");
+                    }
+                    if (matKhauXacNhan.length() > 255) {
+                        throw new Exception("Mật khẩu xác nhận không được quá 255 ký tự!");
+                    }
+                    
+                    // Mã hóa
+                    String encryptedPass1 = md5.ecrypt(matKhauXacNhan.trim());
+                    
+                    // Kiểm tra mật khẩu
+                    TaiKhoan tkCheck = tkbo.checkLoginDB(account, encryptedPass1);
+                    if (tkCheck == null) {
+                        throw new Exception("Mật khẩu không chính xác!");
+                    }
+                    
+                    // Kiểm tra email mới có trùng với email cũ không
+                    TaiKhoan tkCurrent = tkbo.checkRegisterDB(account);
+                    if (tkCurrent.getEmail() != null && tkCurrent.getEmail().equals(emailMoi.trim())) {
+                        throw new Exception("Email mới không được trùng với email hiện tại!");
+                    }
+                    
+                    // Cập nhật email
+                    tkbo.updateEmail(account, emailMoi.trim());
+                    
+                    // Thông báo thành công
+                    request.setAttribute("message", "Đổi email thành công!");
+                    request.setAttribute("messageType", "success");
+                }
+                else {
+                    //Không xác định được action
+                    throw new Exception("Action không hợp lệ!");
                 }
             }
 

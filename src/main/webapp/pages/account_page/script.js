@@ -96,7 +96,7 @@ function showMessage(message, type) {
 	}, 3000);
 }
 
-// Get account data by username
+// Get account data by username, thông tin chi tiết
 function getAccountData(tenDangNhap) {
 	const accountItems = document.querySelectorAll('.account-data-item');
 	for(let item of accountItems) {
@@ -121,7 +121,7 @@ function showDetailModal(tenDangNhap) {
 	const modal = new bootstrap.Modal(document.getElementById('detailModal'));
 	const content = document.getElementById('detailContent');
 	
-	// Get account data
+	// Get account data, gán giá trị
 	const account = getAccountData(tenDangNhap);
 	
 	if(!account) {
@@ -130,7 +130,7 @@ function showDetailModal(tenDangNhap) {
 		return;
 	}
 	
-	// Build detail content
+	// Build detail content, modal thông tin chi tiết tài khoản
 	let html = '<div class="detail-container">';
 	
 	// Tên đăng nhập
@@ -275,7 +275,7 @@ function showDeleteModal(tenDangNhap) {
 	modal.show();
 }
 
-// Validate Add Form
+// Validate Add Form, xác thực client
 function validateAddForm() {
 	const tenDangNhap = document.getElementById('addTenDangNhap').value.trim();
 	const matKhau = document.getElementById('addMatKhau').value.trim();
@@ -390,7 +390,7 @@ function validateEditForm() {
 	return isValid;
 }
 
-// Handle Add Form Submit
+// Handle Add Form, Edit Form Submit
 document.addEventListener('DOMContentLoaded', function() {
 	const addForm = document.getElementById('addForm');
 	if(addForm) {

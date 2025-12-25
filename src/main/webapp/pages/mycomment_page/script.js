@@ -169,13 +169,6 @@ function editComment(maBinhLuan) {
     document.getElementById('editMaBinhLuan').value = maBinhLuanValue;
     document.getElementById('editNoiDung').value = noiDung;
     document.getElementById('editUrl').value = url || '';
-    
-    // Set TinyMCE content
-    setTimeout(() => {
-        if (tinymce.get('editNoiDung')) {
-            tinymce.get('editNoiDung').setContent(noiDung);
-        }
-    }, 100);
 
     const modal = new bootstrap.Modal(document.getElementById('editCommentModal'));
     modal.show();
@@ -690,4 +683,18 @@ document.getElementById('addCommentModal').addEventListener('show.bs.modal', fun
     document.getElementById('addFilePreview').style.display = 'none';
     document.getElementById('addUrlHidden').value = '';
     console.log('Add modal opened, upload state reset');
+});
+
+// Khi modal chỉnh sửa hiển thị hoàn toàn, mới set nội dung TinyMCE
+document.getElementById('editCommentModal').addEventListener('shown.bs.modal', function () {
+    const editor = tinymce.get('editNoiDung');
+    if (editor) {
+        // Lấy nội dung từ textarea ẩn (đã được điền trước đó)
+        const content = document.getElementById('editNoiDung').value;
+        editor.setContent(content || '');
+        // Đảm bảo focus vào editor
+        editor.focus();
+    } else {
+        console.warn('TinyMCE editor #editNoiDung chưa sẵn sàng');
+    }
 });

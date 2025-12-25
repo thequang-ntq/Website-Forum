@@ -16,6 +16,15 @@
         String quyen = (String) session.getAttribute("quyen");
         String account = (String) session.getAttribute("account");
         boolean isAdmin = "Admin".equals(quyen);
+        
+        // Danh sách đoạn chat và danh sách tin nhắn trong đoạn chat hiện tại
+        ArrayList<Modal.DoanChat.DoanChat> dsDoanChat = (ArrayList<Modal.DoanChat.DoanChat>) request.getAttribute("dsDoanChat");
+        ArrayList<Modal.TinNhanChat.TinNhanChat> tinNhanList = (ArrayList<Modal.TinNhanChat.TinNhanChat>) request.getAttribute("tinNhanList");
+        
+        // Đoạn chat hiện tại
+        Long currentDoanChat = (Long) request.getAttribute("currentDoanChat");
+            
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     %>
 
     <!-- Navbar -->
@@ -95,91 +104,119 @@
         </div>
     </nav>
 
-    <!-- Chat Container -->
-    <div class="chat-container">
-        <div class="chat-header">
-            <i class="bi bi-robot me-2"></i>
-            <span>Chat với AI</span>
-            <button class="btn btn-sm btn-outline-light ms-auto" onclick="clearChat()">
-                <i class="bi bi-trash"></i> Xóa lịch sử
-            </button>
+    <!-- Chat Layout -->
+    <div class="chat-layout">
+        <!-- Sidebar (Drawer) -->
+        <div class="chat-sidebar" id="chatSidebar">
+            <div class="sidebar-header">
+                <h5 class="mb-0"><i class="bi bi-chat-left-dots me-2"></i>Lịch sử chat</h5>
+                <button class="btn-new-chat" onclick="startNewChat()">
+                    <i class="bi bi-plus-circle"></i> Chat mới
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <% if(dsDoanChat != null && !dsDoanChat.isEmpty()) {
+                    for(Modal.DoanChat.DoanChat dc : dsDoanChat) {
+                        boolean isActive = currentDoanChat != null && currentDoanChat == dc.getMaDoanChat();
+                %>
+                    <div class="chat-item <%= isActive ? "active" : "" %>" 
+                         onclick="loadChat(<%= dc.getMaDoanChat() %>)">
+                        <div class="chat-item-content">
+                            <div class="chat-item-title"><%= dc.getTieuDe() %></div>
+                            <div class="chat-item-time">
+                                <%= dc.getThoiDiemCapNhat() != null 
+                                    ? sdf.format(dc.getThoiDiemCapNhat()) 
+                                    : sdf.format(dc.getThoiDiemTao()) %>
+                            </div>
+                        </div>
+                        <button class="btn-delete-chat" 
+                                onclick="event.stopPropagation(); deleteChat(<%= dc.getMaDoanChat() %>)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                <% } } else { %>
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                        <p class="mt-2">Chưa có lịch sử chat</p>
+                    </div>
+                <% } %>
+            </div>
         </div>
 
-        <div class="chat-messages" id="chatMessages">
-		    <%
-		        ArrayList<Map<String, Object>> chatHistory = (ArrayList<Map<String, Object>>) request.getAttribute("chatHistory");
-		        if (chatHistory != null && !chatHistory.isEmpty()) {
-		            for (Map<String, Object> msg : chatHistory) {
-		                String role = (String) msg.get("role");
-		                String content = (String) msg.get("content");
-		                String timestamp = (String) msg.get("timestamp");
-		                Boolean hasImage = (Boolean) msg.get("hasImage");
-		
-		                // Tách text và base64 nếu có
-		                String textContent = content;
-		                String base64Image = null;
-		                if (hasImage != null && hasImage && content.contains("|||IMAGE_BASE64|||")) {
-		                    String[] parts = content.split("\\|\\|\\|IMAGE_BASE64\\|\\|\\|", 2);
-		                    textContent = parts[0];
-		                    base64Image = parts.length > 1 ? parts[1] : null;
-		                } else if (hasImage != null && hasImage && !content.contains("|||")) {
-		                    // Chỉ có ảnh, không có text
-		                    textContent = "";
-		                    base64Image = content;
-		                }
-		    %>
-		                <div class="message <%= role %>">
-		                    <% if (hasImage != null && hasImage && base64Image != null) { %>
-		                        <img src="data:image/jpeg;base64,<%= base64Image %>" class="message-image" alt="Ảnh người dùng gửi">
-		                    <% } %>
-		                    <% if (textContent != null && !textContent.trim().isEmpty()) { %>
-		                        <div><%= textContent.replace("\n", "<br>") %></div>
-		                    <% } else if (hasImage != null && hasImage) { %>
-		                        <div><em>[Đã gửi một ảnh]</em></div>
-		                    <% } %>
-		                    <small class="message-time"><%= timestamp %></small>
-		                </div>
-		    <%
-		            }
-		        } else {
-		    %>
-		        <div class="welcome-message">
-		            <i class="bi bi-stars"></i>
-		            <h5>Xin chào! Tôi là trợ lý AI</h5>
-		            <p>Hãy hỏi tôi bất cứ điều gì bạn muốn biết!</p>
-		        </div>
-		    <% } %>
-		</div>
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+            <div class="chat-header">
+                <button class="btn-toggle-sidebar" onclick="toggleSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-robot me-2"></i>
+                    <span>Chat với AI</span>
+            	</div>
+        	</div>
 
-        <div class="chat-input-container">
-            <form id="chatForm" enctype="multipart/form-data">
-                <div class="input-group">
-                    <label for="imageInput" class="btn btn-outline-secondary" title="Chọn ảnh">
-                        <i class="bi bi-image"></i>
-                    </label>
-                    <input type="file" id="imageInput" accept=".png,.jpg,.jpeg" style="display: none;">
-                    
-                    <input type="text" 
-                           class="form-control" 
-                           id="messageInput" 
-                           placeholder="Nhập tin nhắn..."
-                           autocomplete="off">
-                    
-                    <button class="btn btn-primary" type="submit" id="sendBtn">
-                        <i class="bi bi-send-fill"></i>
-                    </button>
-                </div>
-                <div id="imagePreview" class="image-preview mt-2" style="display: none;">
-                    <img id="previewImg" src="" alt="Preview">
-                    <button type="button" class="btn-remove-image" onclick="removeImage()">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="${pageContext.request.contextPath}/pages/chat_page/script.js"></script>
+	        <div class="chat-messages" id="chatMessages">
+	            <% if(tinNhanList != null && !tinNhanList.isEmpty()) {
+	                for(Modal.TinNhanChat.TinNhanChat tn : tinNhanList) {
+	                    String role = tn.getRole();
+	                    String content = tn.getNoiDung();
+	                    String url = tn.getUrl();
+	                    String timestamp = sdf.format(tn.getThoiDiemTao());
+	            %>
+	                <div class="message <%= role %>">
+	                    <% if (url != null && !url.trim().isEmpty()) { %>
+	                        <img src="${pageContext.request.contextPath}/<%= url %>" 
+	                             class="message-image" alt="Ảnh người dùng gửi">
+	                    <% } %>
+	                    <% if (content != null && !content.trim().isEmpty()) { %>
+	                        <div><%= content.replace("\n", "<br>") %></div>
+	                    <% } %>
+	                    <small class="message-time"><%= timestamp %></small>
+	                </div>
+	            <% } } else { %>
+	                <div class="welcome-message">
+	                    <i class="bi bi-stars"></i>
+	                    <h5>Xin chào! Tôi là trợ lý AI</h5>
+	                    <p>Hãy hỏi tôi bất cứ điều gì bạn muốn biết!</p>
+	                </div>
+	            <% } %>
+	        </div>
+	
+	        <div class="chat-input-container">
+	            <form id="chatForm" enctype="multipart/form-data">
+	                <input type="hidden" id="maDoanChatInput" name="maDoanChat" 
+	                       value="<%= currentDoanChat != null ? currentDoanChat : "" %>">
+	                
+	                <div class="input-group">
+	                    <label for="imageInput" class="btn btn-outline-secondary" title="Chọn ảnh">
+	                        <i class="bi bi-image"></i>
+	                    </label>
+	                    <input type="file" id="imageInput" name="image" accept="image/*" style="display: none;">
+	                    
+	                    <input type="text" 
+	                           class="form-control" 
+	                           id="messageInput" 
+	                           name="message"
+	                           placeholder="Nhập tin nhắn..."
+	                           autocomplete="off">
+	                    
+	                    <button class="btn btn-primary" type="submit" id="sendBtn">
+	                        <i class="bi bi-send-fill"></i>
+	                    </button>
+	                </div>
+	                <div id="imagePreview" class="image-preview mt-2" style="display: none;">
+	                    <img id="previewImg" src="" alt="Preview">
+	                    <button type="button" class="btn-remove-image" onclick="removeImage()">
+	                        <i class="bi bi-x"></i>
+	                    </button>
+	                </div>
+	            </form>
+	        </div>
+	    </div>
+	</div>
+	
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="${pageContext.request.contextPath}/pages/chat_page/script.js"></script>
 </body>
 </html>

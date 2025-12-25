@@ -26,6 +26,7 @@ public class DanhGiaBaiVietBO {
         dao.createDB(dgbv);
     }
 
+    // Dùng khi nào ??
     public void updateDB(long MaDanhGia, long MaBaiViet, String TenDangNhap, BigDecimal Diem) throws Exception {
         if ((Object) MaDanhGia == null || MaDanhGia < 1) {
             throw new Exception("Mã đánh giá không được để trống");
@@ -72,7 +73,7 @@ public class DanhGiaBaiVietBO {
 		dao.deleteDBByMaBaiVietVaTenDangNhap(MaBaiViet, TenDangNhap);
 	}
 
-    // Tìm theo tài khoản đánh giá
+    // Tìm theo tài khoản đánh giá, chỉ 1.
     public DanhGiaBaiViet findDB(String TenDangNhap) throws Exception {
         if (TenDangNhap == null || TenDangNhap.trim().isEmpty()) return null;
         for (DanhGiaBaiViet dgbv : readDB()) {

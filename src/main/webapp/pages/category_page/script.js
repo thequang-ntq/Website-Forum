@@ -256,7 +256,7 @@ function validateEditForm() {
 	return isValid;
 }
 
-// Handle Add Form Submit
+// Handle Add Form, Edit Form Submit
 document.addEventListener('DOMContentLoaded', function() {
 	const addForm = document.getElementById('addForm');
 	if(addForm) {

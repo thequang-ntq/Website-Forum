@@ -34,7 +34,8 @@ public class BaiVietBO {
         BaiViet bv = new BaiViet((long) -1, TieuDe, NoiDung, Url, TaiKhoanTao, MaTheLoai, null, null, null, null);
         dao.createDB(bv);
     }
-
+    
+    // Đánh giá bài viết là trung bình cộng đánh giá của tất cả người dùng theo bảng DanhGiaBaiViet, xử lý thông qua trigger trong CSDL.
     public void updateDB(long MaBaiViet, String TieuDe, String NoiDung, String Url, int MaTheLoai, BigDecimal DanhGia, String TrangThai) throws Exception {
         if (MaBaiViet < 1) {
             throw new Exception("Mã bài viết không được để trống!");
@@ -70,7 +71,7 @@ public class BaiVietBO {
         dao.deleteDB(MaBaiViet);
     }
 
-    // Tìm theo tiêu đề, nội dung, tài khoản tạo, thể loại, đánh giá, thời điểm tạo, thời điểm cập nhật
+    // Tìm theo tiêu đề, nội dung, tài khoản tạo, thể loại, đánh giá, thời điểm tạo, thời điểm cập nhật ??
     public ArrayList<BaiViet> findDB_user(ArrayList<BaiViet> dsBaiViet, String key) throws Exception {
         ArrayList<BaiViet> temp = new ArrayList<>();
         if (key == null || key.trim().isEmpty() || dsBaiViet == null) {
@@ -104,7 +105,7 @@ public class BaiVietBO {
         return temp;
     }
 
-    // Tìm theo tiêu đề, nội dung, tài khoản tạo, thể loại, đánh giá, trạng thái, thời điểm tạo, thời điểm cập nhật
+    // Tìm theo tiêu đề, nội dung, tài khoản tạo, thể loại, đánh giá, ***trạng thái, thời điểm tạo, thời điểm cập nhật
     public ArrayList<BaiViet> findDB_admin(String key) throws Exception {
         ArrayList<BaiViet> temp = new ArrayList<>();
         if (key == null || key.trim().isEmpty()) {
@@ -140,13 +141,16 @@ public class BaiVietBO {
     }
 
     // Sắp xếp giảm dần, bài viết đánh giá cao nhất lên đầu (5 sao -> 1 sao -> null)
+    // So sánh bv1 với bv2 để quyết định vị trí bv1 so với bv2
+    // < 0 -> bv1 trước bv2; = 0 -> giữ nguyên; > 0 -> bv1 đứng sau bv2
+    // Muốn đẩy bv1 xuống -> số dương; ngược lại -> số âm.
     public ArrayList<BaiViet> sortDB_danhGia_cao(ArrayList<BaiViet> dsBaiViet) throws Exception {
         ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
         temp.sort((bv1, bv2) -> {
             if (bv1.getDanhGia() == null && bv2.getDanhGia() == null) return 0;
-            if (bv1.getDanhGia() == null) return 1;  // null xuống cuối
-            if (bv2.getDanhGia() == null) return -1; // null xuống cuối
-            return bv2.getDanhGia().compareTo(bv1.getDanhGia()); // Giảm dần
+            if (bv1.getDanhGia() == null) return 1;  // null xuống cuối, bv1 đứng sau bv2, bài chưa có đánh giá bị đẩy xuống cuối
+            if (bv2.getDanhGia() == null) return -1; // null xuống cuối, bv1 đứng trước bv2
+            return bv2.getDanhGia().compareTo(bv1.getDanhGia()); // Giảm dần. =0 -> Đứng sau; <0 -> Đứng trước. Đảo thứ tự bv2 so với bv1 -> Sắp xếp giảm dần
         });
         return temp;
     }
@@ -168,7 +172,8 @@ public class BaiVietBO {
 	 public ArrayList<BaiViet> sortDB_thoiDiemCapNhat_ganNhat(ArrayList<BaiViet> dsBaiViet) throws Exception {
 	     ArrayList<BaiViet> temp = new ArrayList<>(dsBaiViet);
 	     temp.sort((bv1, bv2) -> {
-	         // Nếu cả 2 đều có ThoiDiemCapNhat
+	         // Nếu cả 2 đều có ThoiDiemCapNhat. Đẩy bv1 xuống dưới do bv1 tạo xa hơn bv2. compare mặc định là thằng nào tạo muộn hơn, thời điểm lớn hơn là lớn hơn
+	    	 // thằng còn lại
 	         if (bv1.getThoiDiemCapNhat() != null && bv2.getThoiDiemCapNhat() != null) {
 	             return bv2.getThoiDiemCapNhat().compareTo(bv1.getThoiDiemCapNhat()); // Giảm dần
 	         }
@@ -252,7 +257,7 @@ public class BaiVietBO {
         return temp;
     }
     
- // Lọc danh sách bài viết theo tài khoản tạo ở trang chủ (Tiếp nối cái trước đó)
+ // Lọc danh sách bài viết theo tài khoản tạo ở trang chủ (Tiếp nối cái trước đó), bài viết Active và của tài khoản tạo mới được thêm vào.
     public ArrayList<BaiViet> filterDB_taiKhoanTao_2(ArrayList<BaiViet> dsBaiViet, String taiKhoanTao) throws Exception {
         ArrayList<BaiViet> temp = new ArrayList<>();
         if (taiKhoanTao == null || taiKhoanTao.trim().isEmpty()) {

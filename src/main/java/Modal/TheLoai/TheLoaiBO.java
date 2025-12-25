@@ -14,6 +14,7 @@ public class TheLoaiBO {
 		return ds;
 	}
 	
+	// Đọc các thể loại đang Active
 	public ArrayList<TheLoai> readDB2() throws Exception {
 		ds = dao.readDB();
 		ArrayList<TheLoai> temp = new ArrayList<TheLoai>();

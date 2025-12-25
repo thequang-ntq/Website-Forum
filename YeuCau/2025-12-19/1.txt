@@ -4,7 +4,7 @@
 - Phần chức năng thông tin cá nhân thêm nút bổ sung email. Bấm vào thì hiện Modal nhập Email và xác thực email giống như của chức năng Quên mật khẩu. Modal có 2 nút Thêm Email và Hủy. Khi bấm Thêm email thì xác thực và bổ sung dữ liệu email vào dữ liệu tài khoản đang đăng nhập. Rồi chuyển về trang thông tin cá nhân và thông báo bổ sung email thành công.
 2) OK
 Ở phần tìm kiếm AI thì chuyển sang việc tìm kiếm theo nội dung của bài viết và bình luận dựa vào từ khóa được nhập vào ô tìm kiếm, phân tích ra các vector, embedding... để tìm kiếm (Tìm kiếm Embedding dựa theo nội dung), hiện đại, giống các trang Web lớn.
-3) Chưa cần
+3)
 Ở phần Chat AI thì bổ sung thêm drawner (Ngăn kéo) ở phía bên trái để tái hiện lại lịch sử Chat, các đoạn Chat đã được chat trước đó, hiện ở trong drawner là tiêu đề các đoạn chat. Ngoài ra cập nhập cho có thể upload ảnh lên chat AI nếu chưa có, ảnh lưu ở trong CSDL, lưu ở địa chỉ giống như ảnh được lưu trong bài viết và bình luận trong CSDL (Trong thư mục storage/tên ảnh ngẫu nhiên). Có thể bổ sung dữ liệu vào cơ sở dữ liệu, code...
 4) OK
 Tạo trang liên hệ với điều kiện: Chưa đăng nhập hoặc đăng nhập với Quyền User. Khi bấm vào nút hình liên hệ ở phía dưới, bên phải các trang, sẽ hiển thị qua trang liên hệ . Trong trang là tiêu đề: Thông tin liên hệ người tạo. Phía dưới là ảnh người tạo (Ảnh lấy trong assets trong project), tiếp dưới là thông tin gồm: Mã sinh viên; Họ tên; Trường; Chuyên ngành; Khóa; Lớp; Số điện thoại; Email.

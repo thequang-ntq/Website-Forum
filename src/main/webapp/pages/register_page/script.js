@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 
-	// Form validation on submit
+	// Form validation on submit, thừa, không cần, đã xử lý trong XuLyDangKyController
 	const registerForm = document.getElementById('registerForm');
 	if(registerForm) {
 		registerForm.addEventListener('submit', function(e) {

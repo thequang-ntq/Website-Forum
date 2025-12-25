@@ -29,7 +29,8 @@ public class TaiKhoanDAO {
 	    return ds;
 	}
 
-	// Sửa method createDB()
+	// Sửa method createDB(), lúc tạo thì trạng thái mặc định Active
+	// Đăng ký thì là Quyền là User, còn tạo trong Quản lý tài khoản mới chọn được là User hay Admin.
 	public void createDB(TaiKhoan tk) throws Exception {
 	    String sql = "INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Quyen, Email) VALUES (?, ?, ?, ?);";
 	    PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);

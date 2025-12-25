@@ -240,7 +240,7 @@ public class BinhLuanBO {
 		return temp;
 	}
 	
-	// Lọc danh sách bình luận theo mã bài viết
+	// Lọc danh sách bình luận theo mã bài viết ??
 	public ArrayList<BinhLuan> filterDB_maBaiViet(long maBaiViet, String trangThaiBaiViet) throws Exception {
 		ArrayList<BinhLuan> temp = new ArrayList<BinhLuan>();
 	

@@ -78,7 +78,7 @@ public class QuenMatKhauStepController extends HttpServlet {
         session.setAttribute("resetUsername", tenDangNhap.trim());
         session.setAttribute("pinExpiry", System.currentTimeMillis() + 5 * 60 * 1000); // 5 phút
         
-        response.sendRedirect(request.getContextPath() + "/QuenMatKhauController?step=verify");
+        response.sendRedirect(request.getContextPath() + "/QuenMatKhauController?step=verify"); // Paramater step
     }
     
     private void handleVerifyPIN(HttpServletRequest request, HttpServletResponse response, HttpSession session) 
@@ -87,12 +87,14 @@ public class QuenMatKhauStepController extends HttpServlet {
         String storedPIN = (String) session.getAttribute("resetPIN");
         Long expiry = (Long) session.getAttribute("pinExpiry");
         
+        // Quay lại bước 1
         if(storedPIN == null || expiry == null) {
             session.setAttribute("errorMessage", "Phiên xác thực đã hết hạn!");
             response.sendRedirect(request.getContextPath() + "/QuenMatKhauController");
             return;
         }
         
+        // Quay lại bước 1
         if(System.currentTimeMillis() > expiry) {
             session.removeAttribute("resetPIN");
             session.removeAttribute("pinExpiry");
@@ -101,6 +103,7 @@ public class QuenMatKhauStepController extends HttpServlet {
             return;
         }
         
+        // Quay lại bước 2
         if(!storedPIN.equals(inputPIN)) {
             session.setAttribute("errorVerify", "Mã PIN không chính xác!");
             response.sendRedirect(request.getContextPath() + "/QuenMatKhauController?step=verify");

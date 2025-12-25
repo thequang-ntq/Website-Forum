@@ -1,3 +1,6 @@
+// File này hiện tại không dùng
+
+
 // Đợi DOM load xong mới chạy script
 document.addEventListener('DOMContentLoaded', function() {
 	

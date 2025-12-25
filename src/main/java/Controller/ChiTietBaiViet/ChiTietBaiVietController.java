@@ -89,6 +89,7 @@ public class ChiTietBaiVietController extends HttpServlet {
 		
 		// Kiểm tra đăng nhập
 		if(account == null || account.trim().isEmpty()) {
+			// Trả HTML trực tiếp từ Servlet về trình duyệt
 			response.getWriter().write("<div class='alert alert-danger'>Vui lòng đăng nhập để xem chi tiết!</div>");
 			return;
 		}
@@ -185,11 +186,7 @@ public class ChiTietBaiVietController extends HttpServlet {
 		                
 		                ArrayList<Double> embedding = embeddingService.createEmbedding(noiDung.trim());
 		                String embeddingJson = embeddingService.embeddingToJson(embedding);
-		                
-		                BinhLuanEmbedding ble = new BinhLuanEmbedding();
-		                ble.setMaBinhLuan(newComment.getMaBinhLuan());
-		                ble.setEmbedding(embeddingJson);
-		                bleBO.createDB(ble);
+		                bleBO.createDB(newComment.getMaBinhLuan(), embeddingJson);
 		            }
 		        } 
 		        catch (Exception embEx) {

@@ -171,11 +171,18 @@
 							    <div class="info-label">
 							        <i class="bi bi-envelope-fill me-2"></i>Email:
 							    </div>
-							    <div class="info-value">
+							    <div class="info-value d-flex justify-content-between align-items-center">
+							        <span>
+							            <% if(taiKhoan.getEmail() != null && !taiKhoan.getEmail().trim().isEmpty()) { %>
+							                <%= taiKhoan.getEmail() %>
+							            <% } else { %>
+							                <span class="text-muted">Chưa liên kết</span>
+							            <% } %>
+							        </span>
 							        <% if(taiKhoan.getEmail() != null && !taiKhoan.getEmail().trim().isEmpty()) { %>
-							            <%= taiKhoan.getEmail() %>
-							        <% } else { %>
-							            <span class="text-muted">Chưa liên kết</span>
+							            <button class="btn btn-sm btn-outline-primary" onclick="showChangeEmailModal()">
+							                <i class="bi bi-pencil-fill me-1"></i>Đổi Email
+							            </button>
 							        <% } %>
 							    </div>
 							</div>
@@ -243,6 +250,8 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 				</div>
 				<form id="changePasswordForm" action="${pageContext.request.contextPath}/ThongTinCaNhanController" method="post">
+					<input type="hidden" name="action" value="changePassword">
+				
 					<div class="modal-body">
 						<!-- Error Message -->
 						<div id="modalError" class="alert alert-danger" style="display: none;">
@@ -255,6 +264,7 @@
 							<label for="matKhauCu" class="form-label fw-bold">
 								Mật khẩu cũ <span class="text-danger">*</span>
 							</label>
+							<!-- onkeyup để xác thực kiểm tra khi chỉ cần có thay đổi trong trường nhập -->
 							<input type="password" class="form-control" id="matKhauCu" 
 								   name="matKhauCu" maxlength="255" 
 								   onkeyup="validateChangePasswordForm()" required>
@@ -296,7 +306,7 @@
 		</div>
 	</div>
 	
-	<!-- Delete Account Modal -->
+	<!-- Delete Account Modal, action = deleteAccount -->
 	<div class="modal fade" id="deleteAccountModal" tabindex="-1">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
@@ -307,13 +317,14 @@
 					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 				</div>
 				<form id="deleteAccountForm" action="${pageContext.request.contextPath}/ThongTinCaNhanController" method="post">
+					<!-- Biết được action -->
 					<input type="hidden" name="action" value="deleteAccount">
 					<div class="modal-body">
 						<!-- Warning Alert -->
 						<div class="alert alert-danger border-danger">
 							<i class="bi bi-exclamation-triangle-fill me-2"></i>
 							<strong>Cảnh báo:</strong> Hành động này không thể hoàn tác!<br>
-							Tất cả bài viết, bình luận của bạn sẽ bị xóa vĩnh viễn.
+							Tất cả bài viết, bình luận, lượt thích, đánh giá, đoạn chat của bạn sẽ bị xóa vĩnh viễn.
 						</div>
 
 						<!-- Error Message -->
@@ -369,6 +380,7 @@
 	                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 	            </div>
 	            <form id="addEmailForm" action="${pageContext.request.contextPath}/ThongTinCaNhanController" method="post">
+	            	<!-- action=addEmail -->
 	                <input type="hidden" name="action" value="addEmail">
 	                <div class="modal-body">
 	                    <div id="addEmailError" class="alert alert-danger" style="display: none;">
@@ -399,11 +411,76 @@
 	        </div>
 	    </div>
 	</div>
+	
+	<!-- Change Email Modal -->
+	<div class="modal fade" id="changeEmailModal" tabindex="-1">
+	    <div class="modal-dialog modal-dialog-centered">
+	        <div class="modal-content">
+	            <div class="modal-header">
+	                <h5 class="modal-title">
+	                    <i class="bi bi-pencil-fill me-2"></i>Đổi Email
+	                </h5>
+	                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+	            </div>
+	            <form id="changeEmailForm" action="${pageContext.request.contextPath}/ThongTinCaNhanController" method="post">
+	            	<!-- action = changeEmail -->
+	                <input type="hidden" name="action" value="changeEmail">
+	                <div class="modal-body">
+	                    <div id="changeEmailError" class="alert alert-danger" style="display: none;">
+	                        <i class="bi bi-x-circle-fill me-2"></i>
+	                        <span id="changeEmailErrorText"></span>
+	                    </div>
+	                    
+	                    <!-- Email hiện tại -->
+	                    <div class="mb-3">
+	                        <label class="form-label fw-bold">Email hiện tại</label>
+	                        <input type="text" class="form-control" 
+	                               value="<%= taiKhoan != null && taiKhoan.getEmail() != null ? taiKhoan.getEmail() : "" %>" 
+	                               readonly disabled>
+	                    </div>
+	
+	                    <!-- Email mới -->
+	                    <div class="mb-3">
+	                        <label for="emailMoi" class="form-label fw-bold">
+	                            Email mới <span class="text-danger">*</span>
+	                        </label>
+	                        <input type="email" class="form-control" id="emailMoi" 
+	                               name="emailMoi" maxlength="255" 
+	                               placeholder="example@gmail.com"
+	                               onkeyup="validateChangeEmailForm()" required>
+	                        <div id="emailMoiError" class="invalid-feedback"></div>
+	                    </div>
+	                    
+	                    <!-- Xác nhận mật khẩu -->
+	                    <div class="mb-3">
+	                        <label for="matKhauXacNhanEmail" class="form-label fw-bold">
+	                            Mật khẩu xác nhận <span class="text-danger">*</span>
+	                        </label>
+	                        <input type="password" class="form-control" id="matKhauXacNhanEmail" 
+	                               name="matKhauXacNhan" maxlength="255" 
+	                               placeholder="Nhập mật khẩu để xác nhận"
+	                               onkeyup="validateChangeEmailForm()" required>
+	                        <div id="matKhauXacNhanEmailError" class="invalid-feedback"></div>
+	                    </div>
+	                </div>
+	                <div class="modal-footer">
+	                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+	                        <i class="bi bi-x-circle me-1"></i>Hủy
+	                    </button>
+	                    <button type="submit" class="btn btn-primary" id="changeEmailSubmitBtn" disabled>
+	                        <i class="bi bi-check-circle me-1"></i>Đổi Email
+	                    </button>
+	                </div>
+	            </form>
+	        </div>
+	    </div>
+	</div>
 
 	<script src="${pageContext.request.contextPath}/pages/info_page/script.js"></script>
 	<script>
 		// Message from server
-		<% if(message != null && messageType != null) { 
+		<% if(message != null && messageType != null) {
+			// Có thêm dấu \ ở trước để cho hệ thống biết dấu này được sử dụng
 			String escapedMessage = message.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r");
 		%>
 			document.addEventListener('DOMContentLoaded', function() {

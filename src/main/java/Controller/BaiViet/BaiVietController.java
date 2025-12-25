@@ -66,6 +66,9 @@ public class BaiVietController extends HttpServlet {
 				dsBaiViet = bvbo.readDB();
 			}
 			
+			// Sắp xếp theo MaBaiViet tăng dần
+			dsBaiViet.sort((a, b) -> Long.compare(a.getMaBaiViet(), b.getMaBaiViet()));
+			
 			// Xử lý embedding search
 			String embeddingSearch = request.getParameter("embeddingSearch");
 			if (embeddingSearch != null && !embeddingSearch.trim().isEmpty()) {
@@ -87,9 +90,6 @@ public class BaiVietController extends HttpServlet {
 			    dsBaiViet = filteredList;
 			    request.setAttribute("embeddingSearch", "true");
 			}
-			
-			// Sắp xếp theo MaBaiViet tăng dần
-			dsBaiViet.sort((a, b) -> Long.compare(a.getMaBaiViet(), b.getMaBaiViet()));
 			
 			// Lấy danh sách thể loại cho dropdown
 			ArrayList<TheLoai> dsTheLoai = tlbo.readDB2();

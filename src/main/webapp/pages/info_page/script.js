@@ -1,4 +1,12 @@
 // Đợi DOM load xong
+//Đây là validate và xử lý phía Client
+//Kiểm tra ngay lập tức khi người dùng nhập liệu (onkeyup)
+//Hiển thị lỗi real-time mà không cần gửi form lên server
+//Giảm tải cho server (lọc bỏ request không hợp lệ trước khi gửi)
+//Enable/disable nút submit dựa trên tính hợp lệ của form
+//Phản hồi nhanh, không có độ trễ mạng
+//Mục đích là: Cải thiện UI/UX
+//Chỉ cần thay đổi nhập là bắt đầu kiểm tra rồi
 document.addEventListener('DOMContentLoaded', function() {
 	// Initialize tooltips
 	var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -74,6 +82,7 @@ function showChangePasswordModal() {
 function clearAllErrors() {
 	const inputs = ['matKhauCu', 'matKhauMoi', 'xacNhanMatKhauMoi'];
 	
+	// Xóa hết lỗi và content lỗi
 	inputs.forEach(id => {
 		const input = document.getElementById(id);
 		const errorDiv = document.getElementById(id + 'Error');
@@ -406,6 +415,114 @@ document.addEventListener('DOMContentLoaded', function() {
         addEmailForm.addEventListener('submit', function(e) {
             if(!validateAddEmailForm()) {
                 e.preventDefault();
+            }
+        });
+    }
+});
+
+// Đổi Email
+// Show Change Email Modal
+function showChangeEmailModal() {
+    const modal = new bootstrap.Modal(document.getElementById('changeEmailModal'));
+    const form = document.getElementById('changeEmailForm');
+    const changeEmailError = document.getElementById('changeEmailError');
+    
+    // Reset form
+    form.reset();
+    
+    // Clear errors
+    clearChangeEmailErrors();
+    
+    // Hide modal error
+    changeEmailError.style.display = 'none';
+    
+    modal.show();
+}
+
+// Clear Change Email Errors
+function clearChangeEmailErrors() {
+    const inputs = ['emailMoi', 'matKhauXacNhanEmail'];
+    
+    inputs.forEach(id => {
+        const input = document.getElementById(id);
+        const errorDiv = document.getElementById(id + 'Error');
+        
+        if(input) input.classList.remove('is-invalid');
+        if(errorDiv) errorDiv.textContent = '';
+    });
+    
+    const submitBtn = document.getElementById('changeEmailSubmitBtn');
+    if(submitBtn) submitBtn.disabled = true;
+}
+
+// Validate Change Email Form
+function validateChangeEmailForm() {
+    const emailMoi = document.getElementById('emailMoi');
+    const matKhauXacNhanEmail = document.getElementById('matKhauXacNhanEmail');
+    
+    const emailMoiError = document.getElementById('emailMoiError');
+    const matKhauXacNhanEmailError = document.getElementById('matKhauXacNhanEmailError');
+    
+    const submitBtn = document.getElementById('changeEmailSubmitBtn');
+    const changeEmailError = document.getElementById('changeEmailError');
+    
+    let isValid = true;
+    
+    // Hide modal error
+    changeEmailError.style.display = 'none';
+    
+    // Validate Email mới
+    if(emailMoi.value.trim() === '') {
+        emailMoi.classList.add('is-invalid');
+        emailMoiError.textContent = 'Email mới không được để trống';
+        isValid = false;
+    } else if(emailMoi.value.length > 255) {
+        emailMoi.classList.add('is-invalid');
+        emailMoiError.textContent = 'Email mới không được quá 255 ký tự';
+        isValid = false;
+    } else if(!isValidEmail(emailMoi.value)) {
+        emailMoi.classList.add('is-invalid');
+        emailMoiError.textContent = 'Email mới không hợp lệ';
+        isValid = false;
+    } else {
+        emailMoi.classList.remove('is-invalid');
+        emailMoiError.textContent = '';
+    }
+    
+    // Validate Mật khẩu xác nhận
+    if(matKhauXacNhanEmail.value.trim() === '') {
+        matKhauXacNhanEmail.classList.add('is-invalid');
+        matKhauXacNhanEmailError.textContent = 'Mật khẩu xác nhận không được để trống';
+        isValid = false;
+    } else if(matKhauXacNhanEmail.value.length > 255) {
+        matKhauXacNhanEmail.classList.add('is-invalid');
+        matKhauXacNhanEmailError.textContent = 'Mật khẩu xác nhận không được quá 255 ký tự';
+        isValid = false;
+    } else {
+        matKhauXacNhanEmail.classList.remove('is-invalid');
+        matKhauXacNhanEmailError.textContent = '';
+    }
+    
+    submitBtn.disabled = !isValid;
+    return isValid;
+}
+
+// Handle Change Email Form Submit
+document.addEventListener('DOMContentLoaded', function() {
+    const changeEmailForm = document.getElementById('changeEmailForm');
+    if(changeEmailForm) {
+        changeEmailForm.addEventListener('submit', function(e) {
+            if(!validateChangeEmailForm()) {
+                e.preventDefault();
+                
+                const changeEmailError = document.getElementById('changeEmailError');
+                const changeEmailErrorText = document.getElementById('changeEmailErrorText');
+                changeEmailErrorText.textContent = 'Vui lòng kiểm tra lại các trường đã nhập!';
+                changeEmailError.style.display = 'block';
+                
+                setTimeout(() => {
+                    changeEmailError.style.display = 'none';
+                }, 3000);
             }
         });
     }

@@ -98,7 +98,7 @@ public class XuLyTaiKhoanController extends HttpServlet {
 			    String matKhau = request.getParameter("matKhau");
 			    String quyenTK = request.getParameter("quyen");
 			    String trangThai = request.getParameter("trangThai");
-			    String email = request.getParameter("email");  // THÊM DÒNG NÀY
+			    String email = request.getParameter("email");
 			    
 			    if(tenDangNhap == null || tenDangNhap.trim().isEmpty()) {
 			        session.setAttribute("message", "Tên đăng nhập không được để trống!");
@@ -115,26 +115,34 @@ public class XuLyTaiKhoanController extends HttpServlet {
 			    } else if(trangThai == null || trangThai.trim().isEmpty()) {
 			        session.setAttribute("message", "Trạng thái không được để trống!");
 			        session.setAttribute("messageType", "error");
-			    } else {
-			    	// Lấy thông tin tài khoản hiện tại từ DB
-			        TaiKhoan tkHienTai = tkdao.findByTenDangNhap(tenDangNhap);
-			        
-			        String matKhauCanLuu;
-			        // Kiểm tra: nếu mật khẩu nhập vào trùng với mật khẩu đã mã hóa trong DB
-			        // thì giữ nguyên, còn không thì mã hóa mật khẩu mới
-			        if(tkHienTai != null && matKhau.trim().equals(tkHienTai.getMatKhau())) {
-			            // Mật khẩu không thay đổi, giữ nguyên
-			            matKhauCanLuu = matKhau.trim();
-			        } else {
-			            // Mật khẩu mới, cần mã hóa
-			            matKhauCanLuu = md5.ecrypt(matKhau.trim());
-			        }
-			        
-			        // Cập nhật với mật khẩu đã xử lý
-			        tkbo.updateDB(tenDangNhap.trim(), matKhauCanLuu, quyenTK.trim(), trangThai, 
-			                      email != null && !email.trim().isEmpty() ? email.trim() : null);
-			        session.setAttribute("message", "Cập nhật tài khoản thành công!");
-			        session.setAttribute("messageType", "success");
+			    } else {  	
+			    	// Không cho sửa chính mình
+					if(tenDangNhap.equals(account)) {
+						session.setAttribute("message", "Không thể sửa tài khoản đang đăng nhập!");
+						session.setAttribute("messageType", "error");
+					}
+					else {
+						// Lấy thông tin tài khoản hiện tại từ DB
+				        TaiKhoan tkHienTai = tkdao.findByTenDangNhap(tenDangNhap);
+				        
+				        String matKhauCanLuu;
+				        // Kiểm tra: nếu mật khẩu nhập vào trùng với mật khẩu đã mã hóa trong DB
+				        // thì giữ nguyên, còn không thì mã hóa mật khẩu mới
+				        // nếu mật khẩu không đụng vào thì không cần mã hóa, mật khẩu hiện tại chưa đổi
+				        if(tkHienTai != null && matKhau.trim().equals(tkHienTai.getMatKhau())) {
+				            // Mật khẩu không thay đổi, giữ nguyên
+				            matKhauCanLuu = matKhau.trim();
+				        } else {
+				            // Mật khẩu mới, cần mã hóa
+				            matKhauCanLuu = md5.ecrypt(matKhau.trim());
+				        }
+				        
+				        // Cập nhật với mật khẩu đã xử lý
+				        tkbo.updateDB(tenDangNhap.trim(), matKhauCanLuu, quyenTK.trim(), trangThai, 
+				                      email != null && !email.trim().isEmpty() ? email.trim() : null);
+				        session.setAttribute("message", "Cập nhật tài khoản thành công!");
+				        session.setAttribute("messageType", "success");
+					}
 			    }
 			} else if("delete".equals(action)) {
 				// Xóa tài khoản

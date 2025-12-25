@@ -221,22 +221,43 @@
 							
 								<!-- Comment Input -->
 								<div class="comment-input-section mb-4">
-									<h5 class="mb-3"><i class="bi bi-pencil-square me-2"></i>Viết bình luận</h5>
-									<form id="commentForm">
-										<input type="hidden" id="maBaiVietInput" value="<%= bv.getMaBaiViet() %>">
-										<div class="mb-3">
-											<textarea class="form-control" id="commentContent" rows="3" 
-													  placeholder="Nhập bình luận của bạn..." required></textarea>
-										</div>
-										<div class="mb-3">
-											<input type="url" class="form-control" id="commentUrl" 
-												   placeholder="URL ảnh/video (không bắt buộc)">
-											<small class="text-muted">Hỗ trợ: jpg, jpeg, png, gif, webp, mp4, webm, ogg</small>
-										</div>
-										<button type="submit" class="btn btn-primary">
-											<i class="bi bi-send-fill me-2"></i>Gửi bình luận
-										</button>
-									</form>
+								    <h5 class="mb-3"><i class="bi bi-pencil-square me-2"></i>Viết bình luận</h5>
+								    <form id="commentForm">
+								        <input type="hidden" id="maBaiVietInput" value="<%= bv.getMaBaiViet() %>">
+								        <input type="hidden" id="commentUrlHidden" name="url" value="">
+								        
+								        <div class="mb-3">
+								            <textarea class="form-control" id="commentContent" rows="3" 
+								                      placeholder="Nhập bình luận của bạn..." required></textarea>
+								        </div>
+								        
+								        <!-- Upload File Section -->
+								        <div class="mb-3">
+								            <label class="form-label fw-bold">Ảnh/Video (không bắt buộc)</label>
+								            <div class="upload-container">
+								                <input type="file" id="commentFileInput" accept="image/*,video/*" style="display: none;">
+								                <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('commentFileInput').click()">
+								                    <i class="bi bi-cloud-upload me-2"></i>Tải ảnh/video lên
+								                </button>
+								                <div class="file-status mt-2">
+								                    <i class="bi bi-file-earmark"></i>
+								                    <span id="commentFileStatus" class="text-muted">Chưa có ảnh/video</span>
+								                </div>
+								                <div id="commentFilePreview" class="file-preview mt-3" style="display: none;"></div>
+								                <button type="button" class="btn btn-sm btn-danger mt-2" id="commentRemoveFileBtn" 
+								                        style="display: none;" onclick="removeCommentFile()">
+								                    <i class="bi bi-trash me-1"></i>Xóa file
+								                </button>
+								            </div>
+								            <small class="text-muted">
+								                Hỗ trợ: .jpg, .jpeg, .png, .gif, .webp (ảnh), .mp4, .webm, .ogg (video) - Tối đa 50MB
+								            </small>
+								        </div>
+								        
+								        <button type="submit" class="btn btn-primary">
+								            <i class="bi bi-send-fill me-2"></i>Gửi bình luận
+								        </button>
+								    </form>
 								</div>
 							
 								<div class="divider"></div>
@@ -463,49 +484,193 @@
 			background: linear-gradient(90deg, transparent, #667eea, transparent);
 			margin: 2rem 0;
 		}
+		
+		.upload-container {
+		    padding: 15px;
+		    background: #f8f9fa;
+		    border-radius: 8px;
+		    border: 1px solid #e2e8f0;
+		}
+		
+		.file-status {
+		    display: flex;
+		    align-items: center;
+		    gap: 8px;
+		    padding: 8px;
+		    background: white;
+		    border-radius: 6px;
+		    margin-top: 8px;
+		}
+		
+		.file-preview {
+		    margin-top: 12px;
+		}
+		
+		.file-preview img,
+		.file-preview video {
+		    max-width: 100%;
+		    max-height: 300px;
+		    border-radius: 8px;
+		    object-fit: contain;
+		}
 	</style>
 	
 	<script>
-		// Lấy context path
 		const contextPath = window.location.pathname.split('/')[1];
+	    let commentUploadedFileUrl = '';
+	    
+	    // ============================================
+	    // UPLOAD FILE FUNCTIONALITY
+	    // ============================================
+	    
+	    // Handle file select
+	    document.getElementById('commentFileInput').addEventListener('change', function(event) {
+	        const file = event.target.files[0];
+	        if (!file) return;
+	        
+	        // Validate file type
+	        const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+	        const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+	        const allValidTypes = [...validImageTypes, ...validVideoTypes];
+	        
+	        if (!allValidTypes.includes(file.type)) {
+	            alert('Định dạng file không được hỗ trợ!');
+	            event.target.value = '';
+	            return;
+	        }
+	        
+	        // Validate file size (50MB)
+	        if (file.size > 50 * 1024 * 1024) {
+	            alert('Kích thước file quá lớn! Vui lòng chọn file nhỏ hơn 50MB');
+	            event.target.value = '';
+	            return;
+	        }
+	        
+	        // Update status
+	        document.getElementById('commentFileStatus').textContent = 'Đang chuẩn bị tải lên...';
+	        document.getElementById('commentFileStatus').classList.remove('text-muted');
+	        document.getElementById('commentFileStatus').classList.add('text-primary');
+	        
+	        // Show preview
+	        showCommentFilePreview(file);
+	        
+	        // Upload file
+	        uploadCommentFile(file);
+	    });
+	    
+	    // Upload file
+	    function uploadCommentFile(file) {
+	        const formData = new FormData();
+	        formData.append('file', file);
+	        
+	        const statusElement = document.getElementById('commentFileStatus');
+	        statusElement.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Đang tải lên...';
+	        
+	        fetch('/' + contextPath + '/UploadFileController', {
+	            method: 'POST',
+	            body: formData
+	        })
+	        .then(response => response.json())
+	        .then(data => {
+	            if (data.success) {
+	                commentUploadedFileUrl = data.url;
+	                document.getElementById('commentUrlHidden').value = data.url;
+	                statusElement.textContent = data.fileName;
+	                statusElement.classList.remove('text-primary');
+	                statusElement.classList.add('text-success');
+	                document.getElementById('commentRemoveFileBtn').style.display = 'inline-block';
+	            } else {
+	                throw new Error(data.message || 'Upload thất bại');
+	            }
+	        })
+	        .catch(error => {
+	            console.error('Upload error:', error);
+	            statusElement.textContent = 'Lỗi: ' + error.message;
+	            statusElement.classList.remove('text-primary');
+	            statusElement.classList.add('text-danger');
+	            document.getElementById('commentFileInput').value = '';
+	            document.getElementById('commentFilePreview').style.display = 'none';
+	            commentUploadedFileUrl = '';
+	        });
+	    }
+	    
+	    // Show preview
+	    function showCommentFilePreview(file) {
+	        const preview = document.getElementById('commentFilePreview');
+	        preview.innerHTML = '';
+	        preview.style.display = 'block';
+	        
+	        const reader = new FileReader();
+	        
+	        if (file.type.startsWith('image/')) {
+	            reader.onload = function(e) {
+	                const img = document.createElement('img');
+	                img.src = e.target.result;
+	                preview.appendChild(img);
+	            };
+	            reader.readAsDataURL(file);
+	        } else if (file.type.startsWith('video/')) {
+	            reader.onload = function(e) {
+	                const video = document.createElement('video');
+	                video.src = e.target.result;
+	                video.controls = true;
+	                preview.appendChild(video);
+	            };
+	            reader.readAsDataURL(file);
+	        }
+	    }
+	    
+	    // Remove file
+	    function removeCommentFile() {
+	        document.getElementById('commentFileInput').value = '';
+	        document.getElementById('commentFileStatus').textContent = 'Chưa có ảnh/video';
+	        document.getElementById('commentFileStatus').classList.remove('text-success');
+	        document.getElementById('commentFileStatus').classList.add('text-muted');
+	        document.getElementById('commentFilePreview').style.display = 'none';
+	        document.getElementById('commentRemoveFileBtn').style.display = 'none';
+	        document.getElementById('commentUrlHidden').value = '';
+	        commentUploadedFileUrl = '';
+	    }
+	    
+	    // ============================================
+	    // SUBMIT COMMENT
+	    // ============================================
 		
 		// Xử lý submit bình luận
 		document.getElementById('commentForm').addEventListener('submit', function(e) {
-		    e.preventDefault();
-		    
-		    const content = document.getElementById('commentContent').value.trim();
-		    const url = document.getElementById('commentUrl').value.trim();
-		    const maBaiViet = document.getElementById('maBaiVietInput').value;
-		    
-		    if (!content) {
-		        alert('Vui lòng nhập nội dung bình luận!');
-		        return;
-		    }
-		    
-		    // Gửi qua URL params
-		    const urlParams = new URLSearchParams();
-		    urlParams.append('action', 'comment');
-		    urlParams.append('maBaiViet', maBaiViet);
-		    urlParams.append('noiDung', content);
-		    if (url) urlParams.append('url', url);
-		    
-		    fetch('/' + contextPath + '/ChiTietBaiVietController?' + urlParams.toString(), {
-		        method: 'POST'
-		    })
-		    .then(response => response.json())
-		    .then(data => {
-		        if (data.success) {
-		            // Reload trang
-		            window.location.reload();
-		        } else {
-		            alert(data.message || 'Có lỗi xảy ra khi thêm bình luận!');
-		        }
-		    })
-		    .catch(error => {
-		        console.error('Error:', error);
-		        alert('Có lỗi xảy ra! Vui lòng thử lại.');
-		    });
-		});
+	        e.preventDefault();
+	        
+	        const content = document.getElementById('commentContent').value.trim();
+	        const url = document.getElementById('commentUrlHidden').value.trim();
+	        const maBaiViet = document.getElementById('maBaiVietInput').value;
+	        
+	        if (!content) {
+	            alert('Vui lòng nhập nội dung bình luận!');
+	            return;
+	        }
+	        
+	        const urlParams = new URLSearchParams();
+	        urlParams.append('action', 'comment');
+	        urlParams.append('maBaiViet', maBaiViet);
+	        urlParams.append('noiDung', content);
+	        if (url) urlParams.append('url', url);
+	        
+	        fetch('/' + contextPath + '/ChiTietBaiVietController?' + urlParams.toString(), {
+	            method: 'POST'
+	        })
+	        .then(response => response.json())
+	        .then(data => {
+	            if (data.success) {
+	                window.location.reload();
+	            } else {
+	                alert(data.message || 'Có lỗi xảy ra khi thêm bình luận!');
+	            }
+	        })
+	        .catch(error => {
+	            console.error('Error:', error);
+	            alert('Có lỗi xảy ra! Vui lòng thử lại.');
+	        });
+	    });
 		
 		// Xử lý like/unlike bình luận
 		document.addEventListener('click', function(e) {

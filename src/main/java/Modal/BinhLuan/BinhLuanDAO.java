@@ -43,6 +43,7 @@ public class BinhLuanDAO {
 		pr.close();
 	}
 	
+	// Tổng số lượt thích lấy từ bảng LuotThichBinhLuan.
 	public void updateDB(BinhLuan bl) throws Exception {
 		String sql = "UPDATE BinhLuan SET NoiDung = ?, Url = ?, SoLuotThich = ?, TrangThai = ? WHERE MaBinhLuan = ?;";
 		PreparedStatement pr = DBConfig.getInstance().getCn().prepareStatement(sql);

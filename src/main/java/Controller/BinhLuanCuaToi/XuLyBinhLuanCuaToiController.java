@@ -15,11 +15,15 @@ import javax.servlet.http.HttpSession;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import Modal.BaiViet.BaiViet;
+import Modal.BaiViet.BaiVietBO;
 import Modal.BinhLuan.BinhLuan;
 import Modal.BinhLuan.BinhLuanBO;
 import Modal.BinhLuan.BinhLuanDAO;
 import Modal.LuotThichBinhLuan.LuotThichBinhLuan;
 import Modal.LuotThichBinhLuan.LuotThichBinhLuanBO;
+import Modal.TinNhanChat.TinNhanChat;
+import Modal.TinNhanChat.TinNhanChatBO;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -34,7 +38,9 @@ import Support.GeminiEmbeddingService;
 @MultipartConfig
 public class XuLyBinhLuanCuaToiController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	private BinhLuanBO blbo = new BinhLuanBO();
+	private BaiVietBO bvbo = new BaiVietBO();
+    private BinhLuanBO blbo = new BinhLuanBO();
+    private TinNhanChatBO tinNhanBO = new TinNhanChatBO();
 	private BinhLuanDAO bldao = new BinhLuanDAO();
 	private LuotThichBinhLuanBO ltbo = new LuotThichBinhLuanBO();
 	private BinhLuanEmbeddingBO bleBO = new BinhLuanEmbeddingBO();
@@ -85,11 +91,7 @@ public class XuLyBinhLuanCuaToiController extends HttpServlet {
 			                
 			                ArrayList<Double> embedding = embeddingService.createEmbedding(noiDung.trim());
 			                String embeddingJson = embeddingService.embeddingToJson(embedding);
-			                
-			                BinhLuanEmbedding ble = new BinhLuanEmbedding();
-			                ble.setMaBinhLuan(newComment.getMaBinhLuan());
-			                ble.setEmbedding(embeddingJson);
-			                bleBO.createDB(ble);
+			                bleBO.createDB(newComment.getMaBinhLuan(), embeddingJson);
 			            }
 			        } 
 			        catch (Exception embEx) {
@@ -126,10 +128,6 @@ public class XuLyBinhLuanCuaToiController extends HttpServlet {
 			        
 			        if(url != null && !url.trim().isEmpty()) {
 			            finalUrl = url.trim();
-			            
-			            if(blCheck.getUrl() != null && !blCheck.getUrl().isEmpty()) {
-			                deleteOldFile(request, blCheck.getUrl());
-			            }
 			        } else if("true".equals(keepOldFile)) {
 			            finalUrl = blCheck.getUrl();
 			        }
@@ -137,15 +135,11 @@ public class XuLyBinhLuanCuaToiController extends HttpServlet {
 			        blbo.updateDB(maBinhLuan, noiDung.trim(), finalUrl, soLuotThich, trangThai);
 			        // Cập nhật embedding
 			        try {
-			            bleBO.deleteByMaBinhLuan(maBinhLuan);
+			            bleBO.deleteDB(maBinhLuan);
 			            
 			            ArrayList<Double> embedding = embeddingService.createEmbedding(noiDung.trim());
 			            String embeddingJson = embeddingService.embeddingToJson(embedding);
-			            
-			            BinhLuanEmbedding ble = new BinhLuanEmbedding();
-			            ble.setMaBinhLuan(maBinhLuan);
-			            ble.setEmbedding(embeddingJson);
-			            bleBO.createDB(ble);
+			            bleBO.createDB(maBinhLuan, embeddingJson);
 			        } catch (Exception embEx) {
 			            System.err.println("Lỗi cập nhật embedding: " + embEx.getMessage());
 			        }
@@ -251,10 +245,35 @@ public class XuLyBinhLuanCuaToiController extends HttpServlet {
      */
     private void cleanOrphanFiles(HttpServletRequest request) {
         try {
-            // Bước 1: Lấy set tên file từ DB (chỉ phần filename từ URL)
+        	// Bước 1: Lấy set tên file từ DB (chỉ phần filename từ URL) từ cả bài viết và bình luận, và tin nhắn chat
             Set<String> usedFileNames = new HashSet<>();
+            // Bài viết
+            for (BaiViet bv : bvbo.readDB()) {
+                String url = bv.getUrl();
+                if (url != null && !url.trim().isEmpty()) {
+                    // Trích xuất filename từ URL (ví dụ: "storage/abc123.jpg" -> "abc123.jpg")
+                    String fileName = url.substring(url.lastIndexOf("/") + 1);
+                    if (!fileName.isEmpty()) {
+                        usedFileNames.add(fileName);
+                    }
+                }
+            }
+            
+            // Bình luận
             for (BinhLuan bl : blbo.readDB()) {
                 String url = bl.getUrl();
+                if (url != null && !url.trim().isEmpty()) {
+                    // Trích xuất filename từ URL (ví dụ: "storage/abc123.jpg" -> "abc123.jpg")
+                    String fileName = url.substring(url.lastIndexOf("/") + 1);
+                    if (!fileName.isEmpty()) {
+                        usedFileNames.add(fileName);
+                    }
+                }
+            }
+            
+            // Tin nhắn chat
+            for (TinNhanChat tn : tinNhanBO.readDB2()) {
+                String url = tn.getUrl();
                 if (url != null && !url.trim().isEmpty()) {
                     // Trích xuất filename từ URL (ví dụ: "storage/abc123.jpg" -> "abc123.jpg")
                     String fileName = url.substring(url.lastIndexOf("/") + 1);

@@ -395,18 +395,18 @@
                         <h5 class="mb-0"><i class="bi bi-search me-2"></i>Tìm kiếm</h5>
                     </div>
                     <div class="card-body">
-					    <form action="${pageContext.request.contextPath}/BinhLuanCuaToiController" method="get">
-					        <div class="search-box">
-					            <input type="text" class="form-control" name="search" id="searchInput"
-					                   placeholder="Tìm kiếm bình luận..." 
-					                   value="<%= searchKey != null ? searchKey : "" %>">
-					            <i class="bi bi-search search-icon"></i>
-					            <button type="button" class="btn btn-ai-search" onclick="enhanceSearch()" title="Tìm kiếm thông minh với AI">
-					                <i class="bi bi-stars"></i>
-					            </button>
-					        </div>
-					    </form>
-					</div>
+                        <form action="${pageContext.request.contextPath}/BinhLuanCuaToiController" method="get">
+                            <div class="search-box">
+                                <input type="text" class="form-control" name="search" id="searchInput"
+                                       placeholder="Tìm kiếm bình luận..."
+                                       value="<%= searchKey != null ? searchKey : "" %>">
+                                <i class="bi bi-search search-icon"></i>
+                                <button type="button" class="btn btn-ai-search" onclick="enhanceSearch()" title="Tìm kiếm thông minh với AI">
+                                    <i class="bi bi-stars"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

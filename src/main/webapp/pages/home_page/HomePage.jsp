@@ -226,9 +226,9 @@
 								<i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
 								<h5 class="mt-3 text-muted">
 									<% if(request.getAttribute("selectedTheLoai") != null) { %>
-										Chưa có bài viết nào thỏa điều kiện thể loại "<%= selectedTenTheLoai %>"
+										Không có bài viết nào thỏa điều kiện thể loại "<%= selectedTenTheLoai %>"
 									<% } else if(searchKey != null && !searchKey.trim().isEmpty()) { %>
-										Chưa có bài viết nào thỏa điều kiện tìm kiếm
+										Không có bài viết nào thỏa điều kiện tìm kiếm
 									<% } else { %>
 										Chưa có bài viết nào.
 									<% } %>
