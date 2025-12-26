@@ -5,6 +5,7 @@
 <%@ page import="Modal.BinhLuan.BinhLuan" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.TimeZone" %>
+<%@ page import="Support.TinyMCEConfig" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -16,7 +17,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/pages/mypost_page/style.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- TinyMCE Editor -->
-	<script src="https://cdn.tiny.cloud/1/8iyu7buuyf605fysc52n8rno4r010c26uqkrglbphgmds6pz/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+	<script src="https://cdn.tiny.cloud/1/<%= TinyMCEConfig.getApiKey() %>/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
     <%

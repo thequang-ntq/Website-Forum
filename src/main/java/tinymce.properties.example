@@ -1,0 +1,5 @@
+# TinyMCE API Key Configuration
+# Lấy API key miễn phí tại: https://www.tiny.cloud/auth/signup/
+# Sau khi đăng ký, copy API key vào file tinymce.properties
+
+tinymce.apikey=YOUR_API_KEY_HERE

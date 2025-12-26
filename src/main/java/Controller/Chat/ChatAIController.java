@@ -113,18 +113,22 @@ public class ChatAIController extends HttpServlet {
 
             // Upload ảnh nếu có
             String imageUrl = null;
+            Part imagePartForAPI = null;
+
+            // Upload ảnh và lưu URL vào DB
             if (imagePart != null && imagePart.getSize() > 0) {
                 imageUrl = uploadImage(imagePart, request);
+                // Reset lại stream để có thể đọc lại cho API
+                imagePartForAPI = request.getPart("image");
             }
 
             // Lưu tin nhắn user, tin nhắn hỏi của người dùng
             tinNhanBO.createDB(maDoanChat, "user", message != null ? message : "", imageUrl);
 
-            // Lấy lịch sử chat từ DB, lịch sử chat của đoạn chat có mã như trên
-            // Sau khi người dùng user gửi tin nhắn, mới lấy các tin trong CSDL trong đoạn chat ra đọc để cho vào chatHistory để cho vào AI
+            // Lấy lịch sử chat từ DB
             ArrayList<TinNhanChat> chatHistory = tinNhanBO.readDB(maDoanChat);
             ArrayList<Map<String, Object>> historyForAPI = new ArrayList<>();
-            
+
             for (TinNhanChat tn : chatHistory) {
                 Map<String, Object> msg = new HashMap<>();
                 msg.put("role", tn.getRole());
@@ -133,8 +137,8 @@ public class ChatAIController extends HttpServlet {
                 historyForAPI.add(msg);
             }
 
-            // Gọi OpenAI API
-            String aiResponse = chatService.sendMessage(message, imagePart, historyForAPI);
+            // Gọi OpenAI API với Part mới
+            String aiResponse = chatService.sendMessage(message, imagePartForAPI, historyForAPI);
 
             // Lưu response của AI
             tinNhanBO.createDB(maDoanChat, "assistant", aiResponse, null);

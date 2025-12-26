@@ -78,3 +78,10 @@ out/
 src/main/java/email.properties
 src/main/java/database.properties
 src/main/java/config.properties
+
+# TinyMCE API Key - Không commit file này
+src/main/java/tinymce.properties
+
+# API Keys
+src/main/java/*.properties
+!src/main/java/*.properties.example
